@@ -30,7 +30,7 @@
   --shadow:0 8px 30px rgba(24,24,48,.12);
   --shadow-sm:0 1px 2px rgba(24,24,48,.06);
   --gutterW:42px;
-  --hourH:46px;
+  --hourH:54px;
   --sat:env(safe-area-inset-top,0px);
   --sab:env(safe-area-inset-bottom,0px);
 }
@@ -93,6 +93,26 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   position:relative;z-index:20;
 }
 .topbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* 카테고리 필터 바 */
+.filterbar{flex:none;display:flex;gap:7px;align-items:center;padding:8px 12px;overflow-x:auto;background:var(--surface);border-bottom:1px solid var(--line);scrollbar-width:none}
+.filterbar::-webkit-scrollbar{display:none}
+.fchip{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-weight:700;font-size:12.5px;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);white-space:nowrap;flex:none;transition:.12s}
+.fchip:active{transform:scale(.95)}
+.fchip .cdot{width:9px;height:9px;border-radius:50%;flex:none}
+.fchip.off{opacity:.38}
+.fchip.manage{color:var(--ink-2);padding:5px 10px}
+.fchip.manage svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.fchip.modetoggle svg{width:13px;height:13px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.fchip.modetoggle.on{background:var(--accent);color:#fff;border-color:transparent}
+.fdiv{width:1px;height:18px;background:var(--line-strong);flex:none;margin:0 3px}
+.left-group{display:flex;align-items:center;gap:9px;min-width:0}
+.backbtn{
+  display:flex;align-items:center;gap:1px;height:36px;padding:0 12px 0 7px;border-radius:12px;
+  font-weight:800;font-size:14px;background:var(--accent-soft);color:var(--accent);flex:none;
+  transition:transform .12s;
+}
+.backbtn:active{transform:scale(.94)}
+.backbtn svg{width:17px;height:17px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .title{display:flex;flex-direction:column;gap:1px;min-width:0}
 .title .month{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
 .title .range{font-size:12.5px;color:var(--ink-2);font-weight:500}
@@ -119,9 +139,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   position:relative;z-index:15;box-shadow:0 1px 0 var(--line);
 }
 .dayhead .corner{border-right:1px solid var(--line);position:relative}
-.cornerbtn{width:100%;height:100%;display:grid;place-items:center;color:var(--muted);border-radius:0}
-.cornerbtn:active{background:var(--surface-2)}
-.cornerbtn svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.cornerbtn{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--accent)}
+.cornerbtn:active{background:var(--accent-soft)}
+.cornerbtn svg{width:17px;height:17px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.cornerbtn span{font-size:8px;font-weight:800;color:var(--accent);letter-spacing:.02em;line-height:1}
 .dayhead .hdays{display:grid;grid-template-columns:repeat(7,1fr)}
 .dh{
   padding:7px 2px 8px;text-align:center;display:flex;flex-direction:column;
@@ -153,14 +174,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .gutter .hr span{
   position:absolute;top:-7px;right:6px;font-family:'DM Mono',ui-monospace,monospace;
-  font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:-.02em;
+  font-size:11px;color:var(--ink-2);font-weight:600;letter-spacing:-.02em;
 }
 .gutter .hr:first-child span{top:2px}
 
 .days{
   position:relative;display:grid;grid-template-columns:repeat(7,1fr);
-  background:
-    repeating-linear-gradient(to bottom, transparent, transparent calc(var(--hourH) - 1px), var(--line) calc(var(--hourH) - 1px), var(--line) var(--hourH));
 }
 .daycol{position:relative;border-left:1px solid var(--line)}
 .daycol:first-child{border-left:none}
@@ -168,38 +187,40 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .daycol.holiday{background:var(--holiday-bg)}
 .daycol.today{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
 
-/* half-hour fainter tick */
+/* 시간 구분선 오버레이 — 쉬는 날 색 위에도 보이도록 위(z-index:1)에 그림 */
 .days::before{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(to bottom, transparent, transparent calc(var(--hourH)/2 - .5px), color-mix(in srgb,var(--line) 55%,transparent) calc(var(--hourH)/2 - .5px), color-mix(in srgb,var(--line) 55%,transparent) calc(var(--hourH)/2), transparent calc(var(--hourH)/2), transparent var(--hourH));
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:
+    repeating-linear-gradient(to bottom, transparent, transparent calc(var(--hourH) - 1px), var(--line-strong) calc(var(--hourH) - 1px), var(--line-strong) var(--hourH)),
+    repeating-linear-gradient(to bottom, transparent, transparent calc(var(--hourH)/2 - .5px), color-mix(in srgb,var(--line-strong) 55%,transparent) calc(var(--hourH)/2 - .5px), color-mix(in srgb,var(--line-strong) 55%,transparent) calc(var(--hourH)/2), transparent calc(var(--hourH)/2), transparent var(--hourH));
 }
 
 /* ---------- Events ---------- */
 .evt{
-  position:absolute;left:2px;right:2px;border-radius:7px;overflow:hidden;
-  padding:3px 4px 3px 6px;cursor:pointer;z-index:4;
+  position:absolute;left:2px;right:2px;border-radius:9px;overflow:hidden;
+  padding:5px 7px 5px 9px;cursor:pointer;z-index:4;
   background:color-mix(in srgb,var(--evt) 30%,var(--surface));
   border:1px solid color-mix(in srgb,var(--evt) 45%,var(--surface));
   border-left:3px solid var(--evt);
   transition:transform .1s ease, box-shadow .12s;
-  min-height:16px;
+  min-height:18px;display:flex;flex-direction:column;gap:2px;
 }
 .evt:active{transform:scale(.97);box-shadow:var(--shadow)}
 .evt .et{
-  font-size:10.5px;font-weight:700;line-height:1.15;color:var(--ink);
+  font-size:12px;font-weight:700;line-height:1.3;color:var(--ink);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-  word-break:break-all;
+  word-break:keep-all;overflow-wrap:anywhere;
 }
 .evt .eloc,.evt .etime{
-  font-size:9px;color:var(--ink-2);font-weight:600;line-height:1.2;
+  font-size:10px;color:var(--ink-2);font-weight:600;line-height:1.25;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .evt.lecture::after{
   content:"";position:absolute;top:3px;right:3px;width:4px;height:4px;border-radius:50%;
   background:var(--evt);opacity:.95;
 }
-.evt.short{padding:1px 4px 1px 6px}
-.evt.short .et{-webkit-line-clamp:1;font-size:9.5px}
+.evt.short{padding:2px 7px 2px 9px;gap:0}
+.evt.short .et{-webkit-line-clamp:1;font-size:11px}
 .evt.short .eloc,.evt.short .etime{display:none}
 
 /* 겹친 묶음 카드 */
@@ -283,6 +304,23 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .swatches button:active{transform:scale(.9)}
 .swatches button.on{outline:2.5px solid var(--ink);outline-offset:2px}
 
+/* 카테고리 선택 칩 (일정 폼) */
+.catchips{display:flex;flex-wrap:wrap;gap:7px}
+.catchip{display:flex;align-items:center;gap:6px;padding:9px 13px;border-radius:12px;font-weight:700;font-size:13.5px;background:var(--surface-2);color:var(--ink-2);border:1.5px solid transparent;transition:.12s}
+.catchip:active{transform:scale(.96)}
+.catchip .cdot{width:11px;height:11px;border-radius:50%;flex:none}
+.catchip.on{background:var(--surface);color:var(--ink);border-color:var(--accent);box-shadow:var(--shadow-sm)}
+.catchip.addcat{color:var(--accent);border:1.5px dashed color-mix(in srgb,var(--accent) 45%,var(--surface))}
+
+/* 카테고리 관리 목록 */
+.crow{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.crow:last-child{border-bottom:none}
+.crow .ldot{width:14px;height:14px;border-radius:5px;flex:none}
+.crow .cname{flex:1;font-weight:700;font-size:15px}
+.cdel{width:30px;height:30px;border-radius:9px;color:var(--muted);font-size:15px;font-weight:700;background:var(--surface-2)}
+.cdel:active{background:var(--line-strong)}
+.catadd{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+
 .actions{display:flex;gap:10px;margin-top:20px}
 .actions button{flex:1;padding:14px;border-radius:14px;font-weight:800;font-size:15.5px;transition:transform .1s}
 .actions button:active{transform:scale(.97)}
@@ -310,9 +348,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="planner">
   <div class="topbar">
     <div class="topbar-row">
-      <div class="title">
-        <div class="month" id="monthLabel">—</div>
-        <div class="range tnum" id="rangeLabel">—</div>
+      <div class="left-group">
+        <button class="backbtn" id="backBtn" aria-label="주간으로 돌아가기" style="display:none"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>주간</button>
+        <div class="title">
+          <div class="month" id="monthLabel">—</div>
+          <div class="range tnum" id="rangeLabel">—</div>
+        </div>
       </div>
       <div class="ctrls">
         <button class="iconbtn" id="prevBtn" aria-label="이전 주"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
@@ -323,9 +364,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     </div>
   </div>
 
+  <div class="filterbar" id="filterbar"></div>
+
   <div class="dayhead">
     <div class="corner">
-      <button class="cornerbtn" id="menuBtn" aria-label="백업 · 복원"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
+      <button class="cornerbtn" id="menuBtn" aria-label="백업 · 복원"><svg viewBox="0 0 24 24"><path d="M12 3v10"/><path d="M8 9l4 4 4-4"/><path d="M5 16v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"/></svg><span>백업</span></button>
     </div>
     <div class="hdays" id="hdays"></div>
   </div>
@@ -346,8 +389,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <h2 id="sheetTitle">일정 추가</h2>
 
   <div class="seg" id="typeSeg">
-    <button data-type="lecture" class="on">🔁 반복</button>
-    <button data-type="appointment">📌 약속</button>
+    <button data-type="lecture" class="on">🔁 매주 반복</button>
+    <button data-type="appointment">📅 특정 날짜</button>
   </div>
 
   <div class="field">
@@ -382,8 +425,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   </div>
 
   <div class="field">
-    <label>색상</label>
-    <div class="swatches" id="swatches"></div>
+    <label>카테고리</label>
+    <div class="catchips" id="catChips"></div>
   </div>
 
   <div class="err" id="err"></div>
@@ -423,23 +466,59 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   </div>
 </div>
 
+<!-- 카테고리 관리 시트 -->
+<div class="sheet" id="catSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h2>카테고리 관리</h2>
+  <div id="catList"></div>
+  <div class="catadd">
+    <div class="field" style="margin-bottom:10px">
+      <label>새 카테고리</label>
+      <input type="text" id="newCatName" placeholder="이름 (예: 알바, 동아리)" maxlength="10" autocomplete="off">
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>색상</label>
+      <div class="swatches" id="newCatColors"></div>
+    </div>
+    <button class="bk-btn" id="catAddBtn">+ 카테고리 추가</button>
+  </div>
+  <div class="actions">
+    <button class="btn-cancel" id="catCloseBtn" style="flex:1">닫기</button>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
   var KEY = "weekly-planner-events-v1";
   var AUTOKEY = "weekly-planner-events-v1-autobak";
   var METAKEY = "weekly-planner-meta";
-  var COLORS = ["#9EA0EA","#6FCBB4","#F5A3B5","#F4C58A","#C7ACEE","#8CC4EA","#98D8A0"]; // pastel
+  var COLORS = ["#9EA0EA","#6FCBB4","#F5A3B5","#F4C58A","#C7ACEE","#8CC4EA","#98D8A0","#A9B2C3"]; // pastel
+  var CAT_KEY = "weekly-planner-categories";
+  var HIDDEN_KEY = "weekly-planner-hidden-cats";
+  var DEFAULT_CATS = [
+    { id:"lec", name:"강의", color:"#9EA0EA" },
+    { id:"mtg", name:"회의", color:"#F4C58A" },
+    { id:"apt", name:"약속", color:"#F5A3B5" },
+    { id:"psn", name:"개인", color:"#6FCBB4" },
+    { id:"etc", name:"기타", color:"#A9B2C3" }
+  ];
   var DOW = ["월","화","수","목","금","토","일"]; // Mon..Sun, index 0..6
   var DAY_START = 0, DAY_END = 24; // hours rendered
-  var hourH = 46;
+  var hourH = 54;
 
   // ---- state ----
   var events = load();
   var anchor = new Date();           // any date within the shown week
-  var selDate = ymd(new Date());     // selected/highlighted day
+  var selDate = ymd(new Date());     // selected/highlighted day (day view의 대상 날짜)
+  var view = "week";                 // "week" | "day"
   var editId = null;
-  var form = { type:"lecture", days:[], date:selDate, color:COLORS[0] };
+  var categories = loadCategories();
+  var hidden = loadHidden();         // { catId: true } — 숨긴 카테고리
+  (function migrateCats(){ var ch=false; for(var i=0;i<events.length;i++){ if(!events[i].cat){ events[i].cat=(events[i].type==="lecture")?"lec":"apt"; ch=true; } } if(ch) save(); })();
+  var newCatColor = COLORS[0], catReturnToForm = false;
+  var showCat = (function(){ try{ return localStorage.getItem("weekly-planner-showcat")==="1"; }catch(e){ return false; } })(); // 제목 대신 분류 이름 표시
+  var form = { type:"lecture", days:[], date:selDate, cat:(categories[0]&&categories[0].id) };
 
   // ---- 한국 공휴일 (Nager.Date API, 키 불필요·CORS 지원) ----
   var holidays = {};           // { "YYYY-MM-DD": "공휴일 이름" }
@@ -472,10 +551,23 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function minToStr(m){ return pad(Math.floor(m/60))+":"+pad(m%60); }
   function strToMin(s){ var p=s.split(":"); return (+p[0])*60+(+p[1]); }
 
+  // ---- 카테고리 ----
+  function loadCategories(){ try{ var c=JSON.parse(localStorage.getItem(CAT_KEY)); if(Array.isArray(c)&&c.length) return c; }catch(e){} return DEFAULT_CATS.map(function(x){ return {id:x.id,name:x.name,color:x.color}; }); }
+  function saveCategories(){ try{ localStorage.setItem(CAT_KEY, JSON.stringify(categories)); }catch(e){} }
+  function loadHidden(){ try{ var h=JSON.parse(localStorage.getItem(HIDDEN_KEY)); if(h && typeof h==="object") return h; }catch(e){} return {}; }
+  function saveHidden(){ try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden)); }catch(e){} }
+  function catById(id){ for(var i=0;i<categories.length;i++){ if(categories[i].id===id) return categories[i]; } return null; }
+  function catColor(id){ var c=catById(id); return c?c.color:COLORS[0]; }
+  function catName(id){ var c=catById(id); return c?c.name:"기타"; }
+  function evColor(e){ var c=catById(e.cat); return c?c.color:(e.color||COLORS[0]); }
+  function evLabel(e){ return showCat ? catName(e.cat) : (e.title||"제목 없음"); } // 표시 텍스트: 분류 이름 or 제목
+  function saveShowCat(){ try{ localStorage.setItem("weekly-planner-showcat", showCat?"1":"0"); }catch(e){} }
+
   function weekDates(){ var mon=mondayOf(anchor); var arr=[]; for(var i=0;i<7;i++)arr.push(addDays(mon,i)); return arr; }
   function eventsForDate(d){
     var wday=wd(d), ds=ymd(d), out=[];
     for(var i=0;i<events.length;i++){ var e=events[i];
+      if(e.cat && hidden[e.cat]) continue;                 // 숨긴 카테고리
       if(e.type==="lecture"){
         if(!e.days || e.days.indexOf(wday)<0) continue;   // 요일 안 맞으면 skip
         if(e.from && ds < e.from) continue;               // 반복 시작 전
@@ -526,41 +618,57 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   var hdaysEl=document.getElementById("hdays");
   var daysEl=document.getElementById("days");
+  var backBtn=document.getElementById("backBtn");
   daysEl.style.height = ((DAY_END-DAY_START)*hourH)+"px";
 
   function render(){
-    var dates=weekDates();
+    var isDay = (view==="day");
+    var dates = isDay ? [parseYmd(selDate)] : weekDates();
+    var nCols = dates.length;
     var today=ymd(new Date());
+
+    // 열 개수: 주간 7 / 하루 1
+    hdaysEl.style.gridTemplateColumns="repeat("+nCols+",1fr)";
+    daysEl.style.gridTemplateColumns="repeat("+nCols+",1fr)";
+
     // 보이는 연도의 공휴일 캐시 로드
-    var years={}; for(var yi=0;yi<7;yi++) years[dates[yi].getFullYear()]=1;
+    var years={}; for(var yi=0;yi<dates.length;yi++) years[dates[yi].getFullYear()]=1;
     for(var yk in years) loadHolidayCache(+yk);
-    var first=dates[0], last=dates[6];
+
+    // 상단 라벨
     var mL=document.getElementById("monthLabel");
-    if(first.getMonth()===last.getMonth()) mL.textContent=first.getFullYear()+"년 "+(first.getMonth()+1)+"월";
-    else mL.textContent=(first.getMonth()+1)+"월 – "+(last.getMonth()+1)+"월";
-    document.getElementById("rangeLabel").textContent=
-      (first.getMonth()+1)+"/"+first.getDate()+" – "+(last.getMonth()+1)+"/"+last.getDate();
+    if(isDay){
+      var dd0=dates[0];
+      mL.textContent=(dd0.getMonth()+1)+"월 "+dd0.getDate()+"일";
+      document.getElementById("rangeLabel").textContent=DOW[wd(dd0)]+"요일";
+    } else {
+      var first=dates[0], last=dates[6];
+      if(first.getMonth()===last.getMonth()) mL.textContent=first.getFullYear()+"년 "+(first.getMonth()+1)+"월";
+      else mL.textContent=(first.getMonth()+1)+"월 – "+(last.getMonth()+1)+"월";
+      document.getElementById("rangeLabel").textContent=(first.getMonth()+1)+"/"+first.getDate()+" – "+(last.getMonth()+1)+"/"+last.getDate();
+    }
+    backBtn.style.display=isDay?"":"none";
 
     // day header
     var hh="";
-    for(var i=0;i<7;i++){ var d=dates[i], ds=ymd(d);
+    for(var i=0;i<dates.length;i++){ var d=dates[i], ds=ymd(d), wi=isDay?wd(d):i;
       var hol=holidays[ds];
-      var cls="dh"+(i===5?" sat":"")+(i===6?" sun":"")+(ds===today?" today":"")+(ds===selDate?" sel":"")+(hol?" holiday":"");
-      hh+='<div class="'+cls+'" data-date="'+ds+'"><div class="dow">'+DOW[i]+'</div><div class="dnum tnum">'+d.getDate()+'</div>'+(hol?'<div class="hname" title="'+esc(hol)+'">'+esc(hol)+'</div>':'')+'</div>';
+      var cls="dh"+(wi===5?" sat":"")+(wi===6?" sun":"")+(ds===today?" today":"")+((!isDay&&ds===selDate)?" sel":"")+(hol?" holiday":"");
+      hh+='<div class="'+cls+'" data-date="'+ds+'"><div class="dow">'+DOW[wi]+'</div><div class="dnum tnum">'+d.getDate()+'</div>'+(hol?'<div class="hname" title="'+esc(hol)+'">'+esc(hol)+'</div>':'')+'</div>';
     }
     hdaysEl.innerHTML=hh;
 
     // day columns
     var dh="";
-    for(var j=0;j<7;j++){ var dd=dates[j], dds=ymd(dd);
-      var wknd=(j>=5)?" wknd":"", istoday=(dds===today)?" today":"", ishol=holidays[dds]?" holiday":"";
+    for(var j=0;j<dates.length;j++){ var ddc=dates[j], dds=ymd(ddc), wj=isDay?wd(ddc):j;
+      var wknd=(wj>=5)?" wknd":"", istoday=(dds===today)?" today":"", ishol=holidays[dds]?" holiday":"";
       dh+='<div class="daycol'+wknd+ishol+istoday+'" data-date="'+dds+'" data-idx="'+j+'"></div>';
     }
     daysEl.innerHTML=dh;
 
     var cols=daysEl.querySelectorAll(".daycol");
     var any=false;
-    for(var k=0;k<7;k++){
+    for(var k=0;k<dates.length;k++){
       var col=cols[k], d2=dates[k];
       var evs=eventsForDate(d2);
       evs.sort(function(a,b){ return a.start-b.start || a.end-b.end; });
@@ -573,12 +681,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     // now line
     var nl=daysEl.querySelector(".nowline"); if(nl)nl.remove();
     var now=new Date(), nowYmd=ymd(now);
-    var tIdx=-1; for(var t=0;t<7;t++){ if(ymd(dates[t])===nowYmd){tIdx=t;break;} }
+    var tIdx=-1; for(var t=0;t<dates.length;t++){ if(ymd(dates[t])===nowYmd){tIdx=t;break;} }
     if(tIdx>=0){
       var nowMin=now.getHours()*60+now.getMinutes();
       var y=(nowMin-DAY_START*60)/60*hourH;
       var wrap=document.createElement("div"); wrap.className="nowline";
-      wrap.style.top=y+"px"; wrap.style.left=(tIdx/7*100)+"%"; wrap.style.width=(100/7)+"%";
+      wrap.style.top=y+"px"; wrap.style.left=(tIdx/nCols*100)+"%"; wrap.style.width=(100/nCols)+"%";
       wrap.innerHTML='<div class="d"></div><div class="l"></div>';
       daysEl.appendChild(wrap);
     }
@@ -613,12 +721,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var el=document.createElement("div");
     var dur=maxEnd-minStart;
     el.className="evt cluster"+(dur<=35?" short":"");
-    el.style.setProperty("--evt", cl[0].color||COLORS[0]);
+    el.style.setProperty("--evt", evColor(cl[0]));
     el.style.top=((minStart-DAY_START*60)/60*hourH)+"px";
     el.style.height=Math.max(dur/60*hourH-2,15)+"px";
     el.style.left="calc(0% + 2px)"; el.style.width="calc(100% - 8px)";
     var inner='<span class="cbadge">'+cl.length+'</span>';
-    inner+='<div class="et">'+esc(cl[0].title||"제목 없음")+' 외 '+(cl.length-1)+'</div>';
+    inner+='<div class="et">'+esc(evLabel(cl[0]))+' 외 '+(cl.length-1)+'</div>';
     inner+='<div class="etime tnum">'+minToStr(minStart)+'~'+minToStr(maxEnd)+'</div>';
     el.innerHTML=inner;
     el.addEventListener("click", function(ev){ ev.stopPropagation(); openClusterList(cl); });
@@ -629,7 +737,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var el=document.createElement("div");
     var dur=e.end-e.start;
     el.className="evt "+(e.type==="lecture"?"lecture":"appointment")+(dur<=35?" short":"");
-    el.style.setProperty("--evt", e.color||COLORS[0]);
+    el.style.setProperty("--evt", evColor(e));
     var top=(e.start-DAY_START*60)/60*hourH;
     var height=Math.max(dur/60*hourH-2, 15);
     el.style.top=top+"px"; el.style.height=height+"px";
@@ -637,7 +745,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.left="calc("+(c/n*100)+"% + 2px)";
     el.style.width="calc("+(100/n)+"% - 4px)";
     el.style.zIndex=4+c;
-    var inner='<div class="et">'+esc(e.title||"제목 없음")+'</div>';
+    var inner='<div class="et">'+esc(evLabel(e))+'</div>';
     if(e.location) inner+='<div class="eloc">'+esc(e.location)+'</div>';
     inner+='<div class="etime tnum">'+minToStr(e.start)+'</div>';
     el.innerHTML=inner;
@@ -657,23 +765,33 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     openAdd(col.getAttribute("data-date"), min);
   });
 
-  // header day tap -> select
+  // 요일(날짜) 탭 -> 하루 크게 보기
   hdaysEl.addEventListener("click", function(ev){
     var dh=ev.target.closest(".dh"); if(!dh)return;
-    selDate=dh.getAttribute("data-date"); render();
+    if(view==="week"){ selDate=dh.getAttribute("data-date"); anchor=parseYmd(selDate); view="day"; render(); }
   });
 
   // ---- nav ----
-  document.getElementById("prevBtn").onclick=function(){ anchor=addDays(mondayOf(anchor),-7); render(); };
-  document.getElementById("nextBtn").onclick=function(){ anchor=addDays(mondayOf(anchor),7); render(); };
+  document.getElementById("prevBtn").onclick=function(){
+    if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),-1)); anchor=parseYmd(selDate); }
+    else anchor=addDays(mondayOf(anchor),-7);
+    render();
+  };
+  document.getElementById("nextBtn").onclick=function(){
+    if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),1)); anchor=parseYmd(selDate); }
+    else anchor=addDays(mondayOf(anchor),7);
+    render();
+  };
   document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); render(); scrollToNow(); };
   document.getElementById("addBtn").onclick=function(){ openAdd(selDate, 9*60); };
+  backBtn.onclick=function(){ view="week"; render(); };
 
   // ================= Sheets =================
   var scrim=document.getElementById("scrim");
   var sheet=document.getElementById("sheet");
   var backupSheet=document.getElementById("backupSheet");
   var listSheet=document.getElementById("listSheet");
+  var catSheet=document.getElementById("catSheet");
   var fTitle=document.getElementById("fTitle"), fLoc=document.getElementById("fLoc"),
       fDate=document.getElementById("fDate"), fStart=document.getElementById("fStart"),
       fEnd=document.getElementById("fEnd"), errEl=document.getElementById("err");
@@ -682,7 +800,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var fFrom=document.getElementById("fFrom"), fUntil=document.getElementById("fUntil");
 
   (function(){ var h=""; for(var i=0;i<7;i++)h+='<button data-d="'+i+'">'+DOW[i]+'</button>'; document.getElementById("dayChips").innerHTML=h; })();
-  (function(){ var h=""; for(var i=0;i<COLORS.length;i++)h+='<button data-c="'+COLORS[i]+'" style="background:'+COLORS[i]+'"></button>'; document.getElementById("swatches").innerHTML=h; })();
 
   document.getElementById("typeSeg").addEventListener("click",function(ev){
     var b=ev.target.closest("button"); if(!b)return;
@@ -694,9 +811,26 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(i>=0)form.days.splice(i,1); else form.days.push(d);
     syncChips();
   });
-  document.getElementById("swatches").addEventListener("click",function(ev){
-    var b=ev.target.closest("button"); if(!b)return;
-    form.color=b.getAttribute("data-c"); syncSwatch();
+
+  // 폼 안의 카테고리 선택 칩
+  function buildCatChips(){
+    var h="";
+    categories.forEach(function(c){
+      h+='<button class="catchip" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>';
+    });
+    h+='<button class="catchip addcat" id="catAddChip">+ 새 카테고리</button>';
+    document.getElementById("catChips").innerHTML=h;
+    syncCat();
+  }
+  function syncCat(){
+    document.querySelectorAll("#catChips .catchip[data-cat]").forEach(function(b){
+      b.classList.toggle("on", b.getAttribute("data-cat")===form.cat);
+    });
+  }
+  document.getElementById("catChips").addEventListener("click",function(ev){
+    if(ev.target.closest("#catAddChip")){ openCatManage(true); return; }
+    var b=ev.target.closest(".catchip[data-cat]"); if(!b)return;
+    form.cat=b.getAttribute("data-cat"); syncCat();
   });
 
   function syncType(){
@@ -711,14 +845,74 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       b.classList.toggle("on", form.days.indexOf(+b.getAttribute("data-d"))>=0);
     });
   }
-  function syncSwatch(){
-    document.querySelectorAll("#swatches button").forEach(function(b){
-      b.classList.toggle("on", b.getAttribute("data-c")===form.color);
+
+  // ---- 카테고리 필터 바 (메인 화면) ----
+  var filterbarEl=document.getElementById("filterbar");
+  function buildFilterbar(){
+    var h='<button class="fchip modetoggle'+(showCat?" on":"")+'" id="modeToggle" aria-label="제목/분류 표시 전환"><svg viewBox="0 0 24 24"><path d="M20.6 13.4L11 3.8A2 2 0 0 0 9.6 3.2H4a1 1 0 0 0-1 1v5.6a2 2 0 0 0 .6 1.4l9.6 9.6a2 2 0 0 0 2.8 0l4.6-4.6a2 2 0 0 0 0-2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>분류</button><span class="fdiv"></span>';
+    categories.forEach(function(c){
+      h+='<button class="fchip'+(hidden[c.id]?" off":"")+'" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>';
     });
+    h+='<button class="fchip manage" id="catManageBtn" aria-label="카테고리 관리"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg></button>';
+    filterbarEl.innerHTML=h;
   }
+  filterbarEl.addEventListener("click",function(ev){
+    if(ev.target.closest("#modeToggle")){ showCat=!showCat; saveShowCat(); buildFilterbar(); render(); return; }
+    if(ev.target.closest("#catManageBtn")){ openCatManage(false); return; }
+    var b=ev.target.closest(".fchip[data-cat]"); if(!b)return;
+    var id=b.getAttribute("data-cat");
+    if(hidden[id]) delete hidden[id]; else hidden[id]=true;
+    saveHidden(); buildFilterbar(); render();
+  });
+
+  // ---- 카테고리 관리 시트 ----
+  function buildCatList(){
+    var h="";
+    categories.forEach(function(c){
+      h+='<div class="crow"><span class="ldot" style="background:'+c.color+'"></span><div class="cname">'+esc(c.name)+'</div><button class="cdel" data-del="'+c.id+'" aria-label="삭제">✕</button></div>';
+    });
+    document.getElementById("catList").innerHTML=h;
+  }
+  function buildNewCatColors(){
+    var h=""; COLORS.forEach(function(c){ h+='<button data-c="'+c+'" style="background:'+c+'"></button>'; });
+    document.getElementById("newCatColors").innerHTML=h;
+    newCatColor=COLORS[0]; syncNewCatColor();
+  }
+  function syncNewCatColor(){ document.querySelectorAll("#newCatColors button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-c")===newCatColor); }); }
+  document.getElementById("newCatColors").addEventListener("click",function(ev){ var b=ev.target.closest("button"); if(!b)return; newCatColor=b.getAttribute("data-c"); syncNewCatColor(); });
+
+  function openCatManage(fromForm){
+    catReturnToForm=!!fromForm;
+    if(fromForm) sheet.classList.remove("on");
+    buildCatList(); buildNewCatColors(); document.getElementById("newCatName").value="";
+    openSheet(catSheet);
+  }
+  function closeCatManage(){
+    catSheet.classList.remove("on");
+    if(catReturnToForm){ catReturnToForm=false; buildCatChips(); if(!catById(form.cat)) form.cat=categories[0].id; syncCat(); sheet.classList.add("on"); }
+    else closeSheet();
+  }
+  document.getElementById("catCloseBtn").onclick=closeCatManage;
+  document.getElementById("catAddBtn").onclick=function(){
+    var name=document.getElementById("newCatName").value.trim();
+    if(!name) return;
+    categories.push({ id:"c"+uid(), name:name, color:newCatColor });
+    saveCategories();
+    document.getElementById("newCatName").value="";
+    buildCatList(); buildNewCatColors(); buildFilterbar();
+  };
+  document.getElementById("catList").addEventListener("click",function(ev){
+    var d=ev.target.closest(".cdel"); if(!d)return;
+    if(categories.length<=1) return;
+    var id=d.getAttribute("data-del");
+    if(!confirm("이 카테고리를 삭제할까요?\n(해당 일정은 저장된 색으로 계속 표시돼요)")) return;
+    categories=categories.filter(function(c){ return c.id!==id; });
+    if(hidden[id]){ delete hidden[id]; saveHidden(); }
+    saveCategories(); buildCatList(); buildFilterbar(); render();
+  });
 
   function openSheet(el){ scrim.classList.add("on"); el.classList.add("on"); }
-  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); errEl.textContent=""; }
+  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; }
   scrim.onclick=closeSheet;
   document.getElementById("cancelBtn").onclick=closeSheet;
   document.getElementById("bkCloseBtn").onclick=closeSheet;
@@ -729,7 +923,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var body=document.getElementById("listBody"); body.innerHTML="";
     cl.slice().sort(function(a,b){ return a.start-b.start || a.end-b.end; }).forEach(function(e){
       var row=document.createElement("div"); row.className="lrow";
-      row.innerHTML='<span class="ldot" style="background:'+(e.color||COLORS[0])+'"></span>'+
+      row.innerHTML='<span class="ldot" style="background:'+evColor(e)+'"></span>'+
         '<div class="lmain"><div class="ltitle">'+esc(e.title||"제목 없음")+'</div>'+
         '<div class="lmeta tnum">'+minToStr(e.start)+' ~ '+minToStr(e.end)+(e.location?' · '+esc(e.location):'')+'</div></div>'+
         '<span class="lchev">›</span>';
@@ -744,25 +938,27 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     document.getElementById("sheetTitle").textContent="일정 추가";
     document.getElementById("delBtn").style.display="none";
     var d=parseYmd(dateStr);
-    form.type="lecture"; form.days=[wd(d)]; form.date=dateStr; form.color=COLORS[Math.floor(Math.random()*COLORS.length)];
+    form.type="lecture"; form.days=[wd(d)]; form.date=dateStr;
+    if(!catById(form.cat)) form.cat=categories[0].id;   // 마지막에 쓰던 카테고리 유지
     fTitle.value=""; fLoc.value=""; fDate.value=dateStr;
     fFrom.value=""; fUntil.value="";
     fStart.value=minToStr(startMin); fEnd.value=minToStr(Math.min(startMin+60,24*60-1));
-    syncType(); syncChips(); syncSwatch();
+    syncType(); syncChips(); buildCatChips();
     openSheet(sheet); setTimeout(function(){ fTitle.focus(); },300);
   }
   function openEdit(e){
     editId=e.id;
     document.getElementById("sheetTitle").textContent="일정 편집";
     document.getElementById("delBtn").style.display="";
-    form.type=e.type; form.color=e.color||COLORS[0];
+    form.type=e.type;
+    form.cat=(e.cat && catById(e.cat)) ? e.cat : categories[0].id;
     form.days=(e.days||[]).slice();
     form.date=e.date||selDate;
     fTitle.value=e.title||""; fLoc.value=e.location||"";
     fDate.value=form.date;
     fFrom.value=e.from||""; fUntil.value=e.until||"";
     fStart.value=minToStr(e.start); fEnd.value=minToStr(e.end);
-    syncType(); syncChips(); syncSwatch();
+    syncType(); syncChips(); buildCatChips();
     openSheet(sheet);
   }
 
@@ -780,8 +976,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(form.type==="lecture" && form.days.length===0){ errEl.textContent="요일을 하나 이상 선택해 주세요."; return; }
     if(form.type==="lecture" && fFrom.value && fUntil.value && fUntil.value < fFrom.value){ errEl.textContent="반복 종료일이 시작일보다 빨라요."; return; }
 
+    var cat = catById(form.cat) ? form.cat : categories[0].id;
     var rec={ id: editId||uid(), type:form.type, title:title, location:fLoc.value.trim(),
-              start:s, end:en, color:form.color };
+              start:s, end:en, cat:cat, color:catColor(cat) };
     if(form.type==="lecture"){
       rec.days=form.days.slice();
       if(fFrom.value) rec.from=fFrom.value;
@@ -861,6 +1058,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
 
   // ---- init ----
+  buildFilterbar();
   render();
   (function(){ var m=Math.max(8*60, new Date().getHours()*60); var y=(m-DAY_START*60)/60*hourH-120; scrollEl.scrollTop=Math.max(0,y); })();
   setInterval(render, 60000);

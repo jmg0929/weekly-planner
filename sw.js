@@ -1,6 +1,6 @@
 // 주간 플래너 서비스워커 — 오프라인 지원
 // 앱을 바꿀 때는 아래 버전 숫자를 올리면 캐시가 갱신됩니다.
-const CACHE = "planner-v7";
+const CACHE = "planner-v12";
 const ASSETS = [
   "./",
   "./index.html",
