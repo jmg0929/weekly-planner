@@ -115,7 +115,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   background:var(--surface);border-bottom:1px solid var(--line-strong);
   position:relative;z-index:15;box-shadow:0 1px 0 var(--line);
 }
-.dayhead .corner{border-right:1px solid var(--line)}
+.dayhead .corner{border-right:1px solid var(--line);position:relative}
+.cornerbtn{width:100%;height:100%;display:grid;place-items:center;color:var(--muted);border-radius:0}
+.cornerbtn:active{background:var(--surface-2)}
+.cornerbtn svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .dayhead .hdays{display:grid;grid-template-columns:repeat(7,1fr)}
 .dh{
   padding:7px 2px 8px;text-align:center;display:flex;flex-direction:column;
@@ -129,6 +132,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .dh.sat .dow{color:#4F86D6}
 .dh.sun .dow{color:#E5687F}
+.dh.holiday .dnum{color:var(--now)}
+.dh .hname{font-size:8.5px;font-weight:700;color:var(--now);line-height:1.1;margin-top:1px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 1px}
 .dh.today .dnum{background:var(--accent);color:#fff}
 .dh.today .dow{color:var(--accent)}
 .dh.sel .dnum{outline:2px solid var(--accent);outline-offset:1px}
@@ -157,9 +162,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .daycol{position:relative;border-left:1px solid var(--line)}
 .daycol:first-child{border-left:none}
 .daycol.wknd{background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+.daycol.holiday{background:color-mix(in srgb,var(--now) 6%,transparent)}
 .daycol.today{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
 
-/* half-hour fainter tick via ::before on each column would repeat; use gradient overlay on .days */
+/* half-hour fainter tick */
 .days::before{
   content:"";position:absolute;inset:0;pointer-events:none;
   background:repeating-linear-gradient(to bottom, transparent, transparent calc(var(--hourH)/2 - .5px), color-mix(in srgb,var(--line) 55%,transparent) calc(var(--hourH)/2 - .5px), color-mix(in srgb,var(--line) 55%,transparent) calc(var(--hourH)/2), transparent calc(var(--hourH)/2), transparent var(--hourH));
@@ -169,8 +175,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .evt{
   position:absolute;left:2px;right:2px;border-radius:7px;overflow:hidden;
   padding:3px 4px 3px 6px;cursor:pointer;z-index:4;
-  background:color-mix(in srgb,var(--evt) 15%,var(--surface));
-  border:1px solid color-mix(in srgb,var(--evt) 30%,var(--surface));
+  background:color-mix(in srgb,var(--evt) 30%,var(--surface));
+  border:1px solid color-mix(in srgb,var(--evt) 45%,var(--surface));
   border-left:3px solid var(--evt);
   transition:transform .1s ease, box-shadow .12s;
   min-height:16px;
@@ -182,12 +188,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   word-break:break-all;
 }
 .evt .eloc,.evt .etime{
-  font-size:9px;color:var(--ink-2);font-weight:500;line-height:1.2;
+  font-size:9px;color:var(--ink-2);font-weight:600;line-height:1.2;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .evt.lecture::after{
   content:"";position:absolute;top:3px;right:3px;width:4px;height:4px;border-radius:50%;
-  background:var(--evt);opacity:.9;
+  background:var(--evt);opacity:.95;
 }
 .evt.short{padding:1px 4px 1px 6px}
 .evt.short .et{-webkit-line-clamp:1;font-size:9.5px}
@@ -262,6 +268,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 .err{color:var(--now);font-size:12.5px;font-weight:600;margin-top:-6px;margin-bottom:10px;min-height:0}
 
+/* ---------- Backup sheet ---------- */
+.bk-note{font-size:13px;color:var(--ink-2);line-height:1.55;background:var(--surface-2);padding:13px 15px;border-radius:13px;margin-bottom:16px}
+.bk-note b{color:var(--ink)}
+.bk-btn{width:100%;padding:15px;border-radius:14px;font-weight:800;font-size:15.5px;margin-bottom:10px;background:var(--accent);color:#fff;transition:transform .1s;display:flex;align-items:center;justify-content:center;gap:8px}
+.bk-btn:active{transform:scale(.98)}
+.bk-btn.ghost{background:var(--surface-2);color:var(--ink)}
+.bk-last{font-size:12.5px;color:var(--muted);font-weight:600;text-align:center;margin:2px 0 4px}
+.bk-cap{font-size:12px;color:var(--muted);font-weight:500;text-align:center;margin-top:14px;line-height:1.55}
+
 @media (prefers-reduced-motion: reduce){
   *{transition:none!important}
 }
@@ -284,7 +299,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   </div>
 
   <div class="dayhead">
-    <div class="corner"></div>
+    <div class="corner">
+      <button class="cornerbtn" id="menuBtn" aria-label="백업 · 복원"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
+    </div>
     <div class="hdays" id="hdays"></div>
   </div>
 
@@ -297,18 +314,20 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 </div>
 
 <div class="scrim" id="scrim"></div>
+
+<!-- Add / edit sheet -->
 <div class="sheet" id="sheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
   <h2 id="sheetTitle">일정 추가</h2>
 
   <div class="seg" id="typeSeg">
-    <button data-type="lecture" class="on">📚 강의 (매주 반복)</button>
+    <button data-type="lecture" class="on">🔁 반복</button>
     <button data-type="appointment">📌 약속</button>
   </div>
 
   <div class="field">
     <label>제목</label>
-    <input type="text" id="fTitle" placeholder="예: 자료구조 / 스터디 모임" autocomplete="off">
+    <input type="text" id="fTitle" placeholder="예: 알고리즘 강의 / 헬스 / 스터디" autocomplete="off">
   </div>
   <div class="field">
     <label>장소 <span style="font-weight:500;color:var(--muted)">(선택)</span></label>
@@ -318,6 +337,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <div class="field" id="daysField">
     <label>요일 <span style="font-weight:500;color:var(--muted)">(여러 개 선택 가능)</span></label>
     <div class="chips" id="dayChips"></div>
+  </div>
+  <div class="field" id="rangeField">
+    <label>반복 기간 <span style="font-weight:500;color:var(--muted)">(선택 · 비우면 계속 반복)</span></label>
+    <div class="two">
+      <input type="date" id="fFrom" aria-label="반복 시작일">
+      <input type="date" id="fUntil" aria-label="반복 종료일">
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;font-weight:500">시작일 ~ 종료일 (예: 학기 기간)</div>
   </div>
   <div class="field" id="dateField" style="display:none">
     <label>날짜</label>
@@ -343,11 +370,31 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   </div>
 </div>
 
+<!-- Backup sheet -->
+<div class="sheet" id="backupSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h2>백업 · 복원</h2>
+  <div class="bk-note">
+    <b>자동 백업 켜짐</b> — 일정을 바꿀 때마다 폰 안에 안전 사본이 저장돼요.<br>
+    폰을 바꾸거나 데이터가 지워지는 상황까지 대비하려면, 가끔 아래 <b>내보내기</b>로 파일을 저장해 두세요.
+  </div>
+  <button class="bk-btn" id="exportBtn">📤 백업 파일 내보내기</button>
+  <div class="bk-last" id="bkLast">아직 내보낸 적 없음</div>
+  <button class="bk-btn ghost" id="importBtn">📥 백업 파일에서 복원</button>
+  <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+  <div class="bk-cap">복원하면 현재 일정을 백업 파일 내용으로 <b>덮어써요.</b><br>내보낸 파일은 아이클라우드·메모·나에게 보내기 등에 보관하면 안전해요.</div>
+  <div class="actions">
+    <button class="btn-cancel" id="bkCloseBtn" style="flex:1">닫기</button>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
   var KEY = "weekly-planner-events-v1";
-  var COLORS = ["#5B5BD6","#14B8A6","#F43F5E","#F59E0B","#A855F7","#0EA5E9","#22C55E"];
+  var AUTOKEY = "weekly-planner-events-v1-autobak";
+  var METAKEY = "weekly-planner-meta";
+  var COLORS = ["#9EA0EA","#6FCBB4","#F5A3B5","#F4C58A","#C7ACEE","#8CC4EA","#98D8A0"]; // pastel
   var DOW = ["월","화","수","목","금","토","일"]; // Mon..Sun, index 0..6
   var DAY_START = 0, DAY_END = 24; // hours rendered
   var hourH = 46;
@@ -359,29 +406,75 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var editId = null;
   var form = { type:"lecture", days:[], date:selDate, color:COLORS[0] };
 
+  // ---- 한국 공휴일 (Nager.Date API, 키 불필요·CORS 지원) ----
+  var holidays = {};           // { "YYYY-MM-DD": "공휴일 이름" }
+  var loadedYears = {}, pendingYears = {};
+  var HOLIDAY_EXCLUDE = { "Constitution Day":1, "Labour Day":1 }; // 제헌절·노동절은 공휴일 아님
+
   // ---- helpers ----
   function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; } }
-  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(events, function(k,v){ return k.charAt(0)==="_"?undefined:v; })); }catch(e){} }
+  function cleanEvents(){
+    return events.map(function(e){ var o={}; for(var k in e){ if(e.hasOwnProperty(k) && k.charAt(0)!=="_") o[k]=e[k]; } return o; });
+  }
+  function save(){
+    try{
+      var clean = cleanEvents();
+      var json = JSON.stringify(clean);
+      localStorage.setItem(KEY, json);
+      // 자동 백업: 변경마다 별도 키에 사본 보관
+      localStorage.setItem(AUTOKEY, JSON.stringify({ ts: Date.now(), v:1, data: clean }));
+    }catch(e){}
+  }
+  function getMeta(){ try{ return JSON.parse(localStorage.getItem(METAKEY)) || {}; }catch(e){ return {}; } }
+  function setMeta(m){ try{ localStorage.setItem(METAKEY, JSON.stringify(m)); }catch(e){} }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
   function pad(n){ return (n<10?"0":"")+n; }
   function ymd(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
   function parseYmd(s){ var p=s.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); }
-  // weekday Mon=0..Sun=6
-  function wd(d){ return (d.getDay()+6)%7; }
+  function wd(d){ return (d.getDay()+6)%7; } // weekday Mon=0..Sun=6
   function mondayOf(d){ var x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-wd(x)); return x; }
   function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
   function minToStr(m){ return pad(Math.floor(m/60))+":"+pad(m%60); }
   function strToMin(s){ var p=s.split(":"); return (+p[0])*60+(+p[1]); }
-  function fmtTime(m){ var h=Math.floor(m/60), mm=m%60; var ap=h<12?"오전":"오후"; var h12=h%12; if(h12===0)h12=12; return ap+" "+h12+(mm?":"+pad(mm):""); }
 
   function weekDates(){ var mon=mondayOf(anchor); var arr=[]; for(var i=0;i<7;i++)arr.push(addDays(mon,i)); return arr; }
   function eventsForDate(d){
     var wday=wd(d), ds=ymd(d), out=[];
     for(var i=0;i<events.length;i++){ var e=events[i];
-      if(e.type==="lecture"){ if(e.days && e.days.indexOf(wday)>=0) out.push(e); }
-      else { if(e.date===ds) out.push(e); }
+      if(e.type==="lecture"){
+        if(!e.days || e.days.indexOf(wday)<0) continue;   // 요일 안 맞으면 skip
+        if(e.from && ds < e.from) continue;               // 반복 시작 전
+        if(e.until && ds > e.until) continue;              // 반복 종료 후
+        out.push(e);
+      } else {
+        if(e.date===ds) out.push(e);
+      }
     }
     return out;
+  }
+
+  // ---- 공휴일 로드 (캐시 우선 + 네트워크 갱신) ----
+  function holKey(y){ return "weekly-planner-holidays-"+y; }
+  function applyHolidays(y,map){ for(var k in map) holidays[k]=map[k]; loadedYears[y]=1; }
+  function loadHolidayCache(y){
+    if(loadedYears[y]) return;
+    try{ var c=JSON.parse(localStorage.getItem(holKey(y))||"null"); if(c&&c.map) applyHolidays(y,c.map); }catch(e){}
+  }
+  function refreshHolidays(y){
+    if(pendingYears[y]) return;
+    var c=null; try{ c=JSON.parse(localStorage.getItem(holKey(y))||"null"); }catch(e){}
+    if(c&&c.map&&c.fetchedAt&&(Date.now()-c.fetchedAt)<60*86400000) return; // 캐시 신선하면 네트워크 skip
+    pendingYears[y]=1;
+    fetch("https://date.nager.at/api/v3/PublicHolidays/"+y+"/KR")
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(arr){
+        if(!arr) throw 0;
+        var map={};
+        arr.forEach(function(h){ if(HOLIDAY_EXCLUDE[h.name])return; map[h.date]=h.localName||h.name; });
+        try{ localStorage.setItem(holKey(y), JSON.stringify({fetchedAt:Date.now(), map:map})); }catch(e){}
+        delete pendingYears[y]; applyHolidays(y,map); render();
+      })
+      .catch(function(){ delete pendingYears[y]; });
   }
 
   // ---- render header + gutter (once) ----
@@ -403,7 +496,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function render(){
     var dates=weekDates();
     var today=ymd(new Date());
-    // month label
+    // 보이는 연도의 공휴일 캐시 로드
+    var years={}; for(var yi=0;yi<7;yi++) years[dates[yi].getFullYear()]=1;
+    for(var yk in years) loadHolidayCache(+yk);
     var first=dates[0], last=dates[6];
     var mL=document.getElementById("monthLabel");
     if(first.getMonth()===last.getMonth()) mL.textContent=first.getFullYear()+"년 "+(first.getMonth()+1)+"월";
@@ -414,16 +509,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     // day header
     var hh="";
     for(var i=0;i<7;i++){ var d=dates[i], ds=ymd(d);
-      var cls="dh"+(i===5?" sat":"")+(i===6?" sun":"")+(ds===today?" today":"")+(ds===selDate?" sel":"");
-      hh+='<div class="'+cls+'" data-date="'+ds+'"><div class="dow">'+DOW[i]+'</div><div class="dnum tnum">'+d.getDate()+'</div></div>';
+      var hol=holidays[ds];
+      var cls="dh"+(i===5?" sat":"")+(i===6?" sun":"")+(ds===today?" today":"")+(ds===selDate?" sel":"")+(hol?" holiday":"");
+      hh+='<div class="'+cls+'" data-date="'+ds+'"><div class="dow">'+DOW[i]+'</div><div class="dnum tnum">'+d.getDate()+'</div>'+(hol?'<div class="hname" title="'+esc(hol)+'">'+esc(hol)+'</div>':'')+'</div>';
     }
     hdaysEl.innerHTML=hh;
 
-    // day columns + events
+    // day columns
     var dh="";
     for(var j=0;j<7;j++){ var dd=dates[j], dds=ymd(dd);
-      var wknd=(j>=5)?" wknd":"", istoday=(dds===today)?" today":"";
-      dh+='<div class="daycol'+wknd+istoday+'" data-date="'+dds+'" data-idx="'+j+'"></div>';
+      var wknd=(j>=5)?" wknd":"", istoday=(dds===today)?" today":"", ishol=holidays[dds]?" holiday":"";
+      dh+='<div class="daycol'+wknd+ishol+istoday+'" data-date="'+dds+'" data-idx="'+j+'"></div>';
     }
     daysEl.innerHTML=dh;
 
@@ -432,7 +528,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     for(var k=0;k<7;k++){
       var col=cols[k], d2=dates[k];
       var evs=eventsForDate(d2);
-      // sort + simple overlap columns
       evs.sort(function(a,b){ return a.start-b.start || a.end-b.end; });
       layout(evs);
       for(var m=0;m<evs.length;m++){ any=true; col.appendChild(evNode(evs[m])); }
@@ -455,22 +550,24 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var hint=daysEl.querySelector(".hint"); if(hint)hint.remove();
     if(!any && events.length===0){
       var hn=document.createElement("div"); hn.className="hint";
-      hn.innerHTML='<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v4M10 15h4"/></svg><div>빈 칸을 탭해서<br>강의·약속을 추가해 보세요</div>';
+      hn.innerHTML='<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 13v4M10 15h4"/></svg><div>빈 칸을 탭해서<br>반복 일정·약속을 추가해 보세요</div>';
       daysEl.appendChild(hn);
     }
+
+    // 공휴일 네트워크 갱신 (캐시 없거나 오래되면 받아와서 다시 그림)
+    for(var yr in years) refreshHolidays(+yr);
   }
 
   // assign overlapping events into side-by-side columns
   function layout(evs){
-    var active=[]; // {end, col}
-    var groups=[]; var cur=[]; var curMaxEnd=-1;
+    var cur=[]; var curMaxEnd=-1;
     for(var i=0;i<evs.length;i++){ var e=evs[i];
       if(cur.length && e.start>=curMaxEnd){ assign(cur); cur=[]; curMaxEnd=-1; }
       cur.push(e); if(e.end>curMaxEnd)curMaxEnd=e.end;
     }
     if(cur.length)assign(cur);
     function assign(grp){
-      var colsEnd=[]; // end time per column
+      var colsEnd=[];
       for(var a=0;a<grp.length;a++){ var g=grp[a]; var placed=-1;
         for(var c=0;c<colsEnd.length;c++){ if(g.start>=colsEnd[c]){ placed=c; break; } }
         if(placed<0){ placed=colsEnd.length; colsEnd.push(0); }
@@ -490,7 +587,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var height=Math.max(dur/60*hourH-2, 15);
     el.style.top=top+"px"; el.style.height=height+"px";
     var n=e._cols||1, c=e._col||0;
-    var gap=2;
     el.style.left="calc("+(c/n*100)+"% + 2px)";
     el.style.width="calc("+(100/n)+"% - 4px)";
     el.style.zIndex=4+c;
@@ -526,16 +622,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); render(); scrollToNow(); };
   document.getElementById("addBtn").onclick=function(){ openAdd(selDate, 9*60); };
 
-  // ================= Sheet =================
-  var scrim=document.getElementById("scrim"), sheet=document.getElementById("sheet");
+  // ================= Sheets =================
+  var scrim=document.getElementById("scrim");
+  var sheet=document.getElementById("sheet");
+  var backupSheet=document.getElementById("backupSheet");
   var fTitle=document.getElementById("fTitle"), fLoc=document.getElementById("fLoc"),
       fDate=document.getElementById("fDate"), fStart=document.getElementById("fStart"),
       fEnd=document.getElementById("fEnd"), errEl=document.getElementById("err");
-  var daysField=document.getElementById("daysField"), dateField=document.getElementById("dateField");
+  var daysField=document.getElementById("daysField"), dateField=document.getElementById("dateField"),
+      rangeField=document.getElementById("rangeField");
+  var fFrom=document.getElementById("fFrom"), fUntil=document.getElementById("fUntil");
 
-  // build day chips
   (function(){ var h=""; for(var i=0;i<7;i++)h+='<button data-d="'+i+'">'+DOW[i]+'</button>'; document.getElementById("dayChips").innerHTML=h; })();
-  // build swatches
   (function(){ var h=""; for(var i=0;i<COLORS.length;i++)h+='<button data-c="'+COLORS[i]+'" style="background:'+COLORS[i]+'"></button>'; document.getElementById("swatches").innerHTML=h; })();
 
   document.getElementById("typeSeg").addEventListener("click",function(ev){
@@ -554,10 +652,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
 
   function syncType(){
-    var segs=document.querySelectorAll("#typeSeg button");
-    segs.forEach(function(s){ s.classList.toggle("on", s.getAttribute("data-type")===form.type); });
-    daysField.style.display = form.type==="lecture"?"":"none";
-    dateField.style.display = form.type==="appointment"?"":"none";
+    document.querySelectorAll("#typeSeg button").forEach(function(s){ s.classList.toggle("on", s.getAttribute("data-type")===form.type); });
+    var isRepeat = form.type==="lecture";
+    daysField.style.display = isRepeat?"":"none";
+    rangeField.style.display = isRepeat?"":"none";
+    dateField.style.display = isRepeat?"none":"";
   }
   function syncChips(){
     document.querySelectorAll("#dayChips button").forEach(function(b){
@@ -570,10 +669,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     });
   }
 
-  function openSheet(){ scrim.classList.add("on"); sheet.classList.add("on"); }
-  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); errEl.textContent=""; }
+  function openSheet(el){ scrim.classList.add("on"); el.classList.add("on"); }
+  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); errEl.textContent=""; }
   scrim.onclick=closeSheet;
   document.getElementById("cancelBtn").onclick=closeSheet;
+  document.getElementById("bkCloseBtn").onclick=closeSheet;
 
   function openAdd(dateStr, startMin){
     editId=null;
@@ -582,9 +682,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var d=parseYmd(dateStr);
     form.type="lecture"; form.days=[wd(d)]; form.date=dateStr; form.color=COLORS[Math.floor(Math.random()*COLORS.length)];
     fTitle.value=""; fLoc.value=""; fDate.value=dateStr;
+    fFrom.value=""; fUntil.value="";
     fStart.value=minToStr(startMin); fEnd.value=minToStr(Math.min(startMin+60,24*60-1));
     syncType(); syncChips(); syncSwatch();
-    openSheet(); setTimeout(function(){ fTitle.focus(); },300);
+    openSheet(sheet); setTimeout(function(){ fTitle.focus(); },300);
   }
   function openEdit(e){
     editId=e.id;
@@ -595,9 +696,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     form.date=e.date||selDate;
     fTitle.value=e.title||""; fLoc.value=e.location||"";
     fDate.value=form.date;
+    fFrom.value=e.from||""; fUntil.value=e.until||"";
     fStart.value=minToStr(e.start); fEnd.value=minToStr(e.end);
     syncType(); syncChips(); syncSwatch();
-    openSheet();
+    openSheet(sheet);
   }
 
   document.getElementById("delBtn").onclick=function(){
@@ -612,18 +714,81 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var s=strToMin(fStart.value||"0:0"), en=strToMin(fEnd.value||"0:0");
     if(en<=s){ errEl.textContent="종료 시간이 시작보다 늦어야 해요."; return; }
     if(form.type==="lecture" && form.days.length===0){ errEl.textContent="요일을 하나 이상 선택해 주세요."; return; }
+    if(form.type==="lecture" && fFrom.value && fUntil.value && fUntil.value < fFrom.value){ errEl.textContent="반복 종료일이 시작일보다 빨라요."; return; }
 
     var rec={ id: editId||uid(), type:form.type, title:title, location:fLoc.value.trim(),
               start:s, end:en, color:form.color };
-    if(form.type==="lecture") rec.days=form.days.slice();
-    else rec.date=fDate.value||form.date;
+    if(form.type==="lecture"){
+      rec.days=form.days.slice();
+      if(fFrom.value) rec.from=fFrom.value;
+      if(fUntil.value) rec.until=fUntil.value;
+    } else {
+      rec.date=fDate.value||form.date;
+    }
 
     if(editId){ for(var i=0;i<events.length;i++){ if(events[i].id===editId){ events[i]=rec; break; } } }
     else events.push(rec);
     save(); closeSheet(); render();
   };
 
-  // ---- scroll to now / morning ----
+  // ================= Backup / restore =================
+  var bkLast=document.getElementById("bkLast");
+  function relTime(ts){
+    if(!ts) return "아직 내보낸 적 없음";
+    var diff=Date.now()-ts, day=86400000;
+    if(diff<60000) return "마지막 내보내기: 방금 전";
+    if(diff<3600000) return "마지막 내보내기: "+Math.floor(diff/60000)+"분 전";
+    if(diff<day) return "마지막 내보내기: "+Math.floor(diff/3600000)+"시간 전";
+    return "마지막 내보내기: "+Math.floor(diff/day)+"일 전";
+  }
+  function openBackup(){ bkLast.textContent=relTime(getMeta().lastExport); openSheet(backupSheet); }
+  document.getElementById("menuBtn").onclick=openBackup;
+
+  function markExported(){
+    var m=getMeta(); m.lastExport=Date.now(); setMeta(m);
+    bkLast.textContent=relTime(m.lastExport);
+  }
+  document.getElementById("exportBtn").onclick=function(){
+    var payload={ app:"weekly-planner", v:1, exportedAt:new Date().toISOString(), events:cleanEvents() };
+    var json=JSON.stringify(payload,null,2);
+    var fname="플래너-백업-"+ymd(new Date())+".json";
+    var blob=new Blob([json],{type:"application/json"});
+    try{
+      var file=new File([blob],fname,{type:"application/json"});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file], title:"주간 플래너 백업"}).then(markExported).catch(function(){});
+        return;
+      }
+    }catch(e){}
+    // 폴백: 다운로드
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a"); a.href=url; a.download=fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+    markExported();
+  };
+
+  var importFile=document.getElementById("importFile");
+  document.getElementById("importBtn").onclick=function(){ importFile.value=""; importFile.click(); };
+  importFile.onchange=function(){
+    var f=importFile.files && importFile.files[0]; if(!f) return;
+    var r=new FileReader();
+    r.onload=function(){
+      var arr;
+      try{
+        var d=JSON.parse(r.result);
+        arr = Array.isArray(d) ? d : (d && d.events);
+        if(!Array.isArray(arr)) throw 0;
+      }catch(e){ bkLast.textContent="⚠️ 파일을 읽을 수 없어요 (형식 확인)"; return; }
+      var valid=arr.filter(function(e){ return e && typeof e==="object" && (e.type==="lecture"||e.type==="appointment") && typeof e.start==="number" && typeof e.end==="number"; });
+      if(!confirm("현재 일정을 이 백업으로 덮어쓸까요?\n(불러올 일정: "+valid.length+"개)")) return;
+      valid.forEach(function(e){ if(!e.id) e.id=uid(); });
+      events=valid; save(); render(); closeSheet();
+    };
+    r.readAsText(f);
+  };
+
+  // ---- scroll helpers ----
   var scrollEl=document.getElementById("scroll");
   function scrollToNow(){
     var now=new Date(); var m=now.getHours()*60+now.getMinutes();
@@ -633,9 +798,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // ---- init ----
   render();
-  // start scrolled to ~ current time (or 8am)
   (function(){ var m=Math.max(8*60, new Date().getHours()*60); var y=(m-DAY_START*60)/60*hourH-120; scrollEl.scrollTop=Math.max(0,y); })();
-  // refresh now-line each minute
   setInterval(render, 60000);
 })();
 </script>
