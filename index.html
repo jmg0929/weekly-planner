@@ -26,6 +26,7 @@
   --accent:#5B5BD6;
   --accent-soft:#ECECFB;
   --now:#F43F5E;
+  --holiday-bg:#FDF4F6;
   --shadow:0 8px 30px rgba(24,24,48,.12);
   --shadow-sm:0 1px 2px rgba(24,24,48,.06);
   --gutterW:42px;
@@ -46,6 +47,7 @@
     --accent:#8A8AF0;
     --accent-soft:#22223A;
     --now:#FB6F86;
+    --holiday-bg:color-mix(in srgb, #FDF4F6 11%, var(--surface));
     --shadow:0 10px 34px rgba(0,0,0,.5);
     --shadow-sm:0 1px 2px rgba(0,0,0,.3);
   }
@@ -62,6 +64,7 @@
   --accent:#8A8AF0;
   --accent-soft:#22223A;
   --now:#FB6F86;
+  --holiday-bg:color-mix(in srgb, #FDF4F6 11%, var(--surface));
   --shadow:0 10px 34px rgba(0,0,0,.5);
   --shadow-sm:0 1px 2px rgba(0,0,0,.3);
 }
@@ -161,8 +164,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .daycol{position:relative;border-left:1px solid var(--line)}
 .daycol:first-child{border-left:none}
-.daycol.wknd{background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
-.daycol.holiday{background:color-mix(in srgb,var(--now) 6%,transparent)}
+.daycol.wknd{background:var(--holiday-bg)}
+.daycol.holiday{background:var(--holiday-bg)}
 .daycol.today{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
 
 /* half-hour fainter tick */
@@ -198,6 +201,28 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .evt.short{padding:1px 4px 1px 6px}
 .evt.short .et{-webkit-line-clamp:1;font-size:9.5px}
 .evt.short .eloc,.evt.short .etime{display:none}
+
+/* 겹친 묶음 카드 */
+.evt.cluster{
+  overflow:visible;
+  background:color-mix(in srgb,var(--evt) 22%,var(--surface));
+  box-shadow:2px 2px 0 color-mix(in srgb,var(--evt) 38%,var(--surface)), 4px 4px 0 color-mix(in srgb,var(--evt) 20%,var(--surface));
+}
+.evt.cluster .et{padding-right:15px}
+.cbadge{
+  position:absolute;top:3px;right:3px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;
+  background:var(--accent);color:#fff;font-size:9.5px;font-weight:800;display:grid;place-items:center;line-height:1;z-index:2;
+}
+
+/* 겹친 일정 목록 시트 */
+.lrow{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.lrow:last-child{border-bottom:none}
+.lrow:active{background:var(--surface-2)}
+.ldot{width:6px;height:36px;border-radius:4px;flex:none}
+.lmain{flex:1;min-width:0}
+.ltitle{font-weight:700;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lmeta{font-size:12.5px;color:var(--ink-2);font-weight:500;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lchev{color:var(--muted);font-size:22px;font-weight:400;flex:none;line-height:1}
 
 /* now line */
 .nowline{position:absolute;z-index:6;pointer-events:none;height:0}
@@ -388,6 +413,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   </div>
 </div>
 
+<!-- 겹친 일정 목록 시트 -->
+<div class="sheet" id="listSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h2>겹친 일정</h2>
+  <div id="listBody"></div>
+  <div class="actions">
+    <button class="btn-cancel" id="listCloseBtn" style="flex:1">닫기</button>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -529,8 +564,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       var col=cols[k], d2=dates[k];
       var evs=eventsForDate(d2);
       evs.sort(function(a,b){ return a.start-b.start || a.end-b.end; });
-      layout(evs);
-      for(var m=0;m<evs.length;m++){ any=true; col.appendChild(evNode(evs[m])); }
+      var clusters=clusterize(evs);
+      for(var m=0;m<clusters.length;m++){ any=true;
+        col.appendChild(clusters[m].length===1 ? evNode(clusters[m][0]) : clusterNode(clusters[m]));
+      }
     }
 
     // now line
@@ -558,24 +595,34 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     for(var yr in years) refreshHolidays(+yr);
   }
 
-  // assign overlapping events into side-by-side columns
-  function layout(evs){
-    var cur=[]; var curMaxEnd=-1;
+  // 겹치는 일정을 하나의 묶음(cluster)으로 그룹화 (evs는 start 기준 정렬돼 있어야 함)
+  function clusterize(evs){
+    var clusters=[], cur=[], curMaxEnd=-1;
     for(var i=0;i<evs.length;i++){ var e=evs[i];
-      if(cur.length && e.start>=curMaxEnd){ assign(cur); cur=[]; curMaxEnd=-1; }
+      if(cur.length && e.start>=curMaxEnd){ clusters.push(cur); cur=[]; curMaxEnd=-1; }
       cur.push(e); if(e.end>curMaxEnd)curMaxEnd=e.end;
     }
-    if(cur.length)assign(cur);
-    function assign(grp){
-      var colsEnd=[];
-      for(var a=0;a<grp.length;a++){ var g=grp[a]; var placed=-1;
-        for(var c=0;c<colsEnd.length;c++){ if(g.start>=colsEnd[c]){ placed=c; break; } }
-        if(placed<0){ placed=colsEnd.length; colsEnd.push(0); }
-        colsEnd[placed]=g.end; g._col=placed;
-      }
-      var n=colsEnd.length;
-      for(var b=0;b<grp.length;b++){ grp[b]._cols=n; }
-    }
+    if(cur.length) clusters.push(cur);
+    return clusters;
+  }
+
+  // 겹친 묶음 카드 (개수 배지 + 첫 일정 제목, 탭하면 목록)
+  function clusterNode(cl){
+    var minStart=cl[0].start, maxEnd=cl[0].end;
+    for(var i=1;i<cl.length;i++){ if(cl[i].start<minStart)minStart=cl[i].start; if(cl[i].end>maxEnd)maxEnd=cl[i].end; }
+    var el=document.createElement("div");
+    var dur=maxEnd-minStart;
+    el.className="evt cluster"+(dur<=35?" short":"");
+    el.style.setProperty("--evt", cl[0].color||COLORS[0]);
+    el.style.top=((minStart-DAY_START*60)/60*hourH)+"px";
+    el.style.height=Math.max(dur/60*hourH-2,15)+"px";
+    el.style.left="calc(0% + 2px)"; el.style.width="calc(100% - 8px)";
+    var inner='<span class="cbadge">'+cl.length+'</span>';
+    inner+='<div class="et">'+esc(cl[0].title||"제목 없음")+' 외 '+(cl.length-1)+'</div>';
+    inner+='<div class="etime tnum">'+minToStr(minStart)+'~'+minToStr(maxEnd)+'</div>';
+    el.innerHTML=inner;
+    el.addEventListener("click", function(ev){ ev.stopPropagation(); openClusterList(cl); });
+    return el;
   }
 
   function evNode(e){
@@ -626,6 +673,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var scrim=document.getElementById("scrim");
   var sheet=document.getElementById("sheet");
   var backupSheet=document.getElementById("backupSheet");
+  var listSheet=document.getElementById("listSheet");
   var fTitle=document.getElementById("fTitle"), fLoc=document.getElementById("fLoc"),
       fDate=document.getElementById("fDate"), fStart=document.getElementById("fStart"),
       fEnd=document.getElementById("fEnd"), errEl=document.getElementById("err");
@@ -670,10 +718,26 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
 
   function openSheet(el){ scrim.classList.add("on"); el.classList.add("on"); }
-  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); errEl.textContent=""; }
+  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); errEl.textContent=""; }
   scrim.onclick=closeSheet;
   document.getElementById("cancelBtn").onclick=closeSheet;
   document.getElementById("bkCloseBtn").onclick=closeSheet;
+  document.getElementById("listCloseBtn").onclick=closeSheet;
+
+  // 겹친 일정 목록 열기 (행 탭 → 해당 일정 편집)
+  function openClusterList(cl){
+    var body=document.getElementById("listBody"); body.innerHTML="";
+    cl.slice().sort(function(a,b){ return a.start-b.start || a.end-b.end; }).forEach(function(e){
+      var row=document.createElement("div"); row.className="lrow";
+      row.innerHTML='<span class="ldot" style="background:'+(e.color||COLORS[0])+'"></span>'+
+        '<div class="lmain"><div class="ltitle">'+esc(e.title||"제목 없음")+'</div>'+
+        '<div class="lmeta tnum">'+minToStr(e.start)+' ~ '+minToStr(e.end)+(e.location?' · '+esc(e.location):'')+'</div></div>'+
+        '<span class="lchev">›</span>';
+      row.addEventListener("click", function(){ listSheet.classList.remove("on"); openEdit(e); });
+      body.appendChild(row);
+    });
+    openSheet(listSheet);
+  }
 
   function openAdd(dateStr, startMin){
     editId=null;
