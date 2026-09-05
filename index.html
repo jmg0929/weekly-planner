@@ -113,7 +113,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .backbtn:active{transform:scale(.94)}
 .backbtn svg{width:17px;height:17px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.title{display:flex;flex-direction:column;gap:1px;min-width:0}
+.title{display:flex;flex-direction:column;gap:1px;min-width:0;cursor:pointer}
+.title:active{opacity:.6}
+.month-row{display:flex;align-items:center;gap:5px}
+.tcaret{font-size:12px;color:var(--muted);font-weight:700;line-height:1;margin-top:2px}
 .title .month{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
 .title .range{font-size:12.5px;color:var(--ink-2);font-weight:500}
 .ctrls{display:flex;align-items:center;gap:6px}
@@ -183,8 +186,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .daycol{position:relative;border-left:1px solid var(--line)}
 .daycol:first-child{border-left:none}
-.daycol.wknd{background:var(--holiday-bg)}
-.daycol.holiday{background:var(--holiday-bg)}
 .daycol.today{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
 
 /* 시간 구분선 오버레이 — 쉬는 날 색 위에도 보이도록 위(z-index:1)에 그림 */
@@ -197,11 +198,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* ---------- Events ---------- */
 .evt{
-  position:absolute;left:2px;right:2px;border-radius:9px;overflow:hidden;
-  padding:5px 7px 5px 9px;cursor:pointer;z-index:4;
-  background:color-mix(in srgb,var(--evt) 30%,var(--surface));
-  border:1px solid color-mix(in srgb,var(--evt) 45%,var(--surface));
-  border-left:3px solid var(--evt);
+  position:absolute;left:2px;right:2px;border-radius:8px;overflow:hidden;
+  padding:5px 8px;cursor:pointer;z-index:4;
+  background:color-mix(in srgb,var(--evt) 34%,var(--surface));
+  border:none;
   transition:transform .1s ease, box-shadow .12s;
   min-height:18px;display:flex;flex-direction:column;gap:2px;
 }
@@ -215,24 +215,22 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   font-size:9px;color:var(--ink-2);font-weight:600;line-height:1.25;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.evt.lecture::after{
-  content:"";position:absolute;top:3px;right:3px;width:4px;height:4px;border-radius:50%;
-  background:var(--evt);opacity:.95;
-}
-.evt.short{padding:2px 7px 2px 9px;gap:0}
+.evt.short{padding:2px 8px;gap:0}
 .evt.short .et{-webkit-line-clamp:1;font-size:9.5px}
 .evt.short .eloc,.evt.short .etime{display:none}
 
-/* 겹친 묶음 카드 */
+/* 겹친 묶음 카드 (채움 + 개수 배지 + 색 점) */
 .evt.cluster{
   overflow:visible;
-  background:color-mix(in srgb,var(--evt) 22%,var(--surface));
-  box-shadow:2px 2px 0 color-mix(in srgb,var(--evt) 38%,var(--surface)), 4px 4px 0 color-mix(in srgb,var(--evt) 20%,var(--surface));
+  box-shadow:2px 2px 0 color-mix(in srgb,var(--evt) 34%,var(--surface)), 4px 4px 0 color-mix(in srgb,var(--evt) 18%,var(--surface));
 }
-.evt.cluster .et{padding-right:15px}
+.evt.cluster .et{padding-right:16px}
+.cdots{display:flex;gap:3px;margin-top:auto;padding-top:2px}
+.cdots i{width:6px;height:6px;border-radius:50%;flex:none}
 .cbadge{
-  position:absolute;top:3px;right:3px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;
+  position:absolute;top:4px;right:4px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;
   background:var(--accent);color:#fff;font-size:9.5px;font-weight:800;display:grid;place-items:center;line-height:1;z-index:2;
+  box-shadow:0 0 0 1.5px var(--surface);
 }
 
 /* 겹친 일정 목록 시트 */
@@ -350,11 +348,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <div class="topbar-row">
       <div class="left-group">
         <button class="backbtn" id="backBtn" aria-label="주간으로 돌아가기" style="display:none"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>주간</button>
-        <div class="title">
-          <div class="month" id="monthLabel">—</div>
+        <div class="title" id="titleBtn" role="button" tabindex="0">
+          <div class="month-row"><span class="month" id="monthLabel">—</span><span class="tcaret">▾</span></div>
           <div class="range tnum" id="rangeLabel">—</div>
         </div>
       </div>
+      <input type="date" id="jumpDate" aria-label="날짜로 이동" style="position:absolute;left:14px;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0">
       <div class="ctrls">
         <button class="iconbtn" id="prevBtn" aria-label="이전 주"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
         <button class="today-btn" id="todayBtn">오늘</button>
@@ -427,6 +426,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <div class="field">
     <label>카테고리</label>
     <div class="catchips" id="catChips"></div>
+  </div>
+  <div class="field">
+    <label>색상 <span style="font-weight:500;color:var(--muted)">(카테고리 색이 기본 · 바꾸면 이 일정만 적용)</span></label>
+    <div class="swatches" id="swatches"></div>
   </div>
 
   <div class="err" id="err"></div>
@@ -504,7 +507,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     { id:"etc", name:"기타", color:"#A9B2C3" }
   ];
   var DOW = ["월","화","수","목","금","토","일"]; // Mon..Sun, index 0..6
-  var DAY_START = 0, DAY_END = 24; // hours rendered
+  var DAY_START = 7, DAY_END = 24; // 표시 시간대 (기본 07시~ · 더 이른 일정 있으면 자동으로 내려감)
   var hourH = 54;
 
   // ---- state ----
@@ -518,7 +521,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   (function migrateCats(){ var ch=false; for(var i=0;i<events.length;i++){ if(!events[i].cat){ events[i].cat=(events[i].type==="lecture")?"lec":"apt"; ch=true; } } if(ch) save(); })();
   var newCatColor = COLORS[0], catReturnToForm = false;
   var showCat = (function(){ try{ return localStorage.getItem("weekly-planner-showcat")==="1"; }catch(e){ return false; } })(); // 제목 대신 분류 이름 표시
-  var form = { type:"lecture", days:[], date:selDate, cat:(categories[0]&&categories[0].id) };
+  var form = { type:"lecture", days:[], date:selDate, cat:(categories[0]&&categories[0].id), color:(categories[0]&&categories[0].color) };
 
   // ---- 한국 공휴일 (Nager.Date API, 키 불필요·CORS 지원) ----
   var holidays = {};           // { "YYYY-MM-DD": "공휴일 이름" }
@@ -559,7 +562,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function catById(id){ for(var i=0;i<categories.length;i++){ if(categories[i].id===id) return categories[i]; } return null; }
   function catColor(id){ var c=catById(id); return c?c.color:COLORS[0]; }
   function catName(id){ var c=catById(id); return c?c.name:"기타"; }
-  function evColor(e){ var c=catById(e.cat); return c?c.color:(e.color||COLORS[0]); }
+  function evColor(e){ return e.color || catColor(e.cat); } // 개별 색 우선, 없으면 카테고리 색
   function evLabel(e){ return showCat ? catName(e.cat) : (e.title||"제목 없음"); } // 표시 텍스트: 분류 이름 or 제목
   function saveShowCat(){ try{ localStorage.setItem("weekly-planner-showcat", showCat?"1":"0"); }catch(e){} }
 
@@ -606,15 +609,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // ---- render header + gutter (once) ----
   var gutterEl=document.getElementById("gutter");
-  (function buildGutter(){
+  function buildGutter(){
     var h="";
-    for(var i=DAY_START;i<DAY_END;i++){
-      var lab = i===0?"": (i<12? i+"시" : i===12? "정오" : (i-12)+"시");
-      h+='<div class="hr"><span>'+lab+'</span></div>';
-    }
+    for(var i=DAY_START;i<DAY_END;i++){ h+='<div class="hr"><span>'+pad(i)+':00</span></div>'; }
     gutterEl.innerHTML=h;
     document.documentElement.style.setProperty("--hourH", hourH+"px");
-  })();
+  }
+  buildGutter();
 
   var hdaysEl=document.getElementById("hdays");
   var daysEl=document.getElementById("days");
@@ -626,6 +627,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var dates = isDay ? [parseYmd(selDate)] : weekDates();
     var nCols = dates.length;
     var today=ymd(new Date());
+
+    // 빈 새벽시간 접기: 기본 07시, 더 이른 일정 있으면 그 시각까지만 내림
+    (function(){
+      var need=7;
+      for(var i=0;i<events.length;i++){ var h=Math.floor(events[i].start/60); if(h<need) need=h; }
+      if(need<0)need=0;
+      if(need!==DAY_START){ DAY_START=need; buildGutter(); daysEl.style.height=((DAY_END-DAY_START)*hourH)+"px"; }
+    })();
 
     // 열 개수: 주간 7 / 하루 1
     hdaysEl.style.gridTemplateColumns="repeat("+nCols+",1fr)";
@@ -718,16 +727,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function clusterNode(cl){
     var minStart=cl[0].start, maxEnd=cl[0].end;
     for(var i=1;i<cl.length;i++){ if(cl[i].start<minStart)minStart=cl[i].start; if(cl[i].end>maxEnd)maxEnd=cl[i].end; }
+    // 묶음에 든 서로 다른 색들 (중복 제거)
+    var cols=[]; cl.forEach(function(e){ var c=evColor(e); if(cols.indexOf(c)<0) cols.push(c); });
     var el=document.createElement("div");
     var dur=maxEnd-minStart;
     el.className="evt cluster"+(dur<=35?" short":"");
-    el.style.setProperty("--evt", evColor(cl[0]));
+    el.style.setProperty("--evt", cols[0]);
     el.style.top=((minStart-DAY_START*60)/60*hourH)+"px";
     el.style.height=Math.max(dur/60*hourH-2,15)+"px";
     el.style.left="calc(0% + 2px)"; el.style.width="calc(100% - 8px)";
     var inner='<span class="cbadge">'+cl.length+'</span>';
     inner+='<div class="et">'+esc(evLabel(cl[0]))+' 외 '+(cl.length-1)+'</div>';
     inner+='<div class="etime tnum">'+minToStr(minStart)+'~'+minToStr(maxEnd)+'</div>';
+    inner+='<div class="cdots">'+cols.slice(0,5).map(function(c){ return '<i style="background:'+c+'"></i>'; }).join('')+'</div>';
     el.innerHTML=inner;
     el.addEventListener("click", function(ev){ ev.stopPropagation(); openClusterList(cl); });
     return el;
@@ -772,19 +784,43 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
 
   // ---- nav ----
-  document.getElementById("prevBtn").onclick=function(){
+  function goPrev(){
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),-1)); anchor=parseYmd(selDate); }
     else anchor=addDays(mondayOf(anchor),-7);
     render();
-  };
-  document.getElementById("nextBtn").onclick=function(){
+  }
+  function goNext(){
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),1)); anchor=parseYmd(selDate); }
     else anchor=addDays(mondayOf(anchor),7);
     render();
-  };
+  }
+  document.getElementById("prevBtn").onclick=goPrev;
+  document.getElementById("nextBtn").onclick=goNext;
   document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); render(); scrollToNow(); };
   document.getElementById("addBtn").onclick=function(){ openAdd(selDate, 9*60); };
   backBtn.onclick=function(){ view="week"; render(); };
+
+  // 좌우 스와이프로 주/일 넘기기 (세로 스크롤과 구분: 가로 이동이 뚜렷할 때만)
+  var swEl=document.getElementById("scroll");
+  var swX=0, swY=0, swT=0;
+  swEl.addEventListener("touchstart", function(e){ var t=e.touches[0]; swX=t.clientX; swY=t.clientY; swT=Date.now(); }, {passive:true});
+  swEl.addEventListener("touchend", function(e){
+    var t=e.changedTouches[0]; var dx=t.clientX-swX, dy=t.clientY-swY;
+    if(Date.now()-swT<600 && Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.6){ if(dx<0) goNext(); else goPrev(); }
+  }, {passive:true});
+
+  // 제목 탭 -> 날짜로 점프
+  var jumpDate=document.getElementById("jumpDate");
+  document.getElementById("titleBtn").addEventListener("click", function(){
+    jumpDate.value = (view==="day") ? selDate : ymd(mondayOf(anchor));
+    try{ if(jumpDate.showPicker) jumpDate.showPicker(); else { jumpDate.focus(); jumpDate.click(); } }catch(e){ try{ jumpDate.focus(); jumpDate.click(); }catch(_){} }
+  });
+  jumpDate.addEventListener("change", function(){
+    if(!jumpDate.value) return;
+    anchor=parseYmd(jumpDate.value);
+    if(view==="day") selDate=jumpDate.value;
+    render();
+  });
 
   // ================= Sheets =================
   var scrim=document.getElementById("scrim");
@@ -830,7 +866,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   document.getElementById("catChips").addEventListener("click",function(ev){
     if(ev.target.closest("#catAddChip")){ openCatManage(true); return; }
     var b=ev.target.closest(".catchip[data-cat]"); if(!b)return;
-    form.cat=b.getAttribute("data-cat"); syncCat();
+    form.cat=b.getAttribute("data-cat");
+    form.color=catColor(form.cat);   // 카테고리 고르면 색도 그 색으로 따라옴
+    syncCat(); syncSwatch();
+  });
+
+  // 색상 스와치 (일정별 색 지정)
+  (function(){ var h=""; for(var i=0;i<COLORS.length;i++)h+='<button data-c="'+COLORS[i]+'" style="background:'+COLORS[i]+'"></button>'; document.getElementById("swatches").innerHTML=h; })();
+  function syncSwatch(){
+    document.querySelectorAll("#swatches button").forEach(function(b){
+      b.classList.toggle("on", b.getAttribute("data-c")===form.color);
+    });
+  }
+  document.getElementById("swatches").addEventListener("click",function(ev){
+    var b=ev.target.closest("button"); if(!b)return;
+    form.color=b.getAttribute("data-c"); syncSwatch();
   });
 
   function syncType(){
@@ -940,10 +990,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var d=parseYmd(dateStr);
     form.type="lecture"; form.days=[wd(d)]; form.date=dateStr;
     if(!catById(form.cat)) form.cat=categories[0].id;   // 마지막에 쓰던 카테고리 유지
+    form.color=catColor(form.cat);                      // 새 일정은 카테고리 색으로 시작
     fTitle.value=""; fLoc.value=""; fDate.value=dateStr;
     fFrom.value=""; fUntil.value="";
     fStart.value=minToStr(startMin); fEnd.value=minToStr(Math.min(startMin+60,24*60-1));
-    syncType(); syncChips(); buildCatChips();
+    syncType(); syncChips(); buildCatChips(); syncSwatch();
     openSheet(sheet); setTimeout(function(){ fTitle.focus(); },300);
   }
   function openEdit(e){
@@ -952,13 +1003,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     document.getElementById("delBtn").style.display="";
     form.type=e.type;
     form.cat=(e.cat && catById(e.cat)) ? e.cat : categories[0].id;
+    form.color=e.color||catColor(form.cat);
     form.days=(e.days||[]).slice();
     form.date=e.date||selDate;
     fTitle.value=e.title||""; fLoc.value=e.location||"";
     fDate.value=form.date;
     fFrom.value=e.from||""; fUntil.value=e.until||"";
     fStart.value=minToStr(e.start); fEnd.value=minToStr(e.end);
-    syncType(); syncChips(); buildCatChips();
+    syncType(); syncChips(); buildCatChips(); syncSwatch();
     openSheet(sheet);
   }
 
@@ -978,7 +1030,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
     var cat = catById(form.cat) ? form.cat : categories[0].id;
     var rec={ id: editId||uid(), type:form.type, title:title, location:fLoc.value.trim(),
-              start:s, end:en, cat:cat, color:catColor(cat) };
+              start:s, end:en, cat:cat, color:(form.color||catColor(cat)) };
     if(form.type==="lecture"){
       rec.days=form.days.slice();
       if(fFrom.value) rec.from=fFrom.value;
