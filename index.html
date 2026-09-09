@@ -122,7 +122,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   transition:transform .12s;
 }
 .backbtn:active{transform:scale(.94)}
-.backbtn svg{width:17px;height:17px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.backbtn svg{width:17px;height:17px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .title{display:flex;flex-direction:column;gap:1px;min-width:0;cursor:pointer}
 .title:active{opacity:.6}
 .month-row{display:flex;align-items:center;gap:5px}
@@ -197,6 +197,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .daycol{position:relative;border-left:1px solid var(--line)}
 .daycol:first-child{border-left:none}
 .daycol.today{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
+/* 지난 시간 살짝 흐리게 (오늘 열) */
+.pastwash{position:absolute;left:0;right:0;top:0;pointer-events:none;z-index:1;background:color-mix(in srgb,var(--muted) 12%,transparent)}
+/* 주/일 전환 슬라이드 */
+@keyframes slideInR{from{opacity:.35;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes slideInL{from{opacity:.35;transform:translateX(-26px)}to{opacity:1;transform:none}}
+.anim-next{animation:slideInR .22s cubic-bezier(.32,.72,0,1)}
+.anim-prev{animation:slideInL .22s cubic-bezier(.32,.72,0,1)}
 
 /* 시간 구분선 오버레이 — 쉬는 날 색 위에도 보이도록 위(z-index:1)에 그림 */
 .days::before{
@@ -217,14 +224,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .evt:active{transform:scale(.97);box-shadow:var(--shadow)}
 .evt .et{
-  font-size:10.5px;font-weight:700;line-height:1.25;color:var(--ink);
+  font-size:10.5px;font-weight:700;line-height:1.25;
+  color:color-mix(in srgb,var(--evt) 42%,var(--ink)); /* 그 색의 진한 톤 */
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   word-break:keep-all;overflow-wrap:anywhere;
 }
 .evt .eloc,.evt .etime{
-  font-size:9px;color:var(--ink-2);font-weight:600;line-height:1.25;
+  font-size:9px;font-weight:600;line-height:1.25;
+  color:color-mix(in srgb,var(--evt) 28%,var(--ink-2));
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
+/* 다크모드: 채움을 조금 진하게 해서 색이 뭉개지지 않게 */
+:root:not([data-theme="light"]){ @media (prefers-color-scheme: dark){
+  .evt{background:color-mix(in srgb,var(--evt) 46%,var(--surface))}
+}}
+:root[data-theme="dark"] .evt{background:color-mix(in srgb,var(--evt) 46%,var(--surface))}
 .evt.short{padding:2px 8px;gap:0}
 .evt.short .et{-webkit-line-clamp:1;font-size:9.5px}
 .evt.short .eloc,.evt.short .etime{display:none}
@@ -257,6 +271,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .nowline{position:absolute;z-index:6;pointer-events:none;height:0}
 .nowline .l{position:absolute;left:0;right:0;height:2px;background:var(--now);border-radius:2px}
 .nowline .d{position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--now);box-shadow:0 0 0 2px var(--surface)}
+.nowgut{position:absolute;right:3px;font-size:9px;font-weight:800;color:#fff;background:var(--now);padding:1px 4px;border-radius:6px;transform:translateY(-50%);z-index:3;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 0 0 2px var(--surface)}
 
 /* empty hint */
 .hint{
@@ -348,8 +363,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .bk-last{font-size:12.5px;color:var(--muted);font-weight:600;text-align:center;margin:2px 0 4px}
 .bk-cap{font-size:12px;color:var(--muted);font-weight:500;text-align:center;margin-top:14px;line-height:1.55}
 
+.today-btn:active,.dh:active{transform:scale(.96)}
+.dh .dnum{transition:background .15s, color .15s}
 @media (prefers-reduced-motion: reduce){
-  *{transition:none!important}
+  *{transition:none!important;animation:none!important}
 }
 </style>
 
@@ -520,16 +537,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var KEY = "weekly-planner-events-v1";
   var AUTOKEY = "weekly-planner-events-v1-autobak";
   var METAKEY = "weekly-planner-meta";
-  var COLORS = ["#8CB4EC","#6FCBB4","#F5A3B5","#F4C58A","#A9C9F2","#8CC4EA","#98D8A0","#A9B2C3"]; // pastel (blue-leaning)
-  var COLOR_REMAP = { "#9EA0EA":"#8CB4EC", "#C7ACEE":"#A9C9F2" }; // 예전 보라 → 블루
+  var COLORS = ["#8FB3E6","#86C6B4","#E9A6B0","#E7B98C","#A9B6E0","#8CC4D6","#9FCF9A","#AEB4C2"]; // 톤 통일 파스텔 세트
+  var COLOR_REMAP = { "#9EA0EA":"#8FB3E6", "#C7ACEE":"#A9B6E0", "#8CB4EC":"#8FB3E6", "#A9C9F2":"#A9B6E0", "#F5A3B5":"#E9A6B0", "#F4C58A":"#E7B98C", "#6FCBB4":"#86C6B4", "#A9B2C3":"#AEB4C2" }; // 예전 색 → 통일 세트
   var CAT_KEY = "weekly-planner-categories";
   var HIDDEN_KEY = "weekly-planner-hidden-cats";
   var DEFAULT_CATS = [
-    { id:"lec", name:"강의", color:"#8CB4EC" },
-    { id:"mtg", name:"회의", color:"#F4C58A" },
-    { id:"apt", name:"약속", color:"#F5A3B5" },
-    { id:"psn", name:"개인", color:"#6FCBB4" },
-    { id:"etc", name:"기타", color:"#A9B2C3" }
+    { id:"lec", name:"강의", color:"#8FB3E6" },
+    { id:"mtg", name:"회의", color:"#E7B98C" },
+    { id:"apt", name:"약속", color:"#E9A6B0" },
+    { id:"psn", name:"개인", color:"#86C6B4" },
+    { id:"etc", name:"기타", color:"#AEB4C2" }
   ];
   var DOW = ["월","화","수","목","금","토","일"]; // Mon..Sun, index 0..6
   var DAY_START = 7, DAY_END = 24; // 표시 시간대 (기본 07시~ · 더 이른 일정 있으면 자동으로 내려감)
@@ -724,6 +741,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var nl=daysEl.querySelector(".nowline"); if(nl)nl.remove();
     var now=new Date(), nowYmd=ymd(now);
     var tIdx=-1; for(var t=0;t<dates.length;t++){ if(ymd(dates[t])===nowYmd){tIdx=t;break;} }
+    var oldGut=gutterEl.querySelector(".nowgut"); if(oldGut)oldGut.remove();
     if(tIdx>=0){
       var nowMin=now.getHours()*60+now.getMinutes();
       var y=(nowMin-DAY_START*60)/60*hourH;
@@ -731,6 +749,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       wrap.style.top=y+"px"; wrap.style.left=(tIdx/nCols*100)+"%"; wrap.style.width=(100/nCols)+"%";
       wrap.innerHTML='<div class="d"></div><div class="l"></div>';
       daysEl.appendChild(wrap);
+      // 지난 시간 살짝 흐리게 (오늘 열)
+      if(y>0){ var pw=document.createElement("div"); pw.className="pastwash"; pw.style.height=y+"px";
+        pw.style.left=(tIdx/nCols*100)+"%"; pw.style.right="auto"; pw.style.width=(100/nCols)+"%"; daysEl.appendChild(pw); }
+      // 시간 눈금에 현재 시각 라벨
+      var ng=document.createElement("div"); ng.className="nowgut"; ng.textContent=pad(now.getHours())+":"+pad(now.getMinutes());
+      ng.style.top=y+"px"; gutterEl.appendChild(ng);
     }
 
     // hint
@@ -792,7 +816,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.zIndex=4+c;
     var inner='<div class="et">'+esc(evLabel(e))+'</div>';
     if(e.location) inner+='<div class="eloc">'+esc(e.location)+'</div>';
-    inner+='<div class="etime tnum">'+minToStr(e.start)+'</div>';
+    var timeStr = (view==="day") ? (minToStr(e.start)+"–"+minToStr(e.end)) : minToStr(e.start); // 하루보기: 범위 표시
+    inner+='<div class="etime tnum">'+timeStr+'</div>';
     el.innerHTML=inner;
     el.addEventListener("click", function(ev){ ev.stopPropagation(); openEdit(e); });
     return el;
@@ -817,15 +842,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
 
   // ---- nav ----
+  function animateNav(dir){
+    [daysEl,hdaysEl].forEach(function(el){
+      el.classList.remove("anim-next","anim-prev"); void el.offsetWidth; // 리플로우로 애니 재시작
+      el.classList.add(dir>0?"anim-next":"anim-prev");
+    });
+  }
   function goPrev(){
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),-1)); anchor=parseYmd(selDate); }
     else anchor=addDays(mondayOf(anchor),-7);
-    render();
+    render(); animateNav(-1);
   }
   function goNext(){
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),1)); anchor=parseYmd(selDate); }
     else anchor=addDays(mondayOf(anchor),7);
-    render();
+    render(); animateNav(1);
   }
   document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); render(); scrollToNow(); };
   document.getElementById("addBtn").onclick=function(){ openAdd(selDate, 9*60); };
