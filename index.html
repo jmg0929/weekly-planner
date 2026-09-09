@@ -197,8 +197,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .daycol{position:relative;border-left:1px solid var(--line)}
 .daycol:first-child{border-left:none}
 .daycol.today{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
-/* 지난 시간 살짝 흐리게 (오늘 열) */
-.pastwash{position:absolute;left:0;right:0;top:0;pointer-events:none;z-index:1;background:color-mix(in srgb,var(--muted) 12%,transparent)}
 /* 주/일 전환 슬라이드 */
 @keyframes slideInR{from{opacity:.35;transform:translateX(26px)}to{opacity:1;transform:none}}
 @keyframes slideInL{from{opacity:.35;transform:translateX(-26px)}to{opacity:1;transform:none}}
@@ -749,9 +747,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       wrap.style.top=y+"px"; wrap.style.left=(tIdx/nCols*100)+"%"; wrap.style.width=(100/nCols)+"%";
       wrap.innerHTML='<div class="d"></div><div class="l"></div>';
       daysEl.appendChild(wrap);
-      // 지난 시간 살짝 흐리게 (오늘 열)
-      if(y>0){ var pw=document.createElement("div"); pw.className="pastwash"; pw.style.height=y+"px";
-        pw.style.left=(tIdx/nCols*100)+"%"; pw.style.right="auto"; pw.style.width=(100/nCols)+"%"; daysEl.appendChild(pw); }
       // 시간 눈금에 현재 시각 라벨
       var ng=document.createElement("div"); ng.className="nowgut"; ng.textContent=pad(now.getHours())+":"+pad(now.getMinutes());
       ng.style.top=y+"px"; gutterEl.appendChild(ng);
