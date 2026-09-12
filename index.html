@@ -320,6 +320,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .chips button.on{background:var(--accent);color:#fff;border-color:transparent}
 
+.adv-toggle{display:flex;align-items:center;gap:5px;width:100%;padding:10px 2px;font-weight:700;font-size:14px;color:var(--accent);margin-bottom:2px}
+.adv-toggle:active{opacity:.6}
+.adv-toggle .advcaret{transition:transform .2s;font-size:12px}
+.adv-toggle.open .advcaret{transform:rotate(180deg)}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatches button{width:34px;height:34px;border-radius:50%;position:relative;transition:transform .12s}
 .swatches button:active{transform:scale(.9)}
@@ -416,22 +420,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <label>제목</label>
     <input type="text" id="fTitle" placeholder="예: 알고리즘 강의 / 헬스 / 스터디" autocomplete="off">
   </div>
-  <div class="field">
-    <label>장소 <span style="font-weight:500;color:var(--muted)">(선택)</span></label>
-    <input type="text" id="fLoc" placeholder="예: 공학관 302호" autocomplete="off">
-  </div>
 
   <div class="field" id="daysField">
     <label>요일 <span style="font-weight:500;color:var(--muted)">(여러 개 선택 가능)</span></label>
     <div class="chips" id="dayChips"></div>
-  </div>
-  <div class="field" id="rangeField">
-    <label>반복 기간 <span style="font-weight:500;color:var(--muted)">(선택 · 비우면 계속 반복)</span></label>
-    <div class="two">
-      <input type="date" id="fFrom" aria-label="반복 시작일">
-      <input type="date" id="fUntil" aria-label="반복 종료일">
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:6px;font-weight:500">시작일 ~ 종료일 (예: 학기 기간)</div>
   </div>
   <div class="field" id="dateField" style="display:none">
     <label>날짜</label>
@@ -447,9 +439,25 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <label>카테고리</label>
     <div class="catchips" id="catChips"></div>
   </div>
-  <div class="field">
-    <label>색상 <span style="font-weight:500;color:var(--muted)">(카테고리 색이 기본 · 바꾸면 이 일정만 적용)</span></label>
-    <div class="swatches" id="swatches"></div>
+
+  <button type="button" class="adv-toggle" id="advToggle">세부 설정 <span class="advcaret">▾</span></button>
+  <div id="advanced" hidden>
+    <div class="field">
+      <label>장소 <span style="font-weight:500;color:var(--muted)">(선택)</span></label>
+      <input type="text" id="fLoc" placeholder="예: 공학관 302호" autocomplete="off">
+    </div>
+    <div class="field" id="rangeField">
+      <label>반복 기간 <span style="font-weight:500;color:var(--muted)">(선택 · 비우면 계속 반복)</span></label>
+      <div class="two">
+        <input type="date" id="fFrom" aria-label="반복 시작일">
+        <input type="date" id="fUntil" aria-label="반복 종료일">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;font-weight:500">시작일 ~ 종료일 (예: 학기 기간)</div>
+    </div>
+    <div class="field">
+      <label>색상 <span style="font-weight:500;color:var(--muted)">(카테고리 색이 기본 · 바꾸면 이 일정만)</span></label>
+      <div class="swatches" id="swatches"></div>
+    </div>
   </div>
 
   <div class="err" id="err"></div>
@@ -740,6 +748,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var now=new Date(), nowYmd=ymd(now);
     var tIdx=-1; for(var t=0;t<dates.length;t++){ if(ymd(dates[t])===nowYmd){tIdx=t;break;} }
     var oldGut=gutterEl.querySelector(".nowgut"); if(oldGut)oldGut.remove();
+    gutterEl.querySelectorAll(".hr span").forEach(function(s){ s.style.visibility=""; }); // 눈금 라벨 다시 보이게
     if(tIdx>=0){
       var nowMin=now.getHours()*60+now.getMinutes();
       var y=(nowMin-DAY_START*60)/60*hourH;
@@ -747,7 +756,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       wrap.style.top=y+"px"; wrap.style.left=(tIdx/nCols*100)+"%"; wrap.style.width=(100/nCols)+"%";
       wrap.innerHTML='<div class="d"></div><div class="l"></div>';
       daysEl.appendChild(wrap);
-      // 시간 눈금에 현재 시각 라벨
+      // 시간 눈금에 현재 시각 라벨 (가까운 정각 라벨은 숨겨서 겹침 방지)
+      var nearHour=Math.round(nowMin/60);
+      if(Math.abs(nowMin-nearHour*60)<16){ var hrs=gutterEl.querySelectorAll(".hr"); var hidx=nearHour-DAY_START;
+        if(hrs[hidx]){ var sp=hrs[hidx].querySelector("span"); if(sp) sp.style.visibility="hidden"; } }
       var ng=document.createElement("div"); ng.className="nowgut"; ng.textContent=pad(now.getHours())+":"+pad(now.getMinutes());
       ng.style.top=y+"px"; gutterEl.appendChild(ng);
     }
@@ -810,7 +822,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.width="calc("+(100/n)+"% - 4px)";
     el.style.zIndex=4+c;
     var inner='<div class="et">'+esc(evLabel(e))+'</div>';
-    if(e.location) inner+='<div class="eloc">'+esc(e.location)+'</div>';
+    if(e.location && view==="day") inner+='<div class="eloc">'+esc(e.location)+'</div>'; // 장소는 하루보기에서만
     var timeStr = (view==="day") ? (minToStr(e.start)+"–"+minToStr(e.end)) : minToStr(e.start); // 하루보기: 범위 표시
     inner+='<div class="etime tnum">'+timeStr+'</div>';
     el.innerHTML=inner;
@@ -941,6 +953,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     form.color=b.getAttribute("data-c"); syncSwatch();
   });
 
+  // 세부 설정 접기/펼치기 (장소·반복기간·색상)
+  var advancedEl=document.getElementById("advanced"), advToggle=document.getElementById("advToggle");
+  function setAdvanced(open){ advancedEl.hidden=!open; advToggle.classList.toggle("open",open); }
+  advToggle.onclick=function(){ setAdvanced(advancedEl.hidden); };
+
   function syncType(){
     document.querySelectorAll("#typeSeg button").forEach(function(s){ s.classList.toggle("on", s.getAttribute("data-type")===form.type); });
     var isRepeat = form.type==="lecture";
@@ -1059,7 +1076,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     fTitle.value=""; fLoc.value=""; fDate.value=dateStr;
     fFrom.value=""; fUntil.value="";
     fStart.value=minToStr(startMin); fEnd.value=minToStr(Math.min(startMin+60,24*60-1));
-    syncType(); syncChips(); buildCatChips(); syncSwatch();
+    syncType(); syncChips(); buildCatChips(); syncSwatch(); setAdvanced(false);
     openSheet(sheet); setTimeout(function(){ fTitle.focus(); },300);
   }
   function openEdit(e){
@@ -1076,6 +1093,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     fFrom.value=e.from||""; fUntil.value=e.until||"";
     fStart.value=minToStr(e.start); fEnd.value=minToStr(e.end);
     syncType(); syncChips(); buildCatChips(); syncSwatch();
+    setAdvanced(!!(e.location||e.from||e.until)); // 세부값 있으면 펼친 채로
     openSheet(sheet);
   }
 
