@@ -31,7 +31,7 @@
   --holiday-bg:#FDF4F6;
   --shadow:0 8px 30px rgba(20,32,54,.12);
   --shadow-sm:0 1px 2px rgba(20,32,54,.06);
-  --gutterW:42px;
+  --gutterW:26px;
   --hourH:68px;
   --sat:env(safe-area-inset-top,0px);
   --sab:env(safe-area-inset-bottom,0px);
@@ -89,10 +89,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 .planner{
   display:flex;flex-direction:column;height:100dvh;max-width:900px;margin:0 auto;position:relative;
-  /* 상단 블루→민트 그라데이션이 아래로 부드럽게 사라짐 */
-  background:
-    linear-gradient(180deg, transparent 0, transparent 70px, var(--bg) 230px),
-    linear-gradient(120deg, var(--g1) 0%, var(--g2) 100%);
+  background:var(--bg);
 }
 
 /* ---------- Top bar ---------- */
@@ -137,7 +134,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .month-row{display:flex;align-items:center;gap:5px}
 .tcaret{font-size:12px;color:var(--muted);font-weight:700;line-height:1;margin-top:2px}
 .title .month{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
-.title .range{font-size:12.5px;color:var(--ink-2);font-weight:500}
+.title .range{display:none} /* 날짜 범위는 헤더에 이미 있어 숨김 */
 .ctrls{display:flex;align-items:center;gap:6px}
 .iconbtn{
   width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
@@ -170,7 +167,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .dh{
   margin:0 3px;padding:7px 0 8px;border-radius:13px;text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;
-  background:color-mix(in srgb,var(--surface) 50%,transparent);
+  background:transparent;
   transition:background .15s, box-shadow .15s;
 }
 .dh .dow{font-size:10.5px;font-weight:600;color:var(--ink-2);letter-spacing:.02em}
@@ -180,8 +177,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .dh.holiday .dnum{color:var(--now)}
 .dh .hname{font-size:8.5px;font-weight:700;color:var(--now);line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
 /* 오늘: 흰 카드가 떠 보이게 + 액센트 숫자 */
-.dh.today{background:var(--surface);box-shadow:0 4px 14px rgba(30,60,110,.13)}
-.dh.today .dnum,.dh.today .dow{color:var(--accent)}
+/* 오늘: 진한 파랑 알약 하나만 강조 */
+.dh.today{background:var(--accent)}
+.dh.today .dnum,.dh.today .dow{color:#fff}
 
 /* ---------- Scroll grid ---------- */
 .scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative}
@@ -194,7 +192,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   height:var(--hourH);position:relative;
 }
 .gutter .hr span{
-  position:absolute;top:-7px;right:6px;font-family:'DM Mono',ui-monospace,monospace;
+  position:absolute;top:-7px;right:5px;font-family:'DM Mono',ui-monospace,monospace;
   font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:-.02em;
 }
 .gutter .hr:first-child span{top:2px}
@@ -203,7 +201,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   position:relative;display:grid;grid-template-columns:repeat(7,1fr);
 }
 .daycol{position:relative}
-.daycol.today{background:color-mix(in srgb,var(--accent-soft) 35%,transparent);border-radius:12px}
 /* 주/일 전환 슬라이드 */
 @keyframes slideInR{from{opacity:.35;transform:translateX(26px)}to{opacity:1;transform:none}}
 @keyframes slideInL{from{opacity:.35;transform:translateX(-26px)}to{opacity:1;transform:none}}
@@ -228,9 +225,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .evt:active{transform:scale(.97);box-shadow:var(--shadow)}
 .evt .et{
-  font-size:10.5px;font-weight:700;line-height:1.28;
+  font-size:11px;font-weight:700;line-height:1.3;
   color:color-mix(in srgb,var(--evt) 42%,var(--ink)); /* 그 색의 진한 톤 */
-  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;
   word-break:keep-all;overflow-wrap:anywhere;
 }
 .evt .eloc,.evt .etime{
@@ -299,7 +296,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .nowline{position:absolute;z-index:6;pointer-events:none;height:0}
 .nowline .l{position:absolute;left:0;right:0;height:2px;background:var(--now);border-radius:2px}
 .nowline .d{position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--now);box-shadow:0 0 0 2px var(--surface)}
-.nowgut{position:absolute;right:3px;font-size:9px;font-weight:800;color:#fff;background:var(--now);padding:1px 4px;border-radius:6px;transform:translateY(-50%);z-index:3;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 0 0 2px var(--surface)}
 
 /* empty hint */
 .hint{
@@ -710,7 +706,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var gutterEl=document.getElementById("gutter");
   function buildGutter(){
     var h="";
-    for(var i=DAY_START;i<DAY_END;i++){ h+='<div class="hr"><span>'+pad(i)+':00</span></div>'; }
+    for(var i=DAY_START;i<DAY_END;i++){ h+='<div class="hr"><span>'+pad(i)+'</span></div>'; }
     gutterEl.innerHTML=h;
     document.documentElement.style.setProperty("--hourH", hourH+"px");
   }
@@ -747,7 +743,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var mL=document.getElementById("monthLabel");
     if(isDay){
       var dd0=dates[0];
-      mL.textContent=(dd0.getMonth()+1)+"월 "+dd0.getDate()+"일";
+      mL.textContent=(dd0.getMonth()+1)+"월 "+dd0.getDate()+"일 ("+DOW[wd(dd0)]+")";
       document.getElementById("rangeLabel").textContent=DOW[wd(dd0)]+"요일";
     } else {
       var first=dates[0], last=dates[6];
@@ -790,8 +786,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var nl=daysEl.querySelector(".nowline"); if(nl)nl.remove();
     var now=new Date(), nowYmd=ymd(now);
     var tIdx=-1; for(var t=0;t<dates.length;t++){ if(ymd(dates[t])===nowYmd){tIdx=t;break;} }
-    var oldGut=gutterEl.querySelector(".nowgut"); if(oldGut)oldGut.remove();
-    gutterEl.querySelectorAll(".hr span").forEach(function(s){ s.style.visibility=""; }); // 눈금 라벨 다시 보이게
     if(tIdx>=0){
       var nowMin=now.getHours()*60+now.getMinutes();
       var y=(nowMin-DAY_START*60)/60*hourH;
@@ -799,12 +793,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       wrap.style.top=y+"px"; wrap.style.left=(tIdx/nCols*100)+"%"; wrap.style.width=(100/nCols)+"%";
       wrap.innerHTML='<div class="d"></div><div class="l"></div>';
       daysEl.appendChild(wrap);
-      // 시간 눈금에 현재 시각 라벨 (가까운 정각 라벨은 숨겨서 겹침 방지)
-      var nearHour=Math.round(nowMin/60);
-      if(Math.abs(nowMin-nearHour*60)<16){ var hrs=gutterEl.querySelectorAll(".hr"); var hidx=nearHour-DAY_START;
-        if(hrs[hidx]){ var sp=hrs[hidx].querySelector("span"); if(sp) sp.style.visibility="hidden"; } }
-      var ng=document.createElement("div"); ng.className="nowgut"; ng.textContent=pad(now.getHours())+":"+pad(now.getMinutes());
-      ng.style.top=y+"px"; gutterEl.appendChild(ng);
     }
 
     // hint
@@ -845,7 +833,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.left="calc(0% + 3px)"; el.style.width="calc(100% - 10px)";
     var inner='<span class="cbadge">'+cl.length+'</span>';
     inner+='<div class="et">'+esc(evLabel(cl[0]))+' 외 '+(cl.length-1)+'</div>';
-    inner+='<div class="etime tnum">'+minToStr(minStart)+'~'+minToStr(maxEnd)+'</div>';
+    if(view==="day") inner+='<div class="etime tnum">'+minToStr(minStart)+'–'+minToStr(maxEnd)+'</div>';
     inner+='<div class="cdots">'+cols.slice(0,5).map(function(c){ return '<i style="background:'+c+'"></i>'; }).join('')+'</div>';
     el.innerHTML=inner;
     el.addEventListener("click", function(ev){ ev.stopPropagation(); openClusterList(cl); });
@@ -866,8 +854,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.zIndex=4+c;
     var inner='<div class="et">'+esc(evLabel(e))+'</div>';
     if(e.location && view==="day") inner+='<div class="eloc">'+esc(e.location)+'</div>'; // 장소는 하루보기에서만
-    var timeStr = (view==="day") ? (minToStr(e.start)+"–"+minToStr(e.end)) : minToStr(e.start); // 하루보기: 범위 표시
-    inner+='<div class="etime tnum">'+timeStr+'</div>';
+    // 주간: 제목만 (시간은 블록 위치로 보이고, 탭하면 미리보기에 있음) / 하루보기: 시간 범위
+    if(view==="day") inner+='<div class="etime tnum">'+minToStr(e.start)+"–"+minToStr(e.end)+'</div>';
     el.innerHTML=inner;
     el.addEventListener("click", function(ev){ ev.stopPropagation(); openPeek(e); });
     return el;
