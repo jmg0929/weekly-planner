@@ -1918,6 +1918,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var sel="?select=id,data,deleted,updated_at";
     return Promise.all([ api("GET","/rest/v1/events"+sel), api("GET","/rest/v1/categories"+sel), api("GET","/rest/v1/prefs?select=data,updated_at") ])
       .then(function(res){
+        if(!auth) return false;   // 받는 사이에 로그아웃했으면 버림
         applying=true;
         try{
           var chE=applyRows("ev",res[0]), chC=applyRows("cat",res[1]), chP=false, pr=(res[2]||[])[0];
@@ -1960,10 +1961,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     syncStatusUI("busy");
     // 받아온 "다음에" 폰 쪽 변경을 찾음 → 처음 로그인 때 같은 항목은 서버 것이 이김 (평소 수정은 저장할 때 이미 표시됨)
     syncing = pull()
-      .then(function(changed){ markDirty("ev"); markDirty("cat"); markDirty("prefs"); if(changed){ buildMenuFilter(); render(); } return push(); })
-      .then(function(){ sy.last=Date.now(); sy.err=""; })
+      .then(function(changed){ if(!auth) return; markDirty("ev"); markDirty("cat"); markDirty("prefs"); if(changed){ buildMenuFilter(); render(); } return push(); })
+      .then(function(){ if(auth){ sy.last=Date.now(); sy.err=""; } })
       .catch(function(e){
         if(e && e.signedOut){ sy.err="relogin"; return; }
+        if(!auth) return;   // 로그아웃으로 끊긴 동기화는 오류로 치지 않음
         // 연결 자체가 안 되면(fetch 실패 = TypeError) 오류가 아니라 오프라인
         sy.err = (navigator.onLine===false || e instanceof TypeError) ? "offline" : ((e && e.message) || "error");
       })
