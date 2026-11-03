@@ -143,6 +143,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .mtx small{display:block;font-size:12px;color:var(--ink-2);font-weight:500;margin-top:1px}
 .mchev{color:var(--muted);font-size:21px;line-height:1;flex:none}
 .mval{font-size:13px;font-weight:600;color:var(--muted);flex:none}
+.mval.warn{color:var(--now)}
+/* 동기화(계정) 시트 */
+.acct-card{background:var(--surface-2);border-radius:16px;padding:14px 16px;margin-bottom:14px}
+.acct-mail{font-size:15.5px;font-weight:800;word-break:break-all}
+.acct-stat{font-size:13px;font-weight:600;color:var(--ink-2);margin-top:3px}
+.acct-stat.warn{color:var(--now)}
+#acctSheet .bk-btn:disabled{opacity:.5}
 .msub{margin-bottom:10px}
 /* 표시 칩: 켜짐 = 흰 칩, 꺼짐 = 점선·회색 (숨김) */
 #menuFilter .fchip{background:var(--surface)}
@@ -387,7 +394,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:6px;letter-spacing:.01em}
-.field input[type=text],.field input[type=date],.field input[type=time]{
+.field input[type=text],.field input[type=date],.field input[type=time],.field input[type=email],.field input[type=password]{
   width:100%;padding:12px 13px;border-radius:12px;border:1px solid var(--line-strong);
   background:var(--surface-2);color:var(--ink);font-size:15.5px;font-weight:600;font-family:inherit;
   -webkit-appearance:none;appearance:none;
@@ -716,6 +723,25 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <div class="peek-actions"><button class="peek-edit" id="peekEdit">편집</button></div>
 </div>
 
+<!-- 동기화(계정) 시트 -->
+<div class="sheet" id="acctSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <h2>동기화</h2>
+  <div id="acctOut">
+    <div class="field"><label>이메일</label><input type="email" id="acctEmail" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label>비밀번호</label><input type="password" id="acctPw" autocomplete="current-password"></div>
+    <div class="err" id="acctErr"></div>
+    <button class="bk-btn" id="acctLogin">로그인</button>
+    <button class="bk-btn ghost" id="acctSignup">가입</button>
+  </div>
+  <div id="acctIn" hidden>
+    <div class="acct-card"><div class="acct-mail" id="acctMail"></div><div class="acct-stat" id="acctStat"></div></div>
+    <button class="bk-btn" id="acctSyncNow">지금 동기화</button>
+    <button class="bk-btn ghost" id="acctLogout">로그아웃</button>
+  </div>
+  <div class="actions"><button class="btn-cancel" id="acctClose" style="flex:1">닫기</button></div>
+</div>
+
 <!-- 카테고리 관리 시트 -->
 <div class="sheet" id="catSheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
@@ -764,6 +790,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <section class="msec">
     <div class="msec-t">데이터</div>
     <div class="mcard">
+      <button class="mlink" id="menuSyncBtn">
+        <span class="mico"><svg viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 9.6 4.25 4.25 0 0 1 17.5 18.5H7z"/></svg></span>
+        <span class="mtx"><b>동기화</b></span>
+        <span class="mval" id="menuSyncVal"></span>
+        <span class="mchev">›</span>
+      </button>
       <button class="mlink" id="menuBackupBtn">
         <span class="mico"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></span>
         <span class="mtx"><b>백업 · 복원</b></span>
@@ -851,6 +883,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       // 자동 백업: 변경마다 별도 키에 사본 보관
       localStorage.setItem(AUTOKEY, JSON.stringify({ ts: Date.now(), v:1, data: clean }));
     }catch(e){}
+    onLocalChange("ev");
   }
   function getMeta(){ try{ return JSON.parse(localStorage.getItem(METAKEY)) || {}; }catch(e){ return {}; } }
   function setMeta(m){ try{ localStorage.setItem(METAKEY, JSON.stringify(m)); }catch(e){} }
@@ -866,9 +899,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // ---- 카테고리 ----
   function loadCategories(){ try{ var c=JSON.parse(localStorage.getItem(CAT_KEY)); if(Array.isArray(c)&&c.length) return c; }catch(e){} return DEFAULT_CATS.map(function(x){ return {id:x.id,name:x.name,color:x.color,emoji:x.emoji}; }); }
-  function saveCategories(){ try{ localStorage.setItem(CAT_KEY, JSON.stringify(categories)); }catch(e){} }
+  function saveCategories(){ try{ localStorage.setItem(CAT_KEY, JSON.stringify(categories)); }catch(e){} onLocalChange("cat"); }
   function loadHidden(){ try{ var h=JSON.parse(localStorage.getItem(HIDDEN_KEY)); if(h && typeof h==="object") return h; }catch(e){} return {}; }
-  function saveHidden(){ try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden)); }catch(e){} }
+  function saveHidden(){ try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden)); }catch(e){} onLocalChange("prefs"); }
   function catById(id){ for(var i=0;i<categories.length;i++){ if(categories[i].id===id) return categories[i]; } return null; }
   function catColor(id){ var c=catById(id); return c?c.color:COLORS[0]; }
   function catName(id){ var c=catById(id); return c?c.name:"기타"; }
@@ -1419,8 +1452,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     // 백업 줄 오른쪽에 마지막 백업 시점 (예: 3일 전 / 기록 없음)
     var lt=getMeta().lastExport;
     document.getElementById("menuBackupSub").textContent = lt ? relTime(lt).replace("마지막 내보내기: ","") : "기록 없음";
+    syncStatusUI();
     openSheet(menuSheet);
   }
+  document.getElementById("menuSyncBtn").onclick=function(){ menuSheet.classList.remove("on"); openAccount(); };
   document.getElementById("menuBtn").onclick=openMenu;
   document.getElementById("menuCloseBtn").onclick=closeSheet;
   document.getElementById("menuManageBtn").onclick=function(){ menuSheet.classList.remove("on"); openCatManage(false); };
@@ -1532,7 +1567,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
 
   function openSheet(el){ scrim.classList.add("on"); el.classList.add("on"); }
-  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); menuSheet.classList.remove("on"); peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad"); }
+  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); menuSheet.classList.remove("on"); acctSheet.classList.remove("on"); peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad"); }
   scrim.onclick=closeSheet;
   document.getElementById("cancelBtn").onclick=closeSheet;
   document.getElementById("bkCloseBtn").onclick=closeSheet;
@@ -1713,6 +1748,251 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     r.readAsText(f);
   };
 
+  // ================= 서버 동기화 (Supabase) =================
+  // 로그인 안 하면 지금처럼 폰에만 저장. 로그인하면 폰에 먼저 저장하고, 인터넷이 되면 서버와 맞춤.
+  // 항목마다 "마지막으로 고친 시각"을 붙여서, 두 기기에서 같은 걸 고치면 나중에 고친 쪽이 남음.
+  var SB_URL = "https://kfrvrvuurfxapgvyhlfp.supabase.co";
+  var SB_KEY = "sb_publishable_dAecarNSVcL3lHfo3Jr8Zw_IVogOE0V"; // 공개용 키 — 서버의 "본인 데이터만" 규칙으로 보호됨
+  var AUTH_KEY = "weekly-planner-auth", SYNC_KEY = "weekly-planner-sync";
+  var DEL = "\u0000del";
+  function loadJSON(k){ try{ return JSON.parse(localStorage.getItem(k)||"null"); }catch(e){ return null; } }
+  function putJSON(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  // base: 서버와 마지막으로 맞춘 내용 / at: 그때 서버 시각 / pend: 아직 안 올린 변경(고친 시각) / mark: pend를 찍을 때의 내용
+  function newSync(){ return { base:{ev:{},cat:{},prefs:null}, at:{ev:{},cat:{},prefs:0}, pend:{ev:{},cat:{},prefs:0}, mark:{ev:{},cat:{}}, last:0, err:"" }; }
+  var auth = loadJSON(AUTH_KEY);
+  var sy = (auth && loadJSON(SYNC_KEY)) || newSync();
+  var applying = false, syncing = null, syncAgain = false, syncTimer = null, refreshing = null;
+
+  function objMap(kind){
+    var m={};
+    if(kind==="ev") cleanEvents().forEach(function(e){ if(e.id) m[e.id]=e; });
+    else categories.forEach(function(c){ m[c.id]={ id:c.id, name:c.name, color:c.color, emoji:c.emoji||"" }; });
+    return m;
+  }
+  // 폰에서 바뀐 항목 찾아서 "올릴 목록"에 표시
+  function markDirty(kind){
+    if(!auth || applying) return;
+    var now=Date.now();
+    if(kind==="prefs"){
+      var pj=JSON.stringify(hidden);
+      if(pj!==sy.base.prefs && pj!==sy.mark.prefs){ sy.pend.prefs=now; sy.mark.prefs=pj; }
+    } else {
+      var cur=objMap(kind), base=sy.base[kind], mk=sy.mark[kind], pend=sy.pend[kind], id, js;
+      for(id in cur){ js=JSON.stringify(cur[id]); var ref=(id in mk)?mk[id]:base[id]; if(js!==ref){ pend[id]=now; mk[id]=js; } }
+      var gone={}; for(id in base) gone[id]=1; for(id in mk) gone[id]=1;
+      for(id in gone){ if(!(id in cur) && mk[id]!==DEL && (id in base || id in mk)){ pend[id]=now; mk[id]=DEL; } }
+    }
+    putJSON(SYNC_KEY, sy);
+  }
+  function onLocalChange(kind){
+    if(applying || !auth) return;
+    markDirty(kind); syncSoon();
+  }
+  function syncSoon(){ if(!auth) return; clearTimeout(syncTimer); syncTimer=setTimeout(sync, 1200); }
+
+  // ---- 서버 요청 ----
+  function authReq(path, body, tok){
+    var h={ "apikey":SB_KEY, "Content-Type":"application/json" }; if(tok) h.Authorization="Bearer "+tok;
+    return fetch(SB_URL+"/auth/v1/"+path, { method:"POST", headers:h, body:JSON.stringify(body||{}) })
+      .then(function(r){ return r.text().then(function(t){
+        var j={}; try{ j=t?JSON.parse(t):{}; }catch(e){}
+        if(!r.ok){ var er=new Error(j.msg||j.error_description||j.message||("HTTP "+r.status)); er.status=r.status; er.code=j.error_code||j.code||j.error; throw er; }
+        return j;
+      }); });
+  }
+  function setSession(s){
+    if(!s || !s.access_token || !s.user) throw new Error("no session");
+    auth={ access_token:s.access_token, refresh_token:s.refresh_token, expires_at:Date.now()+(s.expires_in||3600)*1000, user:{ id:s.user.id, email:s.user.email } };
+    putJSON(AUTH_KEY, auth);
+  }
+  // 로그아웃: 동기화 기록까지 지움 / 로그인 만료: 기록은 남겨서 다시 로그인하면 이어서 올림
+  function signedOut(){ auth=null; sy=newSync(); putJSON(AUTH_KEY,null); putJSON(SYNC_KEY,null); }
+  function sessionExpired(){ auth=null; putJSON(AUTH_KEY,null); }
+  function token(){
+    if(!auth) return Promise.reject(new Error("로그인 필요"));
+    if(Date.now() < auth.expires_at-60000) return Promise.resolve(auth.access_token);
+    if(!refreshing){
+      refreshing = authReq("token?grant_type=refresh_token", { refresh_token:auth.refresh_token })
+        .then(function(s){ setSession(s); return auth.access_token; })
+        .catch(function(e){ if(e.status===400||e.status===401||e.status===403){ sessionExpired(); e.signedOut=true; } throw e; })
+        .then(function(t){ refreshing=null; return t; }, function(e){ refreshing=null; throw e; });
+    }
+    return refreshing;
+  }
+  function api(method, path, body, extra){
+    return token().then(function(tok){
+      var h={ "apikey":SB_KEY, "Authorization":"Bearer "+tok, "Content-Type":"application/json" };
+      if(extra) for(var k in extra) h[k]=extra[k];
+      return fetch(SB_URL+path, { method:method, headers:h, body:body?JSON.stringify(body):undefined, cache:"no-store" });
+    }).then(function(r){
+      if(r.status===401 && auth){ auth.expires_at=0; putJSON(AUTH_KEY,auth); }   // 다음엔 토큰 새로 받기
+      if(!r.ok) return r.text().then(function(t){ throw new Error("HTTP "+r.status+" "+String(t).slice(0,120)); });
+      return r.text().then(function(t){ return t?JSON.parse(t):null; });
+    });
+  }
+
+  // ---- 받아오기: 서버에서 바뀐 항목을 폰에 반영 (폰에서 더 나중에 고친 건 유지) ----
+  function applyRows(kind, rows){
+    var list = (kind==="ev") ? events : categories;
+    var map={}, order=[], ch=false;
+    list.forEach(function(x){ map[x.id]=x; order.push(x.id); });
+    (rows||[]).forEach(function(rw){
+      if(!rw || !ID_RE.test(rw.id)) return;
+      var ts=+rw.updated_at||0, p=sy.pend[kind][rw.id];
+      if(p && p>=ts) return;                                            // 내 폰 쪽이 더 최근
+      if(ts<=(sy.at[kind][rw.id]||0)) return;                           // 이미 받은 내용
+      var obj = rw.deleted ? null : (kind==="ev" ? sanitizeEvent(rw.data) : (sanitizeCats([rw.data])[0]||null));
+      if(obj && obj.id!==rw.id) obj=null;
+      if(!obj){ if(rw.id in map){ delete map[rw.id]; ch=true; } delete sy.base[kind][rw.id]; }
+      else {
+        if(!(rw.id in map)) order.push(rw.id);
+        map[rw.id]=obj; ch=true;
+        sy.base[kind][rw.id]=JSON.stringify(kind==="ev" ? obj : { id:obj.id, name:obj.name, color:obj.color, emoji:obj.emoji||"" });
+      }
+      sy.at[kind][rw.id]=ts; delete sy.pend[kind][rw.id]; delete sy.mark[kind][rw.id];
+    });
+    if(ch){
+      var out=order.filter(function(id){ return id in map; }).map(function(id){ return map[id]; });
+      if(kind==="ev") events=out; else if(out.length) categories=out;
+    }
+    return ch;
+  }
+  function pull(){
+    var sel="?select=id,data,deleted,updated_at";
+    return Promise.all([ api("GET","/rest/v1/events"+sel), api("GET","/rest/v1/categories"+sel), api("GET","/rest/v1/prefs?select=data,updated_at") ])
+      .then(function(res){
+        applying=true;
+        try{
+          var chE=applyRows("ev",res[0]), chC=applyRows("cat",res[1]), chP=false, pr=(res[2]||[])[0];
+          if(pr && +pr.updated_at>(sy.at.prefs||0) && !(sy.pend.prefs && sy.pend.prefs>=+pr.updated_at)){
+            var h={}; if(pr.data && typeof pr.data==="object") for(var k in pr.data){ if(ID_RE.test(k) && pr.data[k]===true) h[k]=true; }
+            hidden=h; sy.base.prefs=JSON.stringify(h); sy.at.prefs=+pr.updated_at; sy.pend.prefs=0; delete sy.mark.prefs; chP=true;
+          }
+          if(chE) save(); if(chC) saveCategories(); if(chP) saveHidden();
+          putJSON(SYNC_KEY, sy);
+          return chE||chC||chP;
+        } finally { applying=false; }
+      });
+  }
+  // ---- 올리기: 아직 안 올린 변경만 ----
+  function push(){
+    var jobs=[];
+    ["ev","cat"].forEach(function(kind){
+      var cur=objMap(kind), pend=sy.pend[kind], rows=[];
+      for(var id in pend){ var o=cur[id]; rows.push({ user_id:auth.user.id, id:id, data:o||{}, deleted:!o, updated_at:pend[id] }); }
+      if(!rows.length) return;
+      jobs.push(api("POST", "/rest/v1/"+(kind==="ev"?"events":"categories")+"?on_conflict=user_id,id", rows, { Prefer:"resolution=merge-duplicates,return=minimal" })
+        .then(function(){
+          rows.forEach(function(rw){
+            if(rw.deleted) delete sy.base[kind][rw.id]; else sy.base[kind][rw.id]=JSON.stringify(rw.data);
+            sy.at[kind][rw.id]=rw.updated_at;
+            if(sy.pend[kind][rw.id]===rw.updated_at){ delete sy.pend[kind][rw.id]; delete sy.mark[kind][rw.id]; }
+          });
+        }));
+    });
+    if(sy.pend.prefs){
+      var ts=sy.pend.prefs, hp=JSON.parse(JSON.stringify(hidden));
+      jobs.push(api("POST","/rest/v1/prefs?on_conflict=user_id",[{ user_id:auth.user.id, data:hp, updated_at:ts }],{ Prefer:"resolution=merge-duplicates,return=minimal" })
+        .then(function(){ sy.base.prefs=JSON.stringify(hp); sy.at.prefs=ts; if(sy.pend.prefs===ts){ sy.pend.prefs=0; delete sy.mark.prefs; } }));
+    }
+    return Promise.all(jobs);
+  }
+  function sync(){
+    if(!auth) return Promise.resolve();
+    if(syncing){ syncAgain=true; return syncing; }
+    syncStatusUI("busy");
+    // 받아온 "다음에" 폰 쪽 변경을 찾음 → 처음 로그인 때 같은 항목은 서버 것이 이김 (평소 수정은 저장할 때 이미 표시됨)
+    syncing = pull()
+      .then(function(changed){ markDirty("ev"); markDirty("cat"); markDirty("prefs"); if(changed){ buildMenuFilter(); render(); } return push(); })
+      .then(function(){ sy.last=Date.now(); sy.err=""; })
+      .catch(function(e){
+        if(e && e.signedOut){ sy.err="relogin"; return; }
+        // 연결 자체가 안 되면(fetch 실패 = TypeError) 오류가 아니라 오프라인
+        sy.err = (navigator.onLine===false || e instanceof TypeError) ? "offline" : ((e && e.message) || "error");
+      })
+      .then(function(){
+        if(auth) putJSON(SYNC_KEY, sy);
+        syncing=null; syncStatusUI();
+        if(syncAgain){ syncAgain=false; sync(); }
+      });
+    return syncing;
+  }
+  function pendCount(){ var n=0, k; for(k in sy.pend.ev) n++; for(k in sy.pend.cat) n++; if(sy.pend.prefs) n++; return n; }
+
+  // ---- 화면: 메뉴의 동기화 줄 + 동기화 시트 ----
+  var acctSheet=document.getElementById("acctSheet");
+  var acctEmail=document.getElementById("acctEmail"), acctPw=document.getElementById("acctPw"), acctErr=document.getElementById("acctErr");
+  function syncWord(state){
+    if(!auth) return (sy.err==="relogin") ? "다시 로그인" : "로그인";
+    if(state==="busy") return "동기화 중";
+    if(sy.err==="offline") return "오프라인";
+    if(sy.err) return "오류";
+    if(!sy.last) return "대기";
+    var d=Date.now()-sy.last;
+    return d<60000 ? "방금" : (d<3600000 ? Math.floor(d/60000)+"분 전" : (d<86400000 ? Math.floor(d/3600000)+"시간 전" : Math.floor(d/86400000)+"일 전"));
+  }
+  function syncStatusUI(state){
+    var w=syncWord(state), warn=(!auth && sy.err==="relogin") || (auth && sy.err && sy.err!=="offline");
+    var mv=document.getElementById("menuSyncVal"); mv.textContent=w; mv.classList.toggle("warn", !!warn);
+    document.getElementById("acctOut").hidden=!!auth;
+    document.getElementById("acctIn").hidden=!auth;
+    if(auth){
+      document.getElementById("acctMail").textContent=auth.user.email||"";
+      var st=document.getElementById("acctStat"), n=pendCount();
+      var t = (state==="busy") ? "동기화 중…" : (sy.err==="offline" ? "오프라인 · 올릴 것 "+n+"개" : (sy.err ? "오류 · "+sy.err.slice(0,80) : (sy.last ? "동기화됨 · "+w : "대기")));
+      st.textContent=t; st.classList.toggle("warn", !!(sy.err && sy.err!=="offline"));
+      document.getElementById("acctSyncNow").disabled = (state==="busy");
+    }
+  }
+  function openAccount(){ acctErr.textContent=""; acctPw.value=""; syncStatusUI(); openSheet(acctSheet); }
+  function authMsg(e){
+    var c=(e && e.code)||"", m=(e && e.message)||"";
+    if(navigator.onLine===false) return "인터넷 연결을 확인하세요";
+    if(c==="invalid_credentials" || /invalid login/i.test(m)) return "이메일 또는 비밀번호가 틀려요";
+    if(c==="user_already_exists" || /already registered/i.test(m)) return "이미 가입된 이메일 · 로그인을 누르세요";
+    if(c==="weak_password" || /password should/i.test(m)) return "비밀번호는 6자 이상";
+    if(c==="signup_disabled" || /signups not allowed/i.test(m)) return "가입이 닫혀 있어요";
+    if(c==="email_address_invalid" || c==="validation_failed" || /email.*invalid|invalid.*email/i.test(m)) return "이메일 형식을 확인하세요";
+    if(c==="over_request_rate_limit" || e.status===429) return "잠시 후 다시 시도하세요";
+    return "실패 · "+m.slice(0,60);
+  }
+  function doAuth(kind){
+    var em=acctEmail.value.trim(), pw=acctPw.value;
+    acctErr.textContent="";
+    if(!em || !pw){ acctErr.textContent="이메일과 비밀번호를 입력하세요"; return; }
+    if(kind==="signup" && pw.length<6){ acctErr.textContent="비밀번호는 6자 이상"; return; }
+    var btns=[document.getElementById("acctLogin"), document.getElementById("acctSignup")];
+    btns.forEach(function(b){ b.disabled=true; });
+    authReq(kind==="signup" ? "signup" : "token?grant_type=password", { email:em, password:pw })
+      .then(function(s){
+        if(!s.access_token){ throw new Error("메일 확인이 필요해요"); }
+        setSession(s);
+        // 같은 계정으로 다시 로그인 → 이전 기록 이어서 / 처음이면: 서버 것 받고 → 폰에만 있던 것 올림 (합치기)
+        var old=loadJSON(SYNC_KEY);
+        sy = (old && old.uid===auth.user.id) ? old : newSync();
+        sy.uid=auth.user.id; sy.err=""; putJSON(SYNC_KEY, sy);
+        acctPw.value="";
+        syncStatusUI();
+        return sync();
+      })
+      .catch(function(e){ acctErr.textContent=authMsg(e); })
+      .then(function(){ btns.forEach(function(b){ b.disabled=false; }); });
+  }
+  document.getElementById("acctLogin").onclick=function(){ doAuth("login"); };
+  document.getElementById("acctSignup").onclick=function(){ doAuth("signup"); };
+  acctPw.addEventListener("keydown", function(e){ if(e.key==="Enter") doAuth("login"); });
+  document.getElementById("acctSyncNow").onclick=function(){ sync(); };
+  document.getElementById("acctLogout").onclick=function(){
+    if(!confirm("로그아웃할까요?\n이 기기의 일정은 그대로 남아요.")) return;
+    var tok=auth && auth.access_token;
+    if(tok) authReq("logout", {}, tok).catch(function(){});
+    signedOut(); syncStatusUI();
+  };
+  document.getElementById("acctClose").onclick=closeSheet;
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden && auth) sync(); });
+  window.addEventListener("online", function(){ if(auth) sync(); });
+  setInterval(function(){ if(auth && !document.hidden) sync(); }, 5*60000);
+
   // ---- scroll helpers ----
   var scrollEl=document.getElementById("scroll");
   function scrollToNow(){
@@ -1726,6 +2006,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   render();
   (function(){ var m=Math.max(8*60, new Date().getHours()*60); var y=(m-DAY_START*60)/60*hourH-120; scrollEl.scrollTop=Math.max(0,y); })();
   setInterval(render, 60000);
+  syncStatusUI();
+  if(auth) sync();
 })();
 </script>
 

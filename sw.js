@@ -1,6 +1,6 @@
 // 주간 플래너 서비스워커 — 오프라인 지원
 // 앱을 바꿀 때는 아래 버전 숫자를 올리면 캐시가 갱신됩니다.
-const CACHE = "planner-v38";
+const CACHE = "planner-v39";
 const ASSETS = [
   "./",
   "./index.html",
@@ -30,6 +30,9 @@ self.addEventListener("activate", (e) => {
 // 요청 처리: 캐시 우선, 없으면 네트워크(성공 시 캐시에 저장)
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  // 앱 파일과 글꼴만 캐시. 서버(동기화)·공휴일 API 같은 다른 곳 요청은 항상 네트워크로
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin && url.hostname !== "cdn.jsdelivr.net") return;
   e.respondWith(
     caches.match(e.request).then((cached) => {
       if (cached) return cached;
