@@ -157,6 +157,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .acct-pw-btns .bk-btn.ghost{background:var(--surface)}
 .acct-ok{font-size:13px;font-weight:700;color:var(--ink-2);text-align:center;margin:-2px 0 12px}
 .sr-hide{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.acct-msg{font-size:13px;font-weight:600;color:var(--ink-2);margin:-4px 0 12px}
+.acct-link{display:block;margin:-2px auto 0;padding:8px 4px;font-size:13px;font-weight:600;color:var(--muted)}
 .msub{margin-bottom:10px}
 /* 표시 칩: 켜짐 = 흰 칩, 꺼짐 = 점선·회색 (숨김) */
 #menuFilter .fchip{background:var(--surface)}
@@ -738,8 +740,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <div class="field"><label>이메일</label><input type="email" id="acctEmail" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false"></div>
     <div class="field"><label>비밀번호</label><input type="password" id="acctPw" autocomplete="current-password"></div>
     <div class="err" id="acctErr"></div>
+    <div class="acct-msg" id="acctMsg" hidden></div>
     <button class="bk-btn" id="acctLogin">로그인</button>
     <button class="bk-btn ghost" id="acctSignup">가입</button>
+    <button class="acct-link" id="acctForgot">비밀번호 찾기</button>
   </div>
   <div id="acctIn" hidden>
     <div class="acct-card"><div class="acct-mail" id="acctMail"></div><div class="acct-stat" id="acctStat"></div></div>
@@ -747,7 +751,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <button class="bk-btn ghost" id="acctPwBtn">비밀번호 변경</button>
     <div class="acct-card acct-pw" id="acctPwBox" hidden>
       <input type="email" id="acctPwUser" autocomplete="username" readonly tabindex="-1" aria-hidden="true" class="sr-hide">
-      <div class="field"><label>현재 비밀번호</label><input type="password" id="acctPwCur" autocomplete="current-password"></div>
+      <div class="field" id="acctPwCurF"><label>현재 비밀번호</label><input type="password" id="acctPwCur" autocomplete="current-password"></div>
       <div class="field"><label>새 비밀번호</label><input type="password" id="acctPwNew" autocomplete="new-password" placeholder="6자 이상"></div>
       <div class="field"><label>한 번 더</label><input type="password" id="acctPwNew2" autocomplete="new-password"></div>
       <div class="err" id="acctPwErr"></div>
@@ -1813,7 +1817,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // ---- 서버 요청 ----
   function authReq(path, body, tok, method){
     var h={ "apikey":SB_KEY, "Content-Type":"application/json" }; if(tok) h.Authorization="Bearer "+tok;
-    return fetch(SB_URL+"/auth/v1/"+path, { method:method||"POST", headers:h, body:JSON.stringify(body||{}), cache:"no-store" })
+    method=method||"POST";
+    return fetch(SB_URL+"/auth/v1/"+path, { method:method, headers:h, body:(method==="GET")?undefined:JSON.stringify(body||{}), cache:"no-store" })
       .then(function(r){ return r.text().then(function(t){
         var j={}; try{ j=t?JSON.parse(t):{}; }catch(e){}
         if(!r.ok){ var er=new Error(j.msg||j.error_description||j.message||("HTTP "+r.status)); er.status=r.status; er.code=j.error_code||j.code||j.error; throw er; }
@@ -1964,7 +1969,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       document.getElementById("acctSyncNow").disabled = (state==="busy");
     }
   }
-  function openAccount(){ acctErr.textContent=""; acctPw.value=""; pwBox(false); document.getElementById("acctPwOk").hidden=true; syncStatusUI(); openSheet(acctSheet); }
+  function openAccount(){ acctErr.textContent=""; acctPw.value=""; showMsg(""); pwBox(false); document.getElementById("acctPwOk").hidden=true; syncStatusUI(); openSheet(acctSheet); }
+  var acctMsg=document.getElementById("acctMsg");
+  function showMsg(t){ acctMsg.textContent=t; acctMsg.hidden=!t; }
+  // 메일 링크(가입 인증 · 비밀번호 재설정)가 돌아올 주소
+  var REDIRECT=location.origin+location.pathname.replace(/index\.html$/,"");
   function authMsg(e){
     var c=(e && e.code)||"", m=(e && e.message)||"";
     if(navigator.onLine===false) return "인터넷 연결을 확인하세요";
@@ -1973,58 +1982,79 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(c==="same_password" || /different from the old/i.test(m)) return "지금과 같은 비밀번호예요";
     if(c==="weak_password" || /password should/i.test(m)) return "비밀번호는 6자 이상";
     if(c==="reauthentication_needed") return "다시 로그인 후 시도하세요";
+    if(c==="email_not_confirmed" || /not confirmed/i.test(m)) return "메일 인증이 아직이에요";
     if(c==="signup_disabled" || /signups not allowed/i.test(m)) return "가입이 닫혀 있어요";
     if(c==="email_address_invalid" || c==="validation_failed" || /email.*invalid|invalid.*email/i.test(m)) return "이메일 형식을 확인하세요";
     if(c==="over_request_rate_limit" || e.status===429) return "잠시 후 다시 시도하세요";
     return "실패 · "+m.slice(0,60);
   }
+  // 로그인 성공 → 같은 계정이면 이전 기록 이어서 / 처음이면: 서버 것 받고 → 폰에만 있던 것 올림 (합치기)
+  function startSession(s){
+    setSession(s);
+    var old=loadJSON(SYNC_KEY);
+    sy = (old && old.uid===auth.user.id) ? old : newSync();
+    sy.uid=auth.user.id; sy.err=""; putJSON(SYNC_KEY, sy);
+    syncStatusUI();
+    return sync();
+  }
   function doAuth(kind){
     var em=acctEmail.value.trim(), pw=acctPw.value;
-    acctErr.textContent="";
+    acctErr.textContent=""; showMsg("");
     if(!em || !pw){ acctErr.textContent="이메일과 비밀번호를 입력하세요"; return; }
     if(kind==="signup" && pw.length<6){ acctErr.textContent="비밀번호는 6자 이상"; return; }
     var btns=[document.getElementById("acctLogin"), document.getElementById("acctSignup")];
     btns.forEach(function(b){ b.disabled=true; });
-    authReq(kind==="signup" ? "signup" : "token?grant_type=password", { email:em, password:pw })
+    authReq(kind==="signup" ? "signup?redirect_to="+encodeURIComponent(REDIRECT) : "token?grant_type=password", { email:em, password:pw })
       .then(function(s){
-        if(!s.access_token){ throw new Error("메일 확인이 필요해요"); }
-        setSession(s);
-        // 같은 계정으로 다시 로그인 → 이전 기록 이어서 / 처음이면: 서버 것 받고 → 폰에만 있던 것 올림 (합치기)
-        var old=loadJSON(SYNC_KEY);
-        sy = (old && old.uid===auth.user.id) ? old : newSync();
-        sy.uid=auth.user.id; sy.err=""; putJSON(SYNC_KEY, sy);
+        if(s.access_token){ acctPw.value=""; return startSession(s); }
+        // 메일 인증을 켜 두면 가입 직후엔 세션이 없음. 이미 인증된 이메일이면 identities 가 빈 배열로 옴
+        var u=s.user||s;
+        if(Array.isArray(u.identities) && !u.identities.length){ acctErr.textContent="이미 가입된 이메일 · 로그인을 누르세요"; return; }
         acctPw.value="";
-        syncStatusUI();
-        return sync();
+        showMsg("인증 메일 보냄 · 링크를 누른 뒤 로그인");
       })
       .catch(function(e){ acctErr.textContent=authMsg(e); })
       .then(function(){ btns.forEach(function(b){ b.disabled=false; }); });
   }
+  // 비밀번호 찾기: 재설정 메일 → 링크를 누르면 새 비밀번호 칸이 열림
+  document.getElementById("acctForgot").onclick=function(){
+    var em=acctEmail.value.trim(), btn=this;
+    acctErr.textContent=""; showMsg("");
+    if(!em){ acctErr.textContent="이메일을 입력하세요"; acctEmail.focus(); return; }
+    btn.disabled=true;
+    authReq("recover?redirect_to="+encodeURIComponent(REDIRECT), { email:em })
+      .then(function(){ showMsg("재설정 메일 보냄 · 메일의 링크를 누르세요"); })
+      .catch(function(e){ acctErr.textContent=authMsg(e); })
+      .then(function(){ btn.disabled=false; });
+  };
   document.getElementById("acctLogin").onclick=function(){ doAuth("login"); };
   document.getElementById("acctSignup").onclick=function(){ doAuth("signup"); };
   acctPw.addEventListener("keydown", function(e){ if(e.key==="Enter") doAuth("login"); });
   document.getElementById("acctSyncNow").onclick=function(){ sync(); };
   // ---- 비밀번호 변경: 현재 비밀번호로 한 번 더 확인한 뒤 바꿈 (폰을 잠깐 남이 만져도 못 바꾸게) ----
   var pwCur=document.getElementById("acctPwCur"), pwNew=document.getElementById("acctPwNew"), pwNew2=document.getElementById("acctPwNew2"), pwErr=document.getElementById("acctPwErr");
-  function pwBox(open){
+  var recovering=false;   // 재설정 메일 링크로 막 로그인한 상태 → 현재 비밀번호 없이 새로 정함
+  function pwBox(open, recovery){
+    recovering=!!(open && recovery);
     document.getElementById("acctPwBox").hidden=!open;
     document.getElementById("acctPwBtn").hidden=open;
+    document.getElementById("acctPwCurF").hidden=recovering;
     pwCur.value=pwNew.value=pwNew2.value=""; pwErr.textContent="";
-    if(open){ document.getElementById("acctPwUser").value=(auth&&auth.user.email)||""; document.getElementById("acctPwOk").hidden=true; pwCur.focus(); }
+    if(open){ document.getElementById("acctPwUser").value=(auth&&auth.user.email)||""; document.getElementById("acctPwOk").hidden=true; (recovering ? pwNew : pwCur).focus(); }
   }
   function changePw(){
     var cur=pwCur.value, nw=pwNew.value, em=auth && auth.user.email;
     pwErr.textContent="";
     if(!auth){ pwErr.textContent="로그인이 필요해요"; return; }
-    if(!cur || !nw){ pwErr.textContent="비밀번호를 입력하세요"; return; }
+    if((!recovering && !cur) || !nw){ pwErr.textContent="비밀번호를 입력하세요"; return; }
     if(nw.length<6){ pwErr.textContent="비밀번호는 6자 이상"; return; }
     if(nw!==pwNew2.value){ pwErr.textContent="새 비밀번호가 서로 달라요"; return; }
-    if(nw===cur){ pwErr.textContent="지금과 같은 비밀번호예요"; return; }
+    if(!recovering && nw===cur){ pwErr.textContent="지금과 같은 비밀번호예요"; return; }
     var btn=document.getElementById("acctPwSave"); btn.disabled=true;
-    authReq("token?grant_type=password", { email:em, password:cur })
+    (recovering ? Promise.resolve(null) : authReq("token?grant_type=password", { email:em, password:cur }))
       .catch(function(e){ if(e.code==="invalid_credentials" || /invalid login/i.test(e.message||"")) e.wrongCur=true; throw e; })
-      .then(function(s){ setSession(s); return authReq("user", { password:nw }, auth.access_token, "PUT"); })
-      .then(function(){ pwBox(false); document.getElementById("acctPwOk").hidden=false; })
+      .then(function(s){ if(s) setSession(s); return authReq("user", { password:nw }, auth.access_token, "PUT"); })
+      .then(function(){ pwBox(false); var ok=document.getElementById("acctPwOk"); ok.textContent="비밀번호 변경됨"; ok.hidden=false; })
       .catch(function(e){ pwErr.textContent = e.wrongCur ? "현재 비밀번호가 틀려요" : authMsg(e); })
       .then(function(){ btn.disabled=false; });
   }
@@ -2058,6 +2088,26 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   setInterval(render, 60000);
   syncStatusUI();
   if(auth) sync();
+
+  // 메일 링크(가입 인증 · 비밀번호 재설정)로 열렸을 때: 주소의 토큰으로 로그인하고 주소에서 바로 지움
+  (function(){
+    if(!/^#.*(access_token|error)=/.test(location.hash)) return;
+    var hp=new URLSearchParams(location.hash.slice(1));
+    history.replaceState(null, "", location.pathname+location.search);
+    var at=hp.get("access_token"), type=hp.get("type");
+    if(!at){
+      openAccount();
+      acctErr.textContent = /expired|invalid/i.test(hp.get("error_description")||hp.get("error_code")||"") ? "링크가 만료됐어요 · 다시 요청하세요" : "링크 오류 · 다시 요청하세요";
+      return;
+    }
+    authReq("user", null, at, "GET").then(function(u){
+      var p=startSession({ access_token:at, refresh_token:hp.get("refresh_token"), expires_in:+hp.get("expires_in")||3600, user:u });
+      openAccount();
+      if(type==="recovery") pwBox(true, true);
+      else { var ok=document.getElementById("acctPwOk"); ok.textContent="가입 완료"; ok.hidden=false; }
+      return p;
+    }).catch(function(e){ openAccount(); acctErr.textContent=authMsg(e); });
+  })();
 })();
 </script>
 
