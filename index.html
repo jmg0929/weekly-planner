@@ -26,13 +26,15 @@
   --on-accent:#FFFFFF;
   --accent-soft:#EFEFEF;
   --now:#E5484D;
+  --sat-c:#2F6BDF;
+  --sun-c:#E5484D;
   --g1:#DCEAFC;
   --g2:#E1F5EC;
   --holiday-bg:#F7F7F7;
   --shadow:0 8px 30px rgba(0,0,0,.10);
   --shadow-sm:0 1px 2px rgba(0,0,0,.06);
   --gutterW:26px;
-  --hourH:68px;
+  --hourH:54px;
   --sat:env(safe-area-inset-top,0px);
   --sab:env(safe-area-inset-bottom,0px);
 }
@@ -50,6 +52,8 @@
     --on-accent:#111111;
     --accent-soft:#262626;
     --now:#F2555A;
+    --sat-c:#7EA4F4;
+    --sun-c:#F2555A;
     --g1:#16243C;
     --g2:#132B2B;
     --holiday-bg:#1A1A1A;
@@ -70,6 +74,8 @@
     --on-accent:#111111;
   --accent-soft:#262626;
   --now:#F2555A;
+    --sat-c:#7EA4F4;
+    --sun-c:#F2555A;
   --g1:#16243C;
   --g2:#132B2B;
   --holiday-bg:#1A1A1A;
@@ -183,9 +189,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .dh .dow{font-size:10.5px;font-weight:600;color:var(--ink-2);letter-spacing:.02em}
 .dh .dnum{font-size:18px;font-weight:800;line-height:1.05;letter-spacing:-.02em;color:var(--ink)}
-.dh.sat .dow{color:var(--muted)}
-.dh.sun .dow{color:var(--muted)}
-.dh.holiday .dnum{color:var(--now)}
+.dh.sat .dow,.dh.sat .dnum{color:var(--sat-c)}
+.dh.sun .dow,.dh.sun .dnum,.dh.holiday .dow,.dh.holiday .dnum{color:var(--sun-c)} /* 공휴일 = 일요일과 같은 빨강 */
 .dh .hname{font-size:8.5px;font-weight:700;color:var(--now);line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
 /* 오늘: 흰 카드가 떠 보이게 + 액센트 숫자 */
 /* 오늘: 진한 파랑 알약 하나만 강조 */
@@ -380,6 +385,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   -webkit-appearance:none;appearance:none;
 }
 .field input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.field input.bad{border-color:var(--now);color:var(--now)}
 .field input::placeholder{color:var(--muted);font-weight:500}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
@@ -497,7 +503,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   <div class="field">
     <label>제목</label>
-    <input type="text" id="fTitle" placeholder="예: 알고리즘 강의 / 헬스 / 스터디" autocomplete="off">
+    <input type="text" id="fTitle" autocomplete="off">
   </div>
 
   <div class="field" id="daysField">
@@ -650,7 +656,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var EMOJIS = ["📚","✏️","💻","🧪","📝","🎓","💬","👥","📞","💼","📌","🍽️","☕","🍻","🎉","🎂","🏃","💪","🧘","🌿","🛒","🏥","💊","✈️","🚌","🎮","🎬","🎵","💰","🏠","🐶","❤️","⭐","✨","🔥"];
   var DOW = ["월","화","수","목","금","토","일"]; // Mon..Sun, index 0..6
   var DAY_START = 7, DAY_END = 24; // 표시 시간대 (기본 07시~ · 더 이른 일정 있으면 자동으로 내려감)
-  var hourH = 68;
+  var hourH = 54; // 한 시간 칸 높이 (예전 68px의 80%)
 
   // ---- state ----
   var events = load();
@@ -761,7 +767,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function refreshHolidays(y){
     if(pendingYears[y]) return;
     var c=null; try{ c=JSON.parse(localStorage.getItem(holKey(y))||"null"); }catch(e){}
-    if(c&&c.map&&c.fetchedAt&&(Date.now()-c.fetchedAt)<60*86400000) return; // 캐시 신선하면 네트워크 skip
+    if(c&&c.map&&c.fetchedAt&&(Date.now()-c.fetchedAt)<14*86400000) return; // 받은 지 2주 안 됐으면 캐시 사용, 지나면 다시 받아옴
     pendingYears[y]=1;
     fetch("https://date.nager.at/api/v3/PublicHolidays/"+y+"/KR")
       .then(function(r){ return r.ok?r.json():null; })
@@ -909,7 +915,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var cols=[]; cl.forEach(function(e){ var c=evColor(e); if(cols.indexOf(c)<0) cols.push(c); });
     var el=document.createElement("div");
     var dur=maxEnd-minStart;
-    el.className="evt cluster"+(dur<=35?" short":"");
+    el.className="evt cluster"+(dur<=45?" short":"");
     el.style.setProperty("--evt", cols[0]);
     el.style.top=((minStart-DAY_START*60)/60*hourH)+"px";
     el.style.height=Math.max(dur/60*hourH-2,15)+"px";
@@ -927,7 +933,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var el=document.createElement("div");
     var dur=e.end-e.start;
     var showChk = (view==="day" || mode!=="7");   // 주 모드는 칸이 좁아서 체크는 미리보기의 "완료"로
-    el.className="evt "+(e.type==="lecture"?"lecture":"appointment")+(dur<=35?" short":"")+(isDone(e,ds)?" done":"")+(showChk?" has-chk":"");
+    el.className="evt "+(e.type==="lecture"?"lecture":"appointment")+(dur<=45?" short":"")+(isDone(e,ds)?" done":"")+(showChk?" has-chk":"");
     el.style.setProperty("--evt", evColor(e));
     var top=(e.start-DAY_START*60)/60*hourH;
     var height=Math.max(dur/60*hourH-2, 15);
@@ -937,7 +943,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.width="calc("+(100/n)+"% - 6px)";
     el.style.zIndex=4+c;
     var inner;
-    if(dur<=35){
+    if(dur<=45){
       // 짧은 일정: 한 줄 (칸이 좁으면 이모지 빼고 내용 우선)
       inner='<div class="et">'+((view==="day")?emoHtml(e.cat):"")+esc(evLabel(e))+'</div>';
     } else {
@@ -1078,6 +1084,23 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var fTitle=document.getElementById("fTitle"), fLoc=document.getElementById("fLoc"),
       fDate=document.getElementById("fDate"), fStart=document.getElementById("fStart"),
       fEnd=document.getElementById("fEnd"), errEl=document.getElementById("err");
+  // 시작을 바꾸면 길이를 유지한 채 종료도 같이 이동, 종료를 시작보다 이르게 고르면 바로 알려주기
+  var lastDur = 60;
+  function checkTimes(){
+    var bad = fStart.value && fEnd.value && strToMin(fEnd.value) <= strToMin(fStart.value);
+    fEnd.classList.toggle("bad", !!bad);
+    if(bad) errEl.textContent="종료 시간은 시작 시간보다 늦어야 해요.";
+    else if(errEl.textContent.indexOf("종료 시간")===0) errEl.textContent="";
+    return !bad;
+  }
+  fStart.addEventListener("focus", function(){ if(fStart.value && fEnd.value){ var d=strToMin(fEnd.value)-strToMin(fStart.value); if(d>0) lastDur=d; } });
+  fStart.addEventListener("change", function(){
+    if(!fStart.value) return;
+    var st=strToMin(fStart.value);
+    if(!fEnd.value || strToMin(fEnd.value)<=st) fEnd.value=minToStr(Math.min(st+lastDur, 24*60-1));
+    checkTimes();
+  });
+  fEnd.addEventListener("change", checkTimes);
   var daysField=document.getElementById("daysField"), dateField=document.getElementById("dateField"),
       rangeField=document.getElementById("rangeField");
   var fFrom=document.getElementById("fFrom"), fUntil=document.getElementById("fUntil");
@@ -1242,7 +1265,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
 
   function openSheet(el){ scrim.classList.add("on"); el.classList.add("on"); }
-  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); menuSheet.classList.remove("on"); peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; }
+  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); menuSheet.classList.remove("on"); peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad"); }
   scrim.onclick=closeSheet;
   document.getElementById("cancelBtn").onclick=closeSheet;
   document.getElementById("bkCloseBtn").onclick=closeSheet;
@@ -1305,7 +1328,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var title=fTitle.value.trim();
     if(!title){ errEl.textContent="제목을 입력해 주세요."; return; }
     var s=strToMin(fStart.value||"0:0"), en=strToMin(fEnd.value||"0:0");
-    if(en<=s){ errEl.textContent="종료 시간이 시작보다 늦어야 해요."; return; }
+    if(en<=s){ checkTimes(); fEnd.focus(); return; }
     if(form.type==="lecture" && form.days.length===0){ errEl.textContent="요일을 하나 이상 선택해 주세요."; return; }
     if(form.type==="lecture" && fFrom.value && fUntil.value && fUntil.value < fFrom.value){ errEl.textContent="반복 종료일이 시작일보다 빨라요."; return; }
 
