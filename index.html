@@ -4,8 +4,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="플래너">
-<meta name="theme-color" content="#FAFBFD" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0D1219" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FAFAFA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B0B0B" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="favicon-32.png">
@@ -14,22 +14,23 @@
 
 <style>
 :root{
-  --bg:#FAFBFD;
+  --bg:#FAFAFA;
   --surface:#FFFFFF;
-  --surface-2:#F1F5FA;
-  --ink:#19222E;
-  --ink-2:#52627A;
-  --muted:#93A1B4;
-  --line:#E6ECF3;
-  --line-strong:#D5DEE9;
-  --accent:#4A7CC4;
-  --accent-soft:#E9EFF7;
-  --now:#E2566C;
+  --surface-2:#F3F3F3;
+  --ink:#111111;
+  --ink-2:#555555;
+  --muted:#9B9B9B;
+  --line:#EBEBEB;
+  --line-strong:#D9D9D9;
+  --accent:#111111;
+  --on-accent:#FFFFFF;
+  --accent-soft:#EFEFEF;
+  --now:#E5484D;
   --g1:#DCEAFC;
   --g2:#E1F5EC;
-  --holiday-bg:#FDF4F6;
-  --shadow:0 8px 30px rgba(20,32,54,.12);
-  --shadow-sm:0 1px 2px rgba(20,32,54,.06);
+  --holiday-bg:#F7F7F7;
+  --shadow:0 8px 30px rgba(0,0,0,.10);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.06);
   --gutterW:26px;
   --hourH:68px;
   --sat:env(safe-area-inset-top,0px);
@@ -37,39 +38,41 @@
 }
 :root:not([data-theme="light"]){
   @media (prefers-color-scheme: dark){
-    --bg:#0D1219;
-    --surface:#161C26;
-    --surface-2:#1E2632;
-    --ink:#E8EEF6;
-    --ink-2:#A4B1C2;
-    --muted:#6B7789;
-    --line:#262E3A;
-    --line-strong:#333D4B;
-    --accent:#86A9DA;
-    --accent-soft:#1C2A40;
-    --now:#FB6F86;
+    --bg:#0B0B0B;
+    --surface:#161616;
+    --surface-2:#202020;
+    --ink:#F2F2F2;
+    --ink-2:#B0B0B0;
+    --muted:#707070;
+    --line:#262626;
+    --line-strong:#363636;
+    --accent:#F2F2F2;
+    --on-accent:#111111;
+    --accent-soft:#262626;
+    --now:#F2555A;
     --g1:#16243C;
     --g2:#132B2B;
-    --holiday-bg:color-mix(in srgb, #FDF4F6 11%, var(--surface));
+    --holiday-bg:#1A1A1A;
     --shadow:0 10px 34px rgba(0,0,0,.5);
     --shadow-sm:0 1px 2px rgba(0,0,0,.3);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0D1219;
-  --surface:#161C26;
-  --surface-2:#1E2632;
-  --ink:#E8EEF6;
-  --ink-2:#A4B1C2;
-  --muted:#6B7789;
-  --line:#262E3A;
-  --line-strong:#333D4B;
-  --accent:#86A9DA;
-  --accent-soft:#1C2A40;
-  --now:#FB6F86;
+  --bg:#0B0B0B;
+  --surface:#161616;
+  --surface-2:#202020;
+  --ink:#F2F2F2;
+  --ink-2:#B0B0B0;
+  --muted:#707070;
+  --line:#262626;
+  --line-strong:#363636;
+  --accent:#F2F2F2;
+    --on-accent:#111111;
+  --accent-soft:#262626;
+  --now:#F2555A;
   --g1:#16243C;
   --g2:#132B2B;
-  --holiday-bg:color-mix(in srgb, #FDF4F6 11%, var(--surface));
+  --holiday-bg:#1A1A1A;
   --shadow:0 10px 34px rgba(0,0,0,.5);
   --shadow-sm:0 1px 2px rgba(0,0,0,.3);
 }
@@ -119,7 +122,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .fchip.manage{color:var(--ink-2);padding:5px 10px}
 .fchip.manage svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .fchip.modetoggle svg{width:13px;height:13px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.fchip.modetoggle.on{background:var(--accent);color:#fff;border-color:transparent}
+.fchip.modetoggle.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
 .fdiv{width:1px;height:18px;background:var(--line-strong);flex:none;margin:0 3px}
 .left-group{display:flex;align-items:center;gap:9px;min-width:0}
 .backbtn{
@@ -156,7 +159,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .dh.peekhd,.daycol.peekcol{opacity:.38}
 .daycol.peekcol{cursor:pointer}
 .daycol.peekcol .evt{pointer-events:none}
-.add-btn{background:var(--accent);color:#fff;border-color:transparent}
+.add-btn{background:var(--accent);color:var(--on-accent);border-color:transparent}
 .add-btn svg{stroke:var(--surface)}
 
 /* ---------- Day header ---------- */
@@ -180,8 +183,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .dh .dow{font-size:10.5px;font-weight:600;color:var(--ink-2);letter-spacing:.02em}
 .dh .dnum{font-size:18px;font-weight:800;line-height:1.05;letter-spacing:-.02em;color:var(--ink)}
-.dh.sat .dow{color:#6F8DBA}
-.dh.sun .dow{color:#C97A86}
+.dh.sat .dow{color:var(--muted)}
+.dh.sun .dow{color:var(--muted)}
 .dh.holiday .dnum{color:var(--now)}
 .dh .hname{font-size:8.5px;font-weight:700;color:var(--now);line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
 /* 오늘: 흰 카드가 떠 보이게 + 액센트 숫자 */
@@ -227,32 +230,32 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* ---------- Events ---------- */
 .evt{
-  position:absolute;left:3px;right:3px;border-radius:12px;overflow:hidden;
+  position:absolute;left:3px;right:3px;border-radius:6px;overflow:hidden;
   padding:7px 5px 6px 8px;cursor:pointer;z-index:4; /* 왼쪽 여백을 조금 더 */
-  background:color-mix(in srgb,var(--evt) 32%,var(--surface));
+  background:color-mix(in srgb,var(--evt) 22%,var(--surface-2)); /* 회색 바탕에 카테고리 색은 살짝만 */
   border:none;
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 55%,transparent); /* 같은 색 1px 헤어라인 */
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 30%,var(--line-strong)); /* 옅은 1px 테두리 */
   transition:transform .1s ease, box-shadow .12s;
   min-height:18px;display:flex;flex-direction:column;gap:3px;
 }
 .evt:active{transform:scale(.97);box-shadow:var(--shadow)}
 .evt .et{
   font-size:11px;font-weight:700;line-height:1.2;letter-spacing:-.025em; /* 2줄 제목이 한 덩어리로 읽히게 */
-  color:color-mix(in srgb,var(--evt) 42%,var(--ink)); /* 그 색의 진한 톤 */
+  color:var(--ink); /* 흑백 무드: 제목은 검정 */
   display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;
   word-break:keep-all;overflow-wrap:anywhere;
 }
 .evt .eloc,.evt .etime{
   font-size:9px;font-weight:600;line-height:1.25;
-  color:color-mix(in srgb,var(--evt) 28%,var(--ink-2));
+  color:var(--ink-2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 /* 다크모드: 채움을 조금 진하게 해서 색이 뭉개지지 않게 */
 :root:not([data-theme="light"]){ @media (prefers-color-scheme: dark){
-  .evt{background:color-mix(in srgb,var(--evt) 46%,var(--surface))}
+  .evt{background:color-mix(in srgb,var(--evt) 20%,var(--surface-2))}
 }}
-:root[data-theme="dark"] .evt{background:color-mix(in srgb,var(--evt) 46%,var(--surface))}
-.evt.short{padding:2px 7px;gap:0;border-radius:8px;justify-content:center}
+:root[data-theme="dark"] .evt{background:color-mix(in srgb,var(--evt) 20%,var(--surface-2))}
+.evt.short{padding:2px 7px;gap:0;border-radius:4px;justify-content:center}
 .evt.short .et{-webkit-line-clamp:1;font-size:9.5px}
 .evt.short .eloc,.evt.short .etime{display:none}
 /* 카테고리 이모지 */
@@ -260,12 +263,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* 완료 체크 (레퍼런스): 오른쪽 위 동그라미, 완료하면 채워지고 제목에 취소선 */
 .evt.has-chk .et{padding-right:15px}
 .echk{position:absolute;top:6px;right:5px;width:15px;height:15px;border-radius:50%;padding:0;z-index:2;
-  border:1.5px solid color-mix(in srgb,var(--evt) 35%,var(--ink-2));background:transparent;display:grid;place-items:center}
+  border:1.5px solid var(--ink-2);background:transparent;display:grid;place-items:center}
 .echk::before{content:"";position:absolute;inset:-9px} /* 손가락 터치 영역 넓히기 */
 .echk svg{width:9px;height:9px;stroke:var(--surface);stroke-width:3.2;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0}
 .evt.done{opacity:.55}
 .evt.done .et{text-decoration:line-through;text-decoration-thickness:1.4px}
-.evt.done .echk{background:color-mix(in srgb,var(--evt) 35%,var(--ink-2));border-color:transparent}
+.evt.done .echk{background:var(--ink);border-color:var(--ink)}
 .evt.done .echk svg{opacity:1}
 .evt.short .echk{top:50%;margin-top:-6.5px;width:13px;height:13px}
 .lrow.done .ltitle{text-decoration:line-through;color:var(--muted)}
@@ -273,7 +276,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* 겹친 묶음 카드 (채움 + 개수 배지 + 색 점) */
 .evt.cluster{
   overflow:visible;
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 55%,transparent);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 30%,var(--line-strong));
 }
 .evt.cluster .et{padding-right:16px}
 .cdots{display:flex;gap:3px;margin-top:auto;padding-top:2px}
@@ -298,7 +301,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .peek{
   position:fixed;left:50%;top:50%;z-index:52;width:min(320px,calc(100% - 40px));
   background:var(--surface);border-radius:22px;padding:16px 16px 16px;
-  box-shadow:0 12px 32px rgba(15,30,60,.16);border:1px solid var(--line);
+  box-shadow:0 12px 32px rgba(0,0,0,.14);border:1px solid var(--line);
   transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;
   transition:opacity .18s ease, transform .24s cubic-bezier(.32,.72,0,1);
 }
@@ -310,15 +313,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .peek-title{
   font-size:18px;font-weight:800;letter-spacing:-.03em;line-height:1.22;margin-bottom:10px;
   padding:12px 14px;border-radius:14px;word-break:keep-all;overflow-wrap:anywhere;
-  background:color-mix(in srgb,var(--evt) 32%,var(--surface));
-  color:color-mix(in srgb,var(--evt) 42%,var(--ink));
+  background:color-mix(in srgb,var(--evt) 22%,var(--surface-2)); /* 회색 바탕에 카테고리 색은 살짝만 */
+  color:var(--ink);
 }
 .peek-row{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--ink);padding:6px 4px}
 .peek-row svg{width:17px;height:17px;stroke:var(--muted);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .peek-actions{display:flex;gap:8px;margin-top:12px}
 .peek-done{flex:1;padding:13px;border-radius:14px;background:var(--surface-2);color:var(--ink);font-weight:800;font-size:15px;transition:transform .1s}
 .peek-done:active{transform:scale(.98)}
-.peek-edit{flex:1;padding:13px;border-radius:14px;background:var(--accent);color:#fff;font-weight:800;font-size:15px;transition:transform .1s}
+.peek-edit{flex:1;padding:13px;border-radius:14px;background:var(--accent);color:var(--on-accent);font-weight:800;font-size:15px;transition:transform .1s}
 .peek-edit:active{transform:scale(.98)}
 
 /* now line */
@@ -373,7 +376,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   flex:1;padding:10px 0;border-radius:11px;font-weight:700;font-size:14px;
   background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);transition:.12s;
 }
-.chips button.on{background:var(--accent);color:#fff;border-color:transparent}
+.chips button.on{background:var(--accent);color:var(--on-accent);border-color:transparent}
 
 .adv-toggle{display:flex;align-items:center;gap:5px;width:100%;padding:10px 2px;font-weight:700;font-size:14px;color:var(--ink-2);margin-bottom:2px}
 .adv-toggle:active{opacity:.6}
@@ -412,7 +415,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .actions{display:flex;gap:10px;margin-top:20px}
 .actions button{flex:1;padding:14px;border-radius:14px;font-weight:800;font-size:15.5px;transition:transform .1s}
 .actions button:active{transform:scale(.97)}
-.btn-save{background:var(--accent);color:#fff}
+.btn-save{background:var(--accent);color:var(--on-accent)}
 .btn-cancel{background:var(--surface-2);color:var(--ink)}
 .btn-del{background:transparent;color:var(--now);flex:none;width:52px;font-size:20px}
 .btn-del svg{width:20px;height:20px;stroke:var(--now);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -422,7 +425,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ---------- Backup sheet ---------- */
 .bk-note{font-size:13px;color:var(--ink-2);line-height:1.55;background:var(--surface-2);padding:13px 15px;border-radius:13px;margin-bottom:16px}
 .bk-note b{color:var(--ink)}
-.bk-btn{width:100%;padding:15px;border-radius:14px;font-weight:800;font-size:15.5px;margin-bottom:10px;background:var(--accent);color:#fff;transition:transform .1s;display:flex;align-items:center;justify-content:center;gap:8px}
+.bk-btn{width:100%;padding:15px;border-radius:14px;font-weight:800;font-size:15.5px;margin-bottom:10px;background:var(--accent);color:var(--on-accent);transition:transform .1s;display:flex;align-items:center;justify-content:center;gap:8px}
 .bk-btn:active{transform:scale(.98)}
 .bk-btn.ghost{background:var(--surface-2);color:var(--ink)}
 .bk-last{font-size:12.5px;color:var(--muted);font-weight:600;text-align:center;margin:2px 0 4px}
