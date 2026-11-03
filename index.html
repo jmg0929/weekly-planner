@@ -9,9 +9,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="favicon-32.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 
 <style>
 :root{
@@ -23,9 +22,9 @@
   --muted:#93A1B4;
   --line:#E6ECF3;
   --line-strong:#D5DEE9;
-  --accent:#4E8FE0;
-  --accent-soft:#E7F0FC;
-  --now:#F43F5E;
+  --accent:#4A7CC4;
+  --accent-soft:#E9EFF7;
+  --now:#E2566C;
   --g1:#DCEAFC;
   --g2:#E1F5EC;
   --holiday-bg:#FDF4F6;
@@ -46,7 +45,7 @@
     --muted:#6B7789;
     --line:#262E3A;
     --line-strong:#333D4B;
-    --accent:#79ACF2;
+    --accent:#86A9DA;
     --accent-soft:#1C2A40;
     --now:#FB6F86;
     --g1:#16243C;
@@ -65,7 +64,7 @@
   --muted:#6B7789;
   --line:#262E3A;
   --line-strong:#333D4B;
-  --accent:#79ACF2;
+  --accent:#86A9DA;
   --accent-soft:#1C2A40;
   --now:#FB6F86;
   --g1:#16243C;
@@ -80,7 +79,8 @@ html,body{height:100%;margin:0}
 body{
   background:var(--bg);
   color:var(--ink);
-  font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',sans-serif;
+  font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI',sans-serif;
+  letter-spacing:-0.01em; /* 한글 기본 자간이 넓어 살짝 좁힘 */
   -webkit-font-smoothing:antialiased;
   overscroll-behavior:none;
 }
@@ -94,7 +94,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* ---------- Top bar ---------- */
 .topbar{
-  flex:none;padding:calc(var(--sat) + 12px) 16px 8px;
+  flex:none;padding:calc(var(--sat) + 14px) 14px 6px 18px; /* 의도적 비대칭: 위·왼쪽 넉넉히 */
   background:transparent;
   position:relative;z-index:20;
 }
@@ -124,7 +124,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .left-group{display:flex;align-items:center;gap:9px;min-width:0}
 .backbtn{
   display:flex;align-items:center;gap:1px;height:36px;padding:0 12px 0 7px;border-radius:12px;
-  font-weight:800;font-size:14px;background:var(--accent-soft);color:var(--accent);flex:none;
+  font-weight:700;font-size:14px;background:transparent;border:1px solid var(--line);color:var(--ink);flex:none;
   transition:transform .12s;
 }
 .backbtn:active{transform:scale(.94)}
@@ -133,23 +133,31 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .title:active{opacity:.6}
 .month-row{display:flex;align-items:center;gap:5px}
 .tcaret{font-size:12px;color:var(--muted);font-weight:700;line-height:1;margin-top:2px}
-.title .month{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.title .month{font-size:22px;font-weight:800;letter-spacing:-.035em;line-height:1.1}
 .title .range{display:none} /* 날짜 범위는 헤더에 이미 있어 숨김 */
 .ctrls{display:flex;align-items:center;gap:6px}
 .iconbtn{
   width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
-  background:var(--surface);box-shadow:var(--shadow-sm);color:var(--ink);
+  background:var(--surface);color:var(--ink);
   border:1px solid var(--line);transition:transform .12s ease, background .15s;
 }
 .iconbtn:active{transform:scale(.92)}
 .iconbtn svg{width:19px;height:19px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .today-btn{
   height:38px;padding:0 14px;border-radius:12px;font-weight:700;font-size:13.5px;
-  background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-sm);
+  background:var(--surface);border:1px solid var(--line);
 }
 .today-btn:active{transform:scale(.95)}
+/* 보기 모드 버튼 (4일/3일/주) */
+.mode-btn{height:38px;min-width:46px;padding:0 11px;border-radius:12px;font-weight:800;font-size:13.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line)}
+.mode-btn:active{transform:scale(.95)}
+/* N일 모드: 오른쪽 다음 날을 좁고 흐리게 (탭하면 다음으로) */
+.dh{overflow:hidden}
+.dh.peekhd,.daycol.peekcol{opacity:.38}
+.daycol.peekcol{cursor:pointer}
+.daycol.peekcol .evt{pointer-events:none}
 .add-btn{background:var(--accent);color:#fff;border-color:transparent}
-.add-btn svg{stroke:#fff}
+.add-btn svg{stroke:var(--surface)}
 
 /* ---------- Day header ---------- */
 .dayhead{
@@ -165,21 +173,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .dayhead .hdays{display:grid;grid-template-columns:repeat(7,1fr)}
 /* 요일 = 개별 둥근 카드 (레퍼런스 스타일) */
 .dh{
-  margin:0 3px;padding:7px 0 8px;border-radius:13px;text-align:center;
-  display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;
+  margin:0 3px;padding:7px 0 7px 7px;border-radius:12px;text-align:left; /* 왼쪽 정렬 */
+  display:flex;flex-direction:column;align-items:flex-start;gap:1px;cursor:pointer;
   background:transparent;
   transition:background .15s, box-shadow .15s;
 }
 .dh .dow{font-size:10.5px;font-weight:600;color:var(--ink-2);letter-spacing:.02em}
 .dh .dnum{font-size:18px;font-weight:800;line-height:1.05;letter-spacing:-.02em;color:var(--ink)}
-.dh.sat .dow{color:#4F86D6}
-.dh.sun .dow{color:#E5687F}
+.dh.sat .dow{color:#6F8DBA}
+.dh.sun .dow{color:#C97A86}
 .dh.holiday .dnum{color:var(--now)}
 .dh .hname{font-size:8.5px;font-weight:700;color:var(--now);line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
 /* 오늘: 흰 카드가 떠 보이게 + 액센트 숫자 */
 /* 오늘: 진한 파랑 알약 하나만 강조 */
 .dh.today{background:var(--accent)}
-.dh.today .dnum,.dh.today .dow{color:#fff}
+.dh.today .dnum,.dh.today .dow{color:var(--surface)} /* 라이트=흰색, 다크=어두운 글자로 대비 확보 */
 
 /* ---------- Scroll grid ---------- */
 .scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative}
@@ -192,7 +200,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   height:var(--hourH);position:relative;
 }
 .gutter .hr span{
-  position:absolute;top:-7px;right:5px;font-family:'DM Mono',ui-monospace,monospace;
+  position:absolute;top:-7px;right:5px;font-variant-numeric:tabular-nums;
   font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:-.02em;
 }
 .gutter .hr:first-child span{top:2px}
@@ -217,15 +225,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ---------- Events ---------- */
 .evt{
   position:absolute;left:3px;right:3px;border-radius:12px;overflow:hidden;
-  padding:7px 7px 6px;cursor:pointer;z-index:4;
-  background:color-mix(in srgb,var(--evt) 36%,var(--surface));
+  padding:7px 5px 6px 8px;cursor:pointer;z-index:4; /* 왼쪽 여백을 조금 더 */
+  background:color-mix(in srgb,var(--evt) 32%,var(--surface));
   border:none;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 55%,transparent); /* 같은 색 1px 헤어라인 */
   transition:transform .1s ease, box-shadow .12s;
   min-height:18px;display:flex;flex-direction:column;gap:3px;
 }
 .evt:active{transform:scale(.97);box-shadow:var(--shadow)}
 .evt .et{
-  font-size:11px;font-weight:700;line-height:1.3;
+  font-size:11px;font-weight:700;line-height:1.2;letter-spacing:-.025em; /* 2줄 제목이 한 덩어리로 읽히게 */
   color:color-mix(in srgb,var(--evt) 42%,var(--ink)); /* 그 색의 진한 톤 */
   display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;
   word-break:keep-all;overflow-wrap:anywhere;
@@ -247,14 +256,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* 겹친 묶음 카드 (채움 + 개수 배지 + 색 점) */
 .evt.cluster{
   overflow:visible;
-  box-shadow:2px 2px 0 color-mix(in srgb,var(--evt) 34%,var(--surface)), 4px 4px 0 color-mix(in srgb,var(--evt) 18%,var(--surface));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 55%,transparent);
 }
 .evt.cluster .et{padding-right:16px}
 .cdots{display:flex;gap:3px;margin-top:auto;padding-top:2px}
 .cdots i{width:6px;height:6px;border-radius:50%;flex:none}
 .cbadge{
   position:absolute;top:4px;right:4px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;
-  background:var(--accent);color:#fff;font-size:9.5px;font-weight:800;display:grid;place-items:center;line-height:1;z-index:2;
+  background:var(--ink);color:var(--surface);font-size:9.5px;font-weight:800;display:grid;place-items:center;line-height:1;z-index:2;
   box-shadow:0 0 0 1.5px var(--surface);
 }
 
@@ -272,7 +281,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .peek{
   position:fixed;left:50%;top:50%;z-index:52;width:min(320px,calc(100% - 40px));
   background:var(--surface);border-radius:22px;padding:16px 16px 16px;
-  box-shadow:0 18px 50px rgba(15,30,60,.28);
+  box-shadow:0 12px 32px rgba(15,30,60,.16);border:1px solid var(--line);
   transform:translate(-50%,-46%) scale(.96);opacity:0;pointer-events:none;
   transition:opacity .18s ease, transform .24s cubic-bezier(.32,.72,0,1);
 }
@@ -282,7 +291,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .peek-cat{font-size:12.5px;font-weight:700;color:var(--ink-2);flex:1}
 .peek-x{width:30px;height:30px;border-radius:10px;background:var(--surface-2);color:var(--muted);font-size:13px;font-weight:800}
 .peek-title{
-  font-size:18px;font-weight:800;letter-spacing:-.01em;line-height:1.3;margin-bottom:10px;
+  font-size:18px;font-weight:800;letter-spacing:-.03em;line-height:1.22;margin-bottom:10px;
   padding:12px 14px;border-radius:14px;word-break:keep-all;overflow-wrap:anywhere;
   background:color-mix(in srgb,var(--evt) 32%,var(--surface));
   color:color-mix(in srgb,var(--evt) 42%,var(--ink));
@@ -322,7 +331,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .sheet.on{transform:translateY(0)}
 .grab{width:38px;height:5px;border-radius:3px;background:var(--line-strong);margin:6px auto 14px}
-.sheet h2{font-size:18px;font-weight:800;margin:0 0 16px;letter-spacing:-.01em}
+.sheet h2{font-size:18px;font-weight:800;margin:0 0 16px;letter-spacing:-.03em}
 
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-2);padding:4px;border-radius:12px;margin-bottom:16px}
 .seg button{padding:9px;border-radius:9px;font-weight:700;font-size:14px;color:var(--ink-2);transition:.15s}
@@ -346,7 +355,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .chips button.on{background:var(--accent);color:#fff;border-color:transparent}
 
-.adv-toggle{display:flex;align-items:center;gap:5px;width:100%;padding:10px 2px;font-weight:700;font-size:14px;color:var(--accent);margin-bottom:2px}
+.adv-toggle{display:flex;align-items:center;gap:5px;width:100%;padding:10px 2px;font-weight:700;font-size:14px;color:var(--ink-2);margin-bottom:2px}
 .adv-toggle:active{opacity:.6}
 .adv-toggle .advcaret{transition:transform .2s;font-size:12px}
 .adv-toggle.open .advcaret{transform:rotate(180deg)}
@@ -410,6 +419,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       </div>
       <input type="date" id="jumpDate" aria-label="날짜로 이동" style="position:absolute;left:14px;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0">
       <div class="ctrls">
+        <button class="mode-btn" id="modeBtn" aria-label="보기 모드 바꾸기">4일</button>
         <button class="today-btn" id="todayBtn">오늘</button>
         <button class="iconbtn add-btn" id="addBtn" aria-label="일정 추가"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
         <button class="iconbtn" id="menuBtn" aria-label="메뉴"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -602,6 +612,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var anchor = new Date();           // any date within the shown week
   var selDate = ymd(new Date());     // selected/highlighted day (day view의 대상 날짜)
   var view = "week";                 // "week" | "day"
+  // 보기 모드: "7"=월~일 한 주 / "4"·"3"=오늘부터 N일 + 다음 날 흐리게 (슬라이딩 윈도우)
+  var mode = (function(){ try{ var m=localStorage.getItem("weekly-planner-mode"); return (m==="7"||m==="4"||m==="3")?m:"4"; }catch(e){ return "4"; } })();
+  var winStart = startOfDay(new Date()); // N일 모드의 첫날
   var editId = null;
   var categories = loadCategories();
   var hidden = loadHidden();         // { catId: true } — 숨긴 카테고리
@@ -662,6 +675,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function saveShowCat(){ try{ localStorage.setItem("weekly-planner-showcat", showCat?"1":"0"); }catch(e){} }
 
   function weekDates(){ var mon=mondayOf(anchor); var arr=[]; for(var i=0;i<7;i++)arr.push(addDays(mon,i)); return arr; }
+  function startOfDay(d){ var x=new Date(d); x.setHours(0,0,0,0); return x; }
   function eventsForDate(d){
     var wday=wd(d), ds=ymd(d), out=[];
     for(var i=0;i<events.length;i++){ var e=events[i];
@@ -719,8 +733,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   function render(){
     var isDay = (view==="day");
-    var dates = isDay ? [parseYmd(selDate)] : weekDates();
+    var multi = !isDay && mode!=="7";             // 4일·3일 슬라이딩 모드
+    var nVis = isDay ? 1 : (multi ? +mode : 7);   // 또렷하게 보이는 날 수
+    var dates;
+    if(isDay) dates=[parseYmd(selDate)];
+    else if(multi){ dates=[]; for(var di=0; di<=nVis; di++) dates.push(addDays(winStart,di)); } // 마지막 1개 = 흐린 미리보기
+    else dates=weekDates();
     var nCols = dates.length;
+    var peekIdx = multi ? nCols-1 : -1;
     var today=ymd(new Date());
 
     // 빈 새벽시간 접기: 기본 07시, 더 이른 일정 있으면 그 시각까지만 내림
@@ -731,9 +751,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       if(need!==DAY_START){ DAY_START=need; buildGutter(); daysEl.style.height=((DAY_END-DAY_START)*hourH)+"px"; }
     })();
 
-    // 열 개수: 주간 7 / 하루 1
-    hdaysEl.style.gridTemplateColumns="repeat("+nCols+",1fr)";
-    daysEl.style.gridTemplateColumns="repeat("+nCols+",1fr)";
+    // 열 구성: 주간 7 / 하루 1 / N일 = N칸 + 좁은 미리보기 칸
+    var tpl = multi ? ("repeat("+nVis+",1fr) .42fr") : ("repeat("+nCols+",1fr)");
+    hdaysEl.style.gridTemplateColumns=tpl;
+    daysEl.style.gridTemplateColumns=tpl;
+    syncModeBtn();
 
     // 보이는 연도의 공휴일 캐시 로드
     var years={}; for(var yi=0;yi<dates.length;yi++) years[dates[yi].getFullYear()]=1;
@@ -746,7 +768,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       mL.textContent=(dd0.getMonth()+1)+"월 "+dd0.getDate()+"일 ("+DOW[wd(dd0)]+")";
       document.getElementById("rangeLabel").textContent=DOW[wd(dd0)]+"요일";
     } else {
-      var first=dates[0], last=dates[6];
+      var first=dates[0], last=dates[nVis-1];
       if(first.getMonth()===last.getMonth()) mL.textContent=first.getFullYear()+"년 "+(first.getMonth()+1)+"월";
       else mL.textContent=(first.getMonth()+1)+"월 – "+(last.getMonth()+1)+"월";
       document.getElementById("rangeLabel").textContent=(first.getMonth()+1)+"/"+first.getDate()+" – "+(last.getMonth()+1)+"/"+last.getDate();
@@ -755,18 +777,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
     // day header
     var hh="";
-    for(var i=0;i<dates.length;i++){ var d=dates[i], ds=ymd(d), wi=isDay?wd(d):i;
+    for(var i=0;i<dates.length;i++){ var d=dates[i], ds=ymd(d), wi=wd(d);
       var hol=holidays[ds];
-      var cls="dh"+(wi===5?" sat":"")+(wi===6?" sun":"")+(ds===today?" today":"")+((!isDay&&ds===selDate)?" sel":"")+(hol?" holiday":"");
+      var cls="dh"+(wi===5?" sat":"")+(wi===6?" sun":"")+(ds===today?" today":"")+(hol?" holiday":"")+(i===peekIdx?" peekhd":"");
       hh+='<div class="'+cls+'" data-date="'+ds+'"><div class="dow">'+DOW[wi]+'</div><div class="dnum tnum">'+d.getDate()+'</div>'+(hol?'<div class="hname" title="'+esc(hol)+'">'+esc(hol)+'</div>':'')+'</div>';
     }
     hdaysEl.innerHTML=hh;
 
     // day columns
     var dh="";
-    for(var j=0;j<dates.length;j++){ var ddc=dates[j], dds=ymd(ddc), wj=isDay?wd(ddc):j;
-      var wknd=(wj>=5)?" wknd":"", istoday=(dds===today)?" today":"", ishol=holidays[dds]?" holiday":"";
-      dh+='<div class="daycol'+wknd+ishol+istoday+'" data-date="'+dds+'" data-idx="'+j+'"></div>';
+    for(var j=0;j<dates.length;j++){ var ddc=dates[j], dds=ymd(ddc), wj=wd(ddc);
+      var wknd=(wj>=5)?" wknd":"", istoday=(dds===today)?" today":"", ishol=holidays[dds]?" holiday":"", pk=(j===peekIdx)?" peekcol":"";
+      dh+='<div class="daycol'+wknd+ishol+istoday+pk+'" data-date="'+dds+'" data-idx="'+j+'"></div>';
     }
     daysEl.innerHTML=dh;
 
@@ -790,7 +812,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       var nowMin=now.getHours()*60+now.getMinutes();
       var y=(nowMin-DAY_START*60)/60*hourH;
       var wrap=document.createElement("div"); wrap.className="nowline";
-      wrap.style.top=y+"px"; wrap.style.left=(tIdx/nCols*100)+"%"; wrap.style.width=(100/nCols)+"%";
+      // 칸 너비가 모드마다 달라서 실제 칸 위치(px)로 맞춤
+      wrap.style.top=y+"px"; wrap.style.left=cols[tIdx].offsetLeft+"px"; wrap.style.width=cols[tIdx].offsetWidth+"px";
+      if(tIdx===peekIdx) wrap.style.opacity=".38";
       wrap.innerHTML='<div class="d"></div><div class="l"></div>';
       daysEl.appendChild(wrap);
     }
@@ -833,7 +857,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.left="calc(0% + 3px)"; el.style.width="calc(100% - 10px)";
     var inner='<span class="cbadge">'+cl.length+'</span>';
     inner+='<div class="et">'+esc(evLabel(cl[0]))+' 외 '+(cl.length-1)+'</div>';
-    if(view==="day") inner+='<div class="etime tnum">'+minToStr(minStart)+'–'+minToStr(maxEnd)+'</div>';
+    if(view==="day" || mode!=="7") inner+='<div class="etime tnum">'+minToStr(minStart)+'–'+minToStr(maxEnd)+'</div>';
     inner+='<div class="cdots">'+cols.slice(0,5).map(function(c){ return '<i style="background:'+c+'"></i>'; }).join('')+'</div>';
     el.innerHTML=inner;
     el.addEventListener("click", function(ev){ ev.stopPropagation(); openClusterList(cl); });
@@ -855,7 +879,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var inner='<div class="et">'+esc(evLabel(e))+'</div>';
     if(e.location && view==="day") inner+='<div class="eloc">'+esc(e.location)+'</div>'; // 장소는 하루보기에서만
     // 주간: 제목만 (시간은 블록 위치로 보이고, 탭하면 미리보기에 있음) / 하루보기: 시간 범위
-    if(view==="day") inner+='<div class="etime tnum">'+minToStr(e.start)+"–"+minToStr(e.end)+'</div>';
+    if(view==="day" || mode!=="7") inner+='<div class="etime tnum">'+minToStr(e.start)+"–"+minToStr(e.end)+'</div>'; // 칸이 넓은 모드는 시간도
     el.innerHTML=inner;
     el.addEventListener("click", function(ev){ ev.stopPropagation(); openPeek(e); });
     return el;
@@ -865,6 +889,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // ---- tap empty slot to add ----
   daysEl.addEventListener("click", function(ev){
     var col=ev.target.closest(".daycol"); if(!col)return;
+    if(col.classList.contains("peekcol")){ goNext(); return; } // 흐린 미리보기 칸 탭 → 다음으로
     if(ev.target.closest(".evt"))return;
     var rect=col.getBoundingClientRect();
     var y=ev.clientY-rect.top;
@@ -876,6 +901,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 요일(날짜) 탭 -> 하루 크게 보기
   hdaysEl.addEventListener("click", function(ev){
     var dh=ev.target.closest(".dh"); if(!dh)return;
+    if(dh.classList.contains("peekhd")){ goNext(); return; }  // 흐린 미리보기 날 탭 → 다음으로
     if(view==="week"){ selDate=dh.getAttribute("data-date"); anchor=parseYmd(selDate); view="day"; render(); }
   });
 
@@ -888,17 +914,38 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   function goPrev(){
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),-1)); anchor=parseYmd(selDate); }
+    else if(mode!=="7"){ winStart=addDays(winStart,-1); anchor=winStart; }   // 하루씩 미끄러지기
     else anchor=addDays(mondayOf(anchor),-7);
     render(); animateNav(-1);
   }
   function goNext(){
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),1)); anchor=parseYmd(selDate); }
+    else if(mode!=="7"){ winStart=addDays(winStart,1); anchor=winStart; }
     else anchor=addDays(mondayOf(anchor),7);
     render(); animateNav(1);
   }
-  document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); render(); scrollToNow(); };
+  document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); winStart=startOfDay(new Date()); render(); scrollToNow(); };
   document.getElementById("addBtn").onclick=function(){ openAdd(selDate, 9*60); };
-  backBtn.onclick=function(){ view="week"; render(); };
+  backBtn.onclick=function(){
+    // 하루보기에서 다른 날로 옮겨 다녔으면, 돌아갈 때 그 날이 보이도록 창을 맞춤
+    if(mode!=="7"){ var s=parseYmd(selDate); if(s<winStart || s>=addDays(winStart,+mode)) winStart=s; }
+    view="week"; render();
+  };
+
+  // 보기 모드 버튼: 4일 → 3일 → 주 → 4일 …
+  var modeBtn=document.getElementById("modeBtn");
+  function syncModeBtn(){ modeBtn.textContent = (mode==="7") ? "주" : mode+"일"; }
+  modeBtn.onclick=function(){
+    var next = mode==="4" ? "3" : (mode==="3" ? "7" : "4");
+    // 지금 보던 날짜를 기준으로 이어서 보여주기
+    var base;
+    if(view==="day") base=parseYmd(selDate);
+    else if(mode==="7"){ var mon=mondayOf(anchor), t=startOfDay(new Date()); base=(t>=mon && t<addDays(mon,7)) ? t : mon; }
+    else base=winStart;
+    winStart=startOfDay(base); anchor=winStart;
+    mode=next; try{ localStorage.setItem("weekly-planner-mode", mode); }catch(e){}
+    view="week"; render();
+  };
 
   // 좌우 스와이프로 주/일 넘기기 (세로 스크롤과 구분: 가로 이동이 뚜렷할 때만)
   var swEl=document.getElementById("scroll");
@@ -912,12 +959,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 제목 탭 -> 날짜로 점프
   var jumpDate=document.getElementById("jumpDate");
   document.getElementById("titleBtn").addEventListener("click", function(){
-    jumpDate.value = (view==="day") ? selDate : ymd(mondayOf(anchor));
+    jumpDate.value = (view==="day") ? selDate : (mode!=="7" ? ymd(winStart) : ymd(mondayOf(anchor)));
     try{ if(jumpDate.showPicker) jumpDate.showPicker(); else { jumpDate.focus(); jumpDate.click(); } }catch(e){ try{ jumpDate.focus(); jumpDate.click(); }catch(_){} }
   });
   jumpDate.addEventListener("change", function(){
     if(!jumpDate.value) return;
-    anchor=parseYmd(jumpDate.value);
+    anchor=parseYmd(jumpDate.value); winStart=parseYmd(jumpDate.value);
     if(view==="day") selDate=jumpDate.value;
     render();
   });
