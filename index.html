@@ -236,7 +236,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ---------- Events ---------- */
 .evt{
   position:absolute;left:3px;right:3px;border-radius:6px;overflow:hidden;
-  padding:6px 3px 6px 10px;cursor:pointer;z-index:4;
+  padding:6px 3px 6px 6px;cursor:pointer;z-index:4;
   background:color-mix(in srgb,var(--evt) 22%,var(--surface-2)); /* 회색 바탕에 카테고리 색은 살짝만 */
   border:none;
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 30%,var(--line-strong)); /* 옅은 1px 테두리 */
@@ -245,8 +245,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   --lh:13.5px; /* 일정 내용 한 줄 높이 */
 }
 .evt:active{transform:scale(.97);box-shadow:var(--shadow)}
-/* 왼쪽 카테고리 색 띠 */
-.evt::before{content:"";position:absolute;left:3px;top:4px;bottom:4px;width:3px;border-radius:2px;background:color-mix(in srgb,var(--evt) 82%,var(--ink))} /* 파스텔 색이 흐려 보이지 않게 살짝 진하게 */
+/* 카테고리 색 띠: 태그명 줄에만 (짧은 일정은 내용 한 줄 옆에) */
+.evt .etag,.evt.short:not(.cluster) .et{position:relative;padding-left:7px}
+.evt .etag::before,.evt.short:not(.cluster) .et::before{content:"";position:absolute;left:0;top:1px;bottom:1px;width:3px;border-radius:2px;
+  background:color-mix(in srgb,var(--evt) 82%,var(--ink))} /* 파스텔 색이 흐려 보이지 않게 살짝 진하게 */
 .evt .et{
   font-size:11px;font-weight:700;line-height:var(--lh);letter-spacing:-.025em;
   color:var(--ink); /* 흑백 무드: 제목은 검정 */
@@ -263,8 +265,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   .evt{background:color-mix(in srgb,var(--evt) 20%,var(--surface-2))}
 }}
 :root[data-theme="dark"] .evt{background:color-mix(in srgb,var(--evt) 20%,var(--surface-2))}
-.evt.short{padding:2px 7px 2px 10px;gap:0;border-radius:4px;justify-content:center}
-.evt.short::before{top:3px;bottom:3px}
+.evt.short{padding:2px 7px 2px 6px;gap:0;border-radius:4px;justify-content:center}
 .evt.short .et{-webkit-line-clamp:1;font-size:9.5px}
 .evt.short .eloc,.evt.short .etime{display:none}
 /* 맨 위 태그 줄: 태그명, 아래 내용과는 한 줄 간격의 1.2배 */
