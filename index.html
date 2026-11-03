@@ -158,6 +158,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .acct-ok{font-size:13px;font-weight:700;color:var(--ink-2);text-align:center;margin:-2px 0 12px}
 .sr-hide{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .acct-msg{font-size:13px;font-weight:600;color:var(--ink-2);margin:-4px 0 12px}
+/* 인증번호 6칸: 실제 입력창 하나를 칸 위에 투명하게 덮음 (붙여넣기·자동 채우기 그대로 됨) */
+.otp{position:relative;margin:2px 0 14px}
+.otp input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;background:transparent;color:transparent;caret-color:transparent;font-size:16px;z-index:1}
+.otp-boxes{display:flex;gap:8px;justify-content:center}
+.otp-boxes span{flex:1;max-width:50px;height:58px;border:1.5px solid var(--line-strong);border-radius:12px;background:var(--surface);
+  display:grid;place-items:center;font-size:24px;font-weight:800;color:var(--ink);transition:border-color .12s,box-shadow .12s}
+.otp.focus .otp-boxes span.on{border-color:var(--ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--ink) 12%,transparent)}
+.otp.bad .otp-boxes span{border-color:var(--now)}
 .acct-link{display:block;margin:-2px auto 0;padding:8px 4px;font-size:13px;font-weight:600;color:var(--muted)}
 .msub{margin-bottom:10px}
 /* 표시 칩: 켜짐 = 흰 칩, 꺼짐 = 점선·회색 (숨김) */
@@ -737,13 +745,27 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <div class="grab"></div>
   <h2>동기화</h2>
   <div id="acctOut">
-    <div class="field"><label>이메일</label><input type="email" id="acctEmail" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false"></div>
-    <div class="field"><label>비밀번호</label><input type="password" id="acctPw" autocomplete="current-password"></div>
-    <div class="err" id="acctErr"></div>
-    <div class="acct-msg" id="acctMsg" hidden></div>
-    <button class="bk-btn" id="acctLogin">로그인</button>
-    <button class="bk-btn ghost" id="acctSignup">가입</button>
-    <button class="acct-link" id="acctForgot">비밀번호 찾기</button>
+    <div id="acctForm">
+      <div class="field"><label>이메일</label><input type="email" id="acctEmail" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label>비밀번호</label><input type="password" id="acctPw" autocomplete="current-password"></div>
+      <div class="err" id="acctErr"></div>
+      <div class="acct-msg" id="acctMsg" hidden></div>
+      <button class="bk-btn" id="acctLogin">로그인</button>
+      <button class="bk-btn ghost" id="acctSignup">가입</button>
+      <button class="acct-link" id="acctForgot">비밀번호 찾기</button>
+    </div>
+    <div id="acctCodeBox" hidden>
+      <div class="acct-card"><div class="acct-mail" id="acctCodeMail"></div><div class="acct-stat" id="acctCodeWhat"></div></div>
+      <div class="otp" id="acctOtp">
+        <input type="text" id="acctCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" aria-label="인증번호 6자리">
+        <div class="otp-boxes" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="err" id="acctCodeErr"></div>
+      <div class="acct-msg" id="acctCodeMsg" hidden></div>
+      <button class="bk-btn" id="acctCodeGo">확인</button>
+      <button class="bk-btn ghost" id="acctCodeCancel">취소</button>
+      <button class="acct-link" id="acctCodeResend">다시 보내기</button>
+    </div>
   </div>
   <div id="acctRec" hidden>
     <div class="acct-card"><div class="acct-mail" id="acctRecMail"></div><div class="acct-stat">새 비밀번호 정하기</div></div>
@@ -1995,6 +2017,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(c==="weak_password" || /password should/i.test(m)) return "비밀번호는 6자 이상";
     if(c==="reauthentication_needed") return "다시 로그인 후 시도하세요";
     if(c==="email_not_confirmed" || /not confirmed/i.test(m)) return "메일 인증이 아직이에요";
+    if(c==="otp_expired" || /token has expired|invalid.*otp|otp.*invalid/i.test(m)) return "인증번호가 틀렸거나 만료됐어요";
     if(c==="signup_disabled" || /signups not allowed/i.test(m)) return "가입이 닫혀 있어요";
     if(c==="email_address_invalid" || c==="validation_failed" || /email.*invalid|invalid.*email/i.test(m)) return "이메일 형식을 확인하세요";
     if(c==="over_request_rate_limit" || e.status===429) return "잠시 후 다시 시도하세요";
@@ -2030,9 +2053,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         var u=s.user||s;
         if(Array.isArray(u.identities) && !u.identities.length){ acctErr.textContent="이미 가입된 이메일 · 로그인을 누르세요"; return; }
         acctPw.value="";
-        showMsg("인증 메일 보냄 · 링크를 누른 뒤 로그인");
+        codeMode("signup", em);
       })
-      .catch(function(e){ acctErr.textContent=authMsg(e); })
+      .catch(function(e){
+        if(kind==="login" && (e.code==="email_not_confirmed" || /not confirmed/i.test(e.message||""))){ acctPw.value=""; codeMode("signup", em, true); return; }
+        acctErr.textContent=authMsg(e);
+      })
       .then(function(){ btns.forEach(function(b){ b.disabled=false; }); });
   }
   // 비밀번호 찾기: 재설정 메일 → 링크를 누르면 새 비밀번호 칸이 열림
@@ -2042,8 +2068,82 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(!em){ acctErr.textContent="이메일을 입력하세요"; acctEmail.focus(); return; }
     btn.disabled=true;
     authReq("recover?redirect_to="+encodeURIComponent(REDIRECT), { email:em })
-      .then(function(){ showMsg("재설정 메일 보냄 · 메일의 링크를 누르세요"); })
+      .then(function(){ codeMode("recovery", em); })
       .catch(function(e){ acctErr.textContent=authMsg(e); })
+      .then(function(){ btn.disabled=false; });
+  };
+  // ---- 인증번호: 메일로 온 숫자를 앱에서 바로 입력 (링크가 Safari로 열리는 문제 없음) ----
+  var codeFor=null, acctCode=document.getElementById("acctCode"), codeErr=document.getElementById("acctCodeErr"), codeMsg=document.getElementById("acctCodeMsg");
+  var otpEl=document.getElementById("acctOtp"), otpBoxes=otpEl.querySelectorAll(".otp-boxes span");
+  var CODE_LEN=6, CODE_MIN=5, codeUntil=0, codeTimer=null;
+  // 칸 그리기: 입력한 숫자를 칸마다 하나씩, 다음에 칠 칸에 테두리
+  function renderOtp(){
+    var v=acctCode.value.replace(/\D/g,"").slice(0,CODE_LEN);
+    if(v!==acctCode.value) acctCode.value=v;
+    for(var i=0;i<CODE_LEN;i++){ otpBoxes[i].textContent=v[i]||""; otpBoxes[i].classList.toggle("on", i===Math.min(v.length, CODE_LEN-1)); }
+    return v;
+  }
+  acctCode.addEventListener("input", function(){
+    otpEl.classList.remove("bad"); codeErr.textContent="";
+    if(renderOtp().length===CODE_LEN) verifyCode();
+  });
+  acctCode.addEventListener("focus", function(){ otpEl.classList.add("focus"); var n=acctCode.value.length; try{ acctCode.setSelectionRange(n,n); }catch(e){} });
+  acctCode.addEventListener("blur", function(){ otpEl.classList.remove("focus"); });
+  // 남은 시간: 5분 안에 입력
+  function codeTick(){
+    var what=document.getElementById("acctCodeWhat");
+    if(!codeFor || !codeUntil) return;
+    var left=Math.max(0, Math.ceil((codeUntil-Date.now())/1000));
+    what.textContent = left ? (CODE_MIN+"분 안에 입력하세요 · "+Math.floor(left/60)+":"+("0"+left%60).slice(-2)) : "시간 초과 · 다시 보내기를 누르세요";
+    what.classList.toggle("warn", !left);
+    if(!left){ clearInterval(codeTimer); codeTimer=null; }
+  }
+  function startCodeTimer(){ codeUntil=Date.now()+CODE_MIN*60000; clearInterval(codeTimer); codeTimer=setInterval(codeTick, 1000); codeTick(); }
+  function codeMode(kind, em, notYet){
+    codeFor = kind ? { kind:kind, email:em } : null;
+    document.getElementById("acctForm").hidden=!!kind;
+    document.getElementById("acctCodeBox").hidden=!kind;
+    acctCode.value=""; renderOtp(); otpEl.classList.remove("bad"); codeErr.textContent=""; codeMsg.hidden=true;
+    clearInterval(codeTimer); codeTimer=null; codeUntil=0;
+    if(kind){
+      document.getElementById("acctCodeMail").textContent=em;
+      var what=document.getElementById("acctCodeWhat"); what.classList.remove("warn");
+      if(notYet) what.textContent="메일 인증이 아직이에요 · 다시 보내기를 누르세요";
+      else startCodeTimer();
+      acctCode.focus();
+    }
+  }
+  function codeSent(t){ codeMsg.textContent=t; codeMsg.hidden=!t; }
+  function verifyCode(){
+    var tk=acctCode.value.replace(/\s/g,""), f=codeFor, btn=document.getElementById("acctCodeGo");
+    codeErr.textContent=""; codeSent("");
+    if(!f || btn.disabled) return;
+    if(!/^\d{6}$/.test(tk)){ codeErr.textContent="메일로 온 숫자 6자리를 입력하세요"; return; }
+    if(codeUntil && Date.now()>codeUntil){ codeErr.textContent="시간 초과 · 다시 보내기를 누르세요"; return; }
+    btn.disabled=true;
+    authReq("verify", { type:(f.kind==="signup" ? "email" : "recovery"), email:f.email, token:tk })
+      .then(function(s){
+        if(!s.access_token || !s.user) throw new Error("인증 실패");
+        codeMode(null);
+        if(f.kind==="signup"){ acctEmail.value=f.email; return startSession(s); }
+        // 재설정: 이 세션으로 새 비밀번호만 정하고, 끝나면 그대로 로그인
+        recov={ token:s.access_token, email:s.user.email||f.email, sess:s };
+        document.getElementById("acctRecMail").textContent=recov.email;
+        document.getElementById("acctRecUser").value=recov.email;
+        syncStatusUI(); recNew.focus();
+      })
+      .catch(function(e){ codeErr.textContent=authMsg(e); otpEl.classList.add("bad"); acctCode.value=""; renderOtp(); acctCode.focus(); })
+      .then(function(){ btn.disabled=false; });
+  }
+  document.getElementById("acctCodeGo").onclick=verifyCode;
+  acctCode.addEventListener("keydown", function(e){ if(e.key==="Enter") verifyCode(); });
+  document.getElementById("acctCodeCancel").onclick=function(){ codeMode(null); };
+  document.getElementById("acctCodeResend").onclick=function(){
+    var f=codeFor, btn=this; if(!f) return;
+    codeErr.textContent=""; codeSent(""); btn.disabled=true;
+    (f.kind==="signup" ? authReq("resend", { type:"signup", email:f.email }) : authReq("recover", { email:f.email }))
+      .then(function(){ codeSent("다시 보냈어요"); acctCode.value=""; renderOtp(); startCodeTimer(); acctCode.focus(); })
+      .catch(function(e){ codeErr.textContent=authMsg(e); })
       .then(function(){ btn.disabled=false; });
   };
   document.getElementById("acctLogin").onclick=function(){ doAuth("login"); };
@@ -2100,7 +2200,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     btn.disabled=true;
     authReq("user", { password:nw }, recov.token, "PUT")
       .then(function(){
-        var em=recov.email;
+        var em=recov.email, sess=recov.sess;
+        if(sess && !auth){ recov=null; recNew.value=recNew2.value=""; return startSession(sess).then(function(){
+          if(auth){ var ok=document.getElementById("acctPwOk"); ok.textContent="비밀번호 변경됨"; ok.hidden=false; }
+          else { acctEmail.value=em; showMsg("비밀번호 변경됨 · 새 비밀번호로 로그인"); }
+        }); }
         endRecovery();
         if(auth){ var ok=document.getElementById("acctPwOk"); ok.textContent="비밀번호 변경됨"; ok.hidden=false; }
         else { acctEmail.value=em; showMsg("비밀번호 변경됨 · 새 비밀번호로 로그인"); acctPw.focus(); }
