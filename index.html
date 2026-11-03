@@ -124,7 +124,30 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .switch i{position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .switch.on i{left:22px}
 .menu-fchips{display:flex;flex-wrap:wrap;gap:7px}
-#menuSheet .bk-btn{text-align:center}
+/* 메뉴: 설정 앱처럼 묶음(섹션)으로 */
+.msec{margin-top:16px}
+.msec:first-of-type{margin-top:4px}
+.msec-t{font-size:12px;font-weight:700;color:var(--muted);margin:0 4px 7px;letter-spacing:.02em}
+.mcard{background:var(--surface-2);border-radius:16px;overflow:hidden}
+.mpad{padding:13px 14px 14px}
+.msub{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.msub b{font-size:14.5px;font-weight:700}
+.msub span{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+.mlink{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;text-align:left;border-top:1px solid var(--line)}
+.mcard > .mlink:first-child{border-top:none}
+.mlink:active{background:var(--line)}
+.mico{width:32px;height:32px;border-radius:9px;background:var(--surface);display:grid;place-items:center;flex:none;color:var(--ink)}
+.mico svg{width:17px;height:17px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.mtx{flex:1;min-width:0}
+.mtx b{display:block;font-size:15px;font-weight:700}
+.mtx small{display:block;font-size:12px;color:var(--ink-2);font-weight:500;margin-top:1px}
+.mchev{color:var(--muted);font-size:21px;line-height:1;flex:none}
+.mval{font-size:13px;font-weight:600;color:var(--muted);flex:none}
+.msub{margin-bottom:10px}
+/* 표시 칩: 켜짐 = 흰 칩, 꺼짐 = 점선·회색 (숨김) */
+#menuFilter .fchip{background:var(--surface)}
+#menuFilter .fchip.off{opacity:1;background:transparent;border-style:dashed;border-color:var(--line-strong);color:var(--muted)}
+#menuFilter .fchip.off .cdot{background:transparent!important;box-shadow:inset 0 0 0 1.5px var(--muted)}
 .fchip.manage{color:var(--ink-2);padding:5px 10px}
 .fchip.manage svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .fchip.modetoggle svg{width:13px;height:13px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -433,6 +456,41 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 .err{color:var(--now);font-size:12.5px;font-weight:600;margin-top:-6px;margin-bottom:10px;min-height:0}
 
+/* ---------- 일정 추가 시트 (시안): 여백 넉넉히, 묶음으로 ---------- */
+.ev-sheet{padding-left:20px;padding-right:20px}
+.ev-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin:0 -4px 18px}
+.ev-top h2{margin:0;font-size:16px;font-weight:800;text-align:center}
+.ev-cancel{justify-self:start;padding:8px 6px;font-size:15.5px;font-weight:600;color:var(--ink-2)}
+.ev-save{justify-self:end;padding:8px 16px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-size:15px;font-weight:800}
+.ev-save:active,.ev-cancel:active{opacity:.6}
+.ev-title{width:100%;border:none;background:transparent;color:var(--ink);font-family:inherit;
+  font-size:24px;font-weight:800;letter-spacing:-.03em;padding:4px 0 12px;margin-bottom:18px;
+  border-bottom:1.5px solid var(--line);border-radius:0;-webkit-appearance:none;appearance:none}
+.ev-title:focus{outline:none;border-bottom-color:var(--ink)}
+.ev-title::placeholder{color:var(--line-strong)}
+.ev-seg{margin-bottom:14px}
+.ev-seg button{padding:8px;font-size:13.5px}
+.ev-group{background:var(--surface-2);border-radius:16px;padding:2px 14px;margin-bottom:24px}
+.ev-row{display:flex;align-items:center;gap:12px;min-height:54px}
+.ev-row:not(:last-child){border-bottom:1px solid var(--line)} /* 숨긴 줄이 있어도 첫 줄 위엔 선이 안 생기게 */
+.ev-lab{width:30px;flex:none;font-size:13px;font-weight:700;color:var(--muted)}
+.ev-days{flex:1;gap:4px}
+.ev-days button{flex:1;aspect-ratio:1;max-width:36px;padding:0;border-radius:50%;font-size:13px;background:transparent;border:none;color:var(--ink-2)}
+.ev-days button.on{background:var(--accent);color:var(--on-accent)}
+.ev-in{border:none;background:transparent;color:var(--ink);font-family:inherit;font-size:16px;font-weight:700;padding:6px 0;-webkit-appearance:none;appearance:none;min-width:0}
+.ev-in:focus{outline:none}
+.ev-in.bad{color:var(--now)}
+.ev-time{flex:1;display:flex;align-items:center;gap:8px}
+.ev-time .ev-in{flex:1}
+.ev-arrow{color:var(--muted);font-weight:700}
+.ev-sec{font-size:13px;font-weight:700;color:var(--muted);margin:0 2px 9px}
+.ev-cats{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -20px 18px;padding:0 20px 2px}
+.ev-cats::-webkit-scrollbar{display:none}
+.ev-cats .catchip{flex:none;padding:8px 13px;font-size:13.5px}
+.ev-sheet .adv-toggle{color:var(--muted);font-size:13.5px;padding:8px 2px}
+.ev-del{display:block;width:100%;margin-top:16px;padding:13px;border-radius:14px;background:transparent;color:var(--now);font-weight:700;font-size:15px}
+.ev-del:active{background:var(--surface-2)}
+
 /* ---------- Backup sheet ---------- */
 .bk-note{font-size:13px;color:var(--ink-2);line-height:1.55;background:var(--surface-2);padding:13px 15px;border-radius:13px;margin-bottom:16px}
 .bk-note b{color:var(--ink)}
@@ -553,40 +611,46 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="scrim" id="scrim"></div>
 
 <!-- Add / edit sheet -->
-<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+<div class="sheet ev-sheet" id="sheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
-  <h2 id="sheetTitle">일정 추가</h2>
-
-  <div class="seg" id="typeSeg">
-    <button data-type="lecture" class="on">🔁 매주 반복</button>
-    <button data-type="appointment">📅 특정 날짜</button>
+  <!-- 위: 취소 · 제목 · 저장 (iOS 시트 방식) -->
+  <div class="ev-top">
+    <button class="ev-cancel" id="cancelBtn">취소</button>
+    <h2 id="sheetTitle">일정 추가</h2>
+    <button class="ev-save" id="saveBtn">저장</button>
   </div>
 
-  <div class="field">
-    <label>제목</label>
-    <input type="text" id="fTitle" autocomplete="off">
+  <input type="text" class="ev-title" id="fTitle" placeholder="제목" autocomplete="off" aria-label="제목">
+
+  <div class="seg ev-seg" id="typeSeg">
+    <button data-type="lecture" class="on">매주 반복</button>
+    <button data-type="appointment">특정 날짜</button>
   </div>
 
-  <div class="field" id="daysField">
-    <label>요일 <span style="font-weight:500;color:var(--muted)">(여러 개 선택 가능)</span></label>
-    <div class="chips" id="dayChips"></div>
-  </div>
-  <div class="field" id="dateField" style="display:none">
-    <label>날짜</label>
-    <input type="date" id="fDate">
+  <!-- 언제: 요일(또는 날짜) + 시간을 한 묶음으로 -->
+  <div class="ev-group">
+    <div class="ev-row" id="daysField">
+      <span class="ev-lab">요일</span>
+      <div class="chips ev-days" id="dayChips"></div>
+    </div>
+    <div class="ev-row" id="dateField" style="display:none">
+      <span class="ev-lab">날짜</span>
+      <input type="date" id="fDate" class="ev-in">
+    </div>
+    <div class="ev-row">
+      <span class="ev-lab">시간</span>
+      <div class="ev-time">
+        <input type="time" id="fStart" step="300" class="ev-in" aria-label="시작">
+        <span class="ev-arrow">→</span>
+        <input type="time" id="fEnd" step="300" class="ev-in" aria-label="종료">
+      </div>
+    </div>
   </div>
 
-  <div class="two">
-    <div class="field"><label>시작</label><input type="time" id="fStart" step="300"></div>
-    <div class="field"><label>종료</label><input type="time" id="fEnd" step="300"></div>
-  </div>
+  <div class="ev-sec">카테고리</div>
+  <div class="catchips ev-cats" id="catChips"></div>
 
-  <div class="field">
-    <label>카테고리</label>
-    <div class="catchips" id="catChips"></div>
-  </div>
-
-  <button type="button" class="adv-toggle" id="advToggle">세부 설정 <span class="advcaret">▾</span></button>
+  <button type="button" class="adv-toggle" id="advToggle">장소 · 기간 · 색 <span class="advcaret">▾</span></button>
   <div id="advanced" hidden>
     <div class="field">
       <label>장소 <span style="font-weight:500;color:var(--muted)">(선택)</span></label>
@@ -608,11 +672,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   <div class="err" id="err"></div>
 
-  <div class="actions">
-    <button class="btn-del" id="delBtn" style="display:none" aria-label="삭제"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
-    <button class="btn-cancel" id="cancelBtn">취소</button>
-    <button class="btn-save" id="saveBtn">저장</button>
-  </div>
+  <button class="ev-del" id="delBtn" style="display:none">일정 삭제</button>
 </div>
 
 <!-- Backup sheet -->
@@ -685,12 +745,34 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="sheet" id="menuSheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
   <h2>메뉴</h2>
-  <div class="field" style="margin:6px 0 4px">
-    <label>카테고리 표시 <span style="font-weight:500;color:var(--muted)">(탭해서 켜고 끄기)</span></label>
-    <div class="menu-fchips" id="menuFilter"></div>
-  </div>
-  <button class="bk-btn ghost" id="menuManageBtn">🏷️ 카테고리 관리</button>
-  <button class="bk-btn ghost" id="menuBackupBtn">💾 백업 · 복원</button>
+
+  <section class="msec">
+    <div class="msec-t">카테고리</div>
+    <div class="mcard">
+      <div class="mpad">
+        <div class="msub"><b>표시</b><span id="menuFilterCount" class="tnum"></span></div>
+        <div class="menu-fchips" id="menuFilter"></div>
+      </div>
+      <button class="mlink" id="menuManageBtn">
+        <span class="mico"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg></span>
+        <span class="mtx"><b>편집</b></span>
+        <span class="mchev">›</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="msec">
+    <div class="msec-t">데이터</div>
+    <div class="mcard">
+      <button class="mlink" id="menuBackupBtn">
+        <span class="mico"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></span>
+        <span class="mtx"><b>백업 · 복원</b></span>
+        <span class="mval" id="menuBackupSub"></span>
+        <span class="mchev">›</span>
+      </button>
+    </div>
+  </section>
+
   <div class="actions">
     <button class="btn-cancel" id="menuCloseBtn" style="flex:1">닫기</button>
   </div>
@@ -1264,9 +1346,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function buildCatChips(){
     var h="";
     categories.forEach(function(c){
-      h+='<button class="catchip" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+(c.emoji?esc(c.emoji)+" ":"")+esc(c.name)+'</button>';
+      h+='<button class="catchip" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>';
     });
-    h+='<button class="catchip addcat" id="catAddChip">+ 새 카테고리</button>';
+    h+='<button class="catchip addcat" id="catAddChip" aria-label="새 카테고리">+</button>';
     document.getElementById("catChips").innerHTML=h;
     syncCat();
   }
@@ -1318,9 +1400,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function buildMenuFilter(){
     var h="";
     categories.forEach(function(c){
-      h+='<button class="fchip'+(hidden[c.id]?" off":"")+'" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+(c.emoji?esc(c.emoji)+" ":"")+esc(c.name)+'</button>';
+      h+='<button class="fchip'+(hidden[c.id]?" off":"")+'" data-cat="'+c.id+'" aria-pressed="'+(hidden[c.id]?"false":"true")+'"><span class="cdot" style="background:'+c.color+'"></span>'+(c.emoji?esc(c.emoji)+" ":"")+esc(c.name)+'</button>';
     });
     menuFilterEl.innerHTML=h;
+    var shown=categories.filter(function(c){ return !hidden[c.id]; }).length;
+    document.getElementById("menuFilterCount").textContent = shown+" / "+categories.length;
   }
   menuFilterEl.addEventListener("click",function(ev){
     var b=ev.target.closest(".fchip[data-cat]"); if(!b)return;
@@ -1330,7 +1414,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
 
 
-  function openMenu(){ buildMenuFilter(); openSheet(menuSheet); }
+  function openMenu(){
+    buildMenuFilter();
+    // 백업 줄 오른쪽에 마지막 백업 시점 (예: 3일 전 / 기록 없음)
+    var lt=getMeta().lastExport;
+    document.getElementById("menuBackupSub").textContent = lt ? relTime(lt).replace("마지막 내보내기: ","") : "기록 없음";
+    openSheet(menuSheet);
+  }
   document.getElementById("menuBtn").onclick=openMenu;
   document.getElementById("menuCloseBtn").onclick=closeSheet;
   document.getElementById("menuManageBtn").onclick=function(){ menuSheet.classList.remove("on"); openCatManage(false); };
