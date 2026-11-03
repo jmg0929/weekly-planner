@@ -231,16 +231,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ---------- Events ---------- */
 .evt{
   position:absolute;left:3px;right:3px;border-radius:6px;overflow:hidden;
-  padding:7px 5px 6px 8px;cursor:pointer;z-index:4; /* 왼쪽 여백을 조금 더 */
+  padding:6px 3px 6px 6px;cursor:pointer;z-index:4;
   background:color-mix(in srgb,var(--evt) 22%,var(--surface-2)); /* 회색 바탕에 카테고리 색은 살짝만 */
   border:none;
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 30%,var(--line-strong)); /* 옅은 1px 테두리 */
   transition:transform .1s ease, box-shadow .12s;
-  min-height:18px;display:flex;flex-direction:column;gap:3px;
+  min-height:18px;display:flex;flex-direction:column;gap:0;
+  --lh:13.5px; /* 일정 내용 한 줄 높이 */
 }
 .evt:active{transform:scale(.97);box-shadow:var(--shadow)}
 .evt .et{
-  font-size:11px;font-weight:700;line-height:1.2;letter-spacing:-.025em; /* 2줄 제목이 한 덩어리로 읽히게 */
+  font-size:11px;font-weight:700;line-height:var(--lh);letter-spacing:-.025em;
   color:var(--ink); /* 흑백 무드: 제목은 검정 */
   display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;
   word-break:keep-all;overflow-wrap:anywhere;
@@ -261,13 +262,24 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* 카테고리 이모지 */
 .eico{margin-right:3px;font-style:normal}
 /* 완료 체크 (레퍼런스): 오른쪽 위 동그라미, 완료하면 채워지고 제목에 취소선 */
-.evt.has-chk .et{padding-right:15px}
-.echk{position:absolute;top:6px;right:5px;width:15px;height:15px;border-radius:50%;padding:0;z-index:2;
+/* 맨 위 태그 줄: 이모지 + 태그명, 아래 내용과는 한 줄 간격의 1.2배 */
+/* 일정 내용은 한 줄로, 넘치면 … */
+.evt .et{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evt .etag{
+  flex:none;height:var(--lh);line-height:var(--lh);margin-bottom:calc(var(--lh) * .2);
+  font-size:9.5px;font-weight:700;color:var(--ink-2);letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.evt.has-chk .etag{padding-right:14px}
+.evt .etag .eico{margin-right:2px}
+.evt.short.has-chk .et{padding-right:15px}
+.echk{position:absolute;top:5px;right:3px;width:14px;height:14px;border-radius:50%;padding:0;z-index:2;
   border:1.5px solid var(--ink-2);background:transparent;display:grid;place-items:center}
 .echk::before{content:"";position:absolute;inset:-9px} /* 손가락 터치 영역 넓히기 */
 .echk svg{width:9px;height:9px;stroke:var(--surface);stroke-width:3.2;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0}
 .evt.done{opacity:.55}
 .evt.done .et{text-decoration:line-through;text-decoration-thickness:1.4px}
+.evt.done .etag{color:var(--muted)}
 .evt.done .echk{background:var(--ink);border-color:var(--ink)}
 .evt.done .echk svg{opacity:1}
 .evt.short .echk{top:50%;margin-top:-6.5px;width:13px;height:13px}
@@ -606,10 +618,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="sheet" id="menuSheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
   <h2>메뉴</h2>
-  <div class="menurow">
-    <div class="menurow-txt"><div class="menurow-t">카테고리 이름으로 표시</div><div class="menurow-d">일정에 제목 대신 분류 이름</div></div>
-    <div class="switch" id="showCatSwitch"><i></i></div>
-  </div>
   <div class="field" style="margin:6px 0 4px">
     <label>카테고리 표시 <span style="font-weight:500;color:var(--muted)">(탭해서 켜고 끄기)</span></label>
     <div class="menu-fchips" id="menuFilter"></div>
@@ -649,8 +657,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var anchor = new Date();           // any date within the shown week
   var selDate = ymd(new Date());     // selected/highlighted day (day view의 대상 날짜)
   var view = "week";                 // "week" | "day"
-  // 보기 모드: "7"=월~일 한 주 / "4"·"3"=오늘부터 N일 + 다음 날 흐리게 (슬라이딩 윈도우)
-  var mode = (function(){ try{ var m=localStorage.getItem("weekly-planner-mode"); return (m==="7"||m==="4"||m==="3")?m:"4"; }catch(e){ return "4"; } })();
+  // 보기 모드: "7"=월~일 한 주 / "4"·"5"=오늘부터 N일 + 다음 날 흐리게 (슬라이딩 윈도우)
+  var mode = (function(){ try{ var m=localStorage.getItem("weekly-planner-mode"); return (m==="7"||m==="5"||m==="4")?m:"4"; }catch(e){ return "4"; } })();
   var winStart = startOfDay(new Date()); // N일 모드의 첫날
   var editId = null;
   var categories = loadCategories();
@@ -671,7 +679,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(ch) saveCategories();
   })();
   var newCatColor = COLORS[0], newCatEmoji = "", emoTarget = null, catReturnToForm = false;
-  var showCat = (function(){ try{ return localStorage.getItem("weekly-planner-showcat")==="1"; }catch(e){ return false; } })(); // 제목 대신 분류 이름 표시
   var form = { type:"lecture", days:[], date:selDate, cat:(categories[0]&&categories[0].id), color:(categories[0]&&categories[0].color) };
 
   // ---- 한국 공휴일 (Nager.Date API, 키 불필요·CORS 지원) ----
@@ -724,8 +731,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     save(); render();
   }
   function evColor(e){ return e.color || catColor(e.cat); } // 개별 색 우선, 없으면 카테고리 색
-  function evLabel(e){ return showCat ? catName(e.cat) : (e.title||"제목 없음"); } // 표시 텍스트: 분류 이름 or 제목
-  function saveShowCat(){ try{ localStorage.setItem("weekly-planner-showcat", showCat?"1":"0"); }catch(e){} }
+  function evLabel(e){ return e.title||"제목 없음"; }
 
   function weekDates(){ var mon=mondayOf(anchor); var arr=[]; for(var i=0;i<7;i++)arr.push(addDays(mon,i)); return arr; }
   function startOfDay(d){ var x=new Date(d); x.setHours(0,0,0,0); return x; }
@@ -930,10 +936,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.left="calc("+(c/n*100)+"% + 3px)";
     el.style.width="calc("+(100/n)+"% - 6px)";
     el.style.zIndex=4+c;
-    var inner='<div class="et">'+emoHtml(e.cat)+esc(evLabel(e))+'</div>';
-    if(e.location && view==="day") inner+='<div class="eloc">'+esc(e.location)+'</div>'; // 장소는 하루보기에서만
-    // 주간: 제목만 (시간은 블록 위치로 보이고, 탭하면 미리보기에 있음) / 하루보기: 시간 범위
-    if(view==="day" || mode!=="7") inner+='<div class="etime tnum">'+minToStr(e.start)+"–"+minToStr(e.end)+'</div>'; // 칸이 넓은 모드는 시간도
+    var inner;
+    if(dur<=35){
+      // 짧은 일정: 한 줄 (칸이 좁으면 이모지 빼고 내용 우선)
+      inner='<div class="et">'+((view==="day")?emoHtml(e.cat):"")+esc(evLabel(e))+'</div>';
+    } else {
+      // 맨 위: 이모지 + 태그명 / 그 아래 (1.2배 간격): 일정 내용
+      inner='<div class="etag">'+emoHtml(e.cat)+esc(catName(e.cat))+'</div><div class="et">'+esc(evLabel(e))+'</div>';
+      if(view==="day"){   // 하루보기는 폭이 넓어 장소·시간도
+        if(e.location) inner+='<div class="eloc">'+esc(e.location)+'</div>';
+        inner+='<div class="etime tnum">'+minToStr(e.start)+"–"+minToStr(e.end)+'</div>';
+      }
+    }
     if(showChk) inner+='<button class="echk" aria-label="완료 표시"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>';
     el.innerHTML=inner;
     var chk=el.querySelector(".echk");
@@ -993,7 +1007,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var modeBtn=document.getElementById("modeBtn");
   function syncModeBtn(){ modeBtn.textContent = (mode==="7") ? "주" : mode+"일"; }
   modeBtn.onclick=function(){
-    var next = mode==="4" ? "3" : (mode==="3" ? "7" : "4");
+    var next = mode==="4" ? "5" : (mode==="5" ? "7" : "4");
     // 지금 보던 날짜를 기준으로 이어서 보여주기
     var base;
     if(view==="day") base=parseYmd(selDate);
@@ -1150,11 +1164,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     saveHidden(); buildMenuFilter(); render();
   });
 
-  var showCatSwitch=document.getElementById("showCatSwitch");
-  function syncShowCatSwitch(){ showCatSwitch.classList.toggle("on", showCat); }
-  showCatSwitch.addEventListener("click", function(){ showCat=!showCat; saveShowCat(); syncShowCatSwitch(); render(); });
 
-  function openMenu(){ buildMenuFilter(); syncShowCatSwitch(); openSheet(menuSheet); }
+  function openMenu(){ buildMenuFilter(); openSheet(menuSheet); }
   document.getElementById("menuBtn").onclick=openMenu;
   document.getElementById("menuCloseBtn").onclick=closeSheet;
   document.getElementById("menuManageBtn").onclick=function(){ menuSheet.classList.remove("on"); openCatManage(false); };
