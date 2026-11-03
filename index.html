@@ -566,7 +566,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <div class="bk-last" id="bkLast">아직 내보낸 적 없음</div>
   <button class="bk-btn ghost" id="importBtn">📥 백업 파일에서 복원</button>
   <input type="file" id="importFile" accept="application/json,.json" style="display:none">
-  <div class="bk-cap">복원하면 현재 일정을 백업 파일 내용으로 <b>덮어써요.</b><br>내보낸 파일은 아이클라우드·메모·나에게 보내기 등에 보관하면 안전해요.</div>
+  <div class="bk-cap">복원하면 현재 일정·카테고리를 백업 파일 내용으로 <b>덮어써요.</b><br>내보낸 파일은 아이클라우드·메모·나에게 보내기 등에 보관하면 안전해요.</div>
   <div class="actions">
     <button class="btn-cancel" id="bkCloseBtn" style="flex:1">닫기</button>
   </div>
@@ -1349,6 +1349,41 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   };
 
   // ================= Backup / restore =================
+  var ID_RE=/^[A-Za-z0-9_-]{1,40}$/, COLOR_RE=/^#[0-9A-Fa-f]{6}$/, DATE_RE=/^\d{4}-\d{2}-\d{2}$/;
+  function str(v, max){ return (typeof v==="string") ? v.slice(0,max) : ""; }
+  function sanitizeCats(list){
+    var out=[], seen={};
+    list.forEach(function(c){
+      if(!c || typeof c!=="object" || !ID_RE.test(c.id) || seen[c.id]) return;
+      var name=str(c.name,20).trim(); if(!name) return;
+      seen[c.id]=1;
+      out.push({ id:c.id, name:name, color:COLOR_RE.test(c.color)?c.color:COLORS[0], emoji:str(c.emoji,8) });
+    });
+    return out;
+  }
+  function sanitizeEvent(e){
+    if(!e || typeof e!=="object") return null;
+    if(e.type!=="lecture" && e.type!=="appointment") return null;
+    var st=+e.start, en=+e.end;
+    if(!isFinite(st) || !isFinite(en) || st<0 || en>24*60 || en<=st) return null;
+    var o={ id:ID_RE.test(e.id)?e.id:uid(), type:e.type, title:str(e.title,100), location:str(e.location,100), start:Math.round(st), end:Math.round(en) };
+    if(ID_RE.test(e.cat)) o.cat=e.cat;
+    if(COLOR_RE.test(e.color)) o.color=e.color;
+    if(e.type==="lecture"){
+      o.days=Array.isArray(e.days) ? e.days.filter(function(x){ return x===0||x===1||x===2||x===3||x===4||x===5||x===6; }) : [];
+      if(!o.days.length) return null;
+      if(DATE_RE.test(e.from)) o.from=e.from;
+      if(DATE_RE.test(e.until)) o.until=e.until;
+    } else {
+      if(!DATE_RE.test(e.date)) return null;
+      o.date=e.date;
+    }
+    if(e.doneDates && typeof e.doneDates==="object"){
+      var dd={}; for(var k in e.doneDates){ if(DATE_RE.test(k) && e.doneDates[k]===true) dd[k]=true; }
+      o.doneDates=dd;
+    }
+    return o;
+  }
   var bkLast=document.getElementById("bkLast");
   function relTime(ts){
     if(!ts) return "아직 내보낸 적 없음";
@@ -1365,7 +1400,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     bkLast.textContent=relTime(m.lastExport);
   }
   document.getElementById("exportBtn").onclick=function(){
-    var payload={ app:"weekly-planner", v:1, exportedAt:new Date().toISOString(), events:cleanEvents() };
+    var payload={ app:"weekly-planner", v:2, exportedAt:new Date().toISOString(), events:cleanEvents(), categories:categories, hiddenCats:hidden };
     var json=JSON.stringify(payload,null,2);
     var fname="플래너-백업-"+ymd(new Date())+".json";
     var blob=new Blob([json],{type:"application/json"});
@@ -1390,16 +1425,27 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var f=importFile.files && importFile.files[0]; if(!f) return;
     var r=new FileReader();
     r.onload=function(){
-      var arr;
+      var arr, d;
       try{
-        var d=JSON.parse(r.result);
+        d=JSON.parse(r.result);
         arr = Array.isArray(d) ? d : (d && d.events);
         if(!Array.isArray(arr)) throw 0;
       }catch(e){ bkLast.textContent="⚠️ 파일을 읽을 수 없어요 (형식 확인)"; return; }
-      var valid=arr.filter(function(e){ return e && typeof e==="object" && (e.type==="lecture"||e.type==="appointment") && typeof e.start==="number" && typeof e.end==="number"; });
-      if(!confirm("현재 일정을 이 백업으로 덮어쓸까요?\n(불러올 일정: "+valid.length+"개)")) return;
-      valid.forEach(function(e){ if(!e.id) e.id=uid(); });
-      events=valid; save(); render(); closeSheet();
+      var valid=arr.map(sanitizeEvent).filter(Boolean);
+      var cats = (d && Array.isArray(d.categories)) ? sanitizeCats(d.categories) : null; // 예전(v1) 백업엔 카테고리가 없음
+      var msg="현재 일정을 이 백업으로 덮어쓸까요?\n(불러올 일정: "+valid.length+"개"+(cats&&cats.length ? ", 카테고리: "+cats.length+"개" : "")+")";
+      if(!confirm(msg)) return;
+      if(cats && cats.length){
+        categories=cats; saveCategories();
+        hidden={};
+        if(d.hiddenCats && typeof d.hiddenCats==="object") for(var hk in d.hiddenCats){ if(d.hiddenCats[hk]===true && catById(hk)) hidden[hk]=true; }
+        saveHidden();
+      } else {
+        // 카테고리 정보가 없는 예전 백업: 지금 목록에 없는 태그는 일정 색으로 임시 태그를 만들어 둠
+        valid.forEach(function(e){ if(e.cat && !catById(e.cat)){ categories.push({ id:e.cat, name:"복원된 태그", color:e.color||COLORS[0], emoji:"" }); } });
+        saveCategories();
+      }
+      events=valid; save(); buildMenuFilter(); render(); closeSheet();
     };
     r.readAsText(f);
   };
