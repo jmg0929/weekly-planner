@@ -215,11 +215,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .anim-next{animation:slideInR .22s cubic-bezier(.32,.72,0,1)}
 .anim-prev{animation:slideInL .22s cubic-bezier(.32,.72,0,1)}
 
-/* 시간 구분선 오버레이 — 쉬는 날 색 위에도 보이도록 위(z-index:1)에 그림 */
+/* 시간 구분선 오버레이 — 정각선은 옅게, 30분선은 더 희미하게 (레퍼런스처럼) */
 .days::before{
   content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  --hr-line:color-mix(in srgb,var(--line) 80%,transparent);
+  --half-line:color-mix(in srgb,var(--line) 45%,transparent);
   background:
-    repeating-linear-gradient(to bottom, transparent, transparent calc(var(--hourH) - 1px), var(--line) calc(var(--hourH) - 1px), var(--line) var(--hourH));
+    repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--hourH) - 1px), var(--hr-line) calc(var(--hourH) - 1px), var(--hr-line) var(--hourH)),
+    repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--hourH) / 2 - 1px), var(--half-line) calc(var(--hourH) / 2 - 1px), var(--half-line) calc(var(--hourH) / 2));
 }
 
 /* ---------- Events ---------- */
@@ -252,6 +255,20 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .evt.short{padding:2px 7px;gap:0;border-radius:8px;justify-content:center}
 .evt.short .et{-webkit-line-clamp:1;font-size:9.5px}
 .evt.short .eloc,.evt.short .etime{display:none}
+/* 카테고리 이모지 */
+.eico{margin-right:3px;font-style:normal}
+/* 완료 체크 (레퍼런스): 오른쪽 위 동그라미, 완료하면 채워지고 제목에 취소선 */
+.evt.has-chk .et{padding-right:15px}
+.echk{position:absolute;top:6px;right:5px;width:15px;height:15px;border-radius:50%;padding:0;z-index:2;
+  border:1.5px solid color-mix(in srgb,var(--evt) 35%,var(--ink-2));background:transparent;display:grid;place-items:center}
+.echk::before{content:"";position:absolute;inset:-9px} /* 손가락 터치 영역 넓히기 */
+.echk svg{width:9px;height:9px;stroke:var(--surface);stroke-width:3.2;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.evt.done{opacity:.55}
+.evt.done .et{text-decoration:line-through;text-decoration-thickness:1.4px}
+.evt.done .echk{background:color-mix(in srgb,var(--evt) 35%,var(--ink-2));border-color:transparent}
+.evt.done .echk svg{opacity:1}
+.evt.short .echk{top:50%;margin-top:-6.5px;width:13px;height:13px}
+.lrow.done .ltitle{text-decoration:line-through;color:var(--muted)}
 
 /* 겹친 묶음 카드 (채움 + 개수 배지 + 색 점) */
 .evt.cluster{
@@ -298,7 +315,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .peek-row{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--ink);padding:6px 4px}
 .peek-row svg{width:17px;height:17px;stroke:var(--muted);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.peek-edit{margin-top:12px;width:100%;padding:13px;border-radius:14px;background:var(--accent);color:#fff;font-weight:800;font-size:15px;transition:transform .1s}
+.peek-actions{display:flex;gap:8px;margin-top:12px}
+.peek-done{flex:1;padding:13px;border-radius:14px;background:var(--surface-2);color:var(--ink);font-weight:800;font-size:15px;transition:transform .1s}
+.peek-done:active{transform:scale(.98)}
+.peek-edit{flex:1;padding:13px;border-radius:14px;background:var(--accent);color:#fff;font-weight:800;font-size:15px;transition:transform .1s}
 .peek-edit:active{transform:scale(.98)}
 
 /* now line */
@@ -379,6 +399,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .crow .cname{flex:1;font-weight:700;font-size:15px}
 .cdel{width:30px;height:30px;border-radius:9px;color:var(--muted);font-size:15px;font-weight:700;background:var(--surface-2)}
 .cdel:active{background:var(--line-strong)}
+/* 카테고리 이모지 선택 */
+.cemo{width:34px;height:34px;border-radius:10px;background:var(--surface-2);font-size:18px;line-height:1;display:grid;place-items:center;flex:none;color:var(--muted)}
+.cemo.on{box-shadow:0 0 0 2px var(--accent)}
+.emogrid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.emogrid button{aspect-ratio:1;border-radius:9px;font-size:19px;line-height:1;display:grid;place-items:center;background:transparent}
+.emogrid button.on{background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.emogrid button.none{font-size:11px;font-weight:700;color:var(--muted)}
+.emopick{padding:4px 0 12px;border-bottom:1px solid var(--line)}
 .catadd{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 
 .actions{display:flex;gap:10px;margin-top:20px}
@@ -543,7 +571,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <div class="peek-row"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="peekTime" class="tnum"></span></div>
   <div class="peek-row"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="peekWhen"></span></div>
   <div class="peek-row" id="peekLocRow"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span id="peekLoc"></span></div>
-  <button class="peek-edit" id="peekEdit">편집</button>
+  <div class="peek-actions"><button class="peek-done" id="peekDone">완료</button><button class="peek-edit" id="peekEdit">편집</button></div>
 </div>
 
 <!-- 카테고리 관리 시트 -->
@@ -556,9 +584,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       <label>새 카테고리</label>
       <input type="text" id="newCatName" placeholder="이름 (예: 알바, 동아리)" maxlength="10" autocomplete="off">
     </div>
-    <div class="field" style="margin-bottom:12px">
+    <div class="field" style="margin-bottom:10px">
       <label>색상</label>
       <div class="swatches" id="newCatColors"></div>
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label>이모지</label>
+      <div class="emogrid" id="newCatEmojis"></div>
     </div>
     <button class="bk-btn" id="catAddBtn">+ 카테고리 추가</button>
   </div>
@@ -597,12 +629,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var CAT_KEY = "weekly-planner-categories";
   var HIDDEN_KEY = "weekly-planner-hidden-cats";
   var DEFAULT_CATS = [
-    { id:"lec", name:"강의", color:"#8FB3E6" },
-    { id:"mtg", name:"회의", color:"#E7B98C" },
-    { id:"apt", name:"약속", color:"#E9A6B0" },
-    { id:"psn", name:"개인", color:"#86C6B4" },
-    { id:"etc", name:"기타", color:"#AEB4C2" }
+    { id:"lec", name:"강의", color:"#8FB3E6", emoji:"📚" },
+    { id:"mtg", name:"회의", color:"#E7B98C", emoji:"💬" },
+    { id:"apt", name:"약속", color:"#E9A6B0", emoji:"📌" },
+    { id:"psn", name:"개인", color:"#86C6B4", emoji:"🌿" },
+    { id:"etc", name:"기타", color:"#AEB4C2", emoji:"✨" }
   ];
+  // 카테고리(태그)에 고를 수 있는 이모지
+  var EMOJIS = ["📚","✏️","💻","🧪","📝","🎓","💬","👥","📞","💼","📌","🍽️","☕","🍻","🎉","🎂","🏃","💪","🧘","🌿","🛒","🏥","💊","✈️","🚌","🎮","🎬","🎵","💰","🏠","🐶","❤️","⭐","✨","🔥"];
   var DOW = ["월","화","수","목","금","토","일"]; // Mon..Sun, index 0..6
   var DAY_START = 7, DAY_END = 24; // 표시 시간대 (기본 07시~ · 더 이른 일정 있으면 자동으로 내려감)
   var hourH = 68;
@@ -627,7 +661,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(ch) save();
     if(cch) saveCategories();
   })();
-  var newCatColor = COLORS[0], catReturnToForm = false;
+  // 이모지 도입 전 카테고리: 기본 카테고리에 기본 이모지 채워 넣기 (한 번만)
+  (function migrateEmoji(){
+    var ch=false;
+    categories.forEach(function(c){ if(c.emoji===undefined){ var d=DEFAULT_CATS.filter(function(x){ return x.id===c.id; })[0]; c.emoji=d?d.emoji:""; ch=true; } });
+    if(ch) saveCategories();
+  })();
+  var newCatColor = COLORS[0], newCatEmoji = "", emoTarget = null, catReturnToForm = false;
   var showCat = (function(){ try{ return localStorage.getItem("weekly-planner-showcat")==="1"; }catch(e){ return false; } })(); // 제목 대신 분류 이름 표시
   var form = { type:"lecture", days:[], date:selDate, cat:(categories[0]&&categories[0].id), color:(categories[0]&&categories[0].color) };
 
@@ -663,13 +703,23 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function strToMin(s){ var p=s.split(":"); return (+p[0])*60+(+p[1]); }
 
   // ---- 카테고리 ----
-  function loadCategories(){ try{ var c=JSON.parse(localStorage.getItem(CAT_KEY)); if(Array.isArray(c)&&c.length) return c; }catch(e){} return DEFAULT_CATS.map(function(x){ return {id:x.id,name:x.name,color:x.color}; }); }
+  function loadCategories(){ try{ var c=JSON.parse(localStorage.getItem(CAT_KEY)); if(Array.isArray(c)&&c.length) return c; }catch(e){} return DEFAULT_CATS.map(function(x){ return {id:x.id,name:x.name,color:x.color,emoji:x.emoji}; }); }
   function saveCategories(){ try{ localStorage.setItem(CAT_KEY, JSON.stringify(categories)); }catch(e){} }
   function loadHidden(){ try{ var h=JSON.parse(localStorage.getItem(HIDDEN_KEY)); if(h && typeof h==="object") return h; }catch(e){} return {}; }
   function saveHidden(){ try{ localStorage.setItem(HIDDEN_KEY, JSON.stringify(hidden)); }catch(e){} }
   function catById(id){ for(var i=0;i<categories.length;i++){ if(categories[i].id===id) return categories[i]; } return null; }
   function catColor(id){ var c=catById(id); return c?c.color:COLORS[0]; }
   function catName(id){ var c=catById(id); return c?c.name:"기타"; }
+  function catEmoji(id){ var c=catById(id); return (c && c.emoji) || ""; }
+  function emoHtml(id){ var m=catEmoji(id); return m ? '<span class="eico">'+esc(m)+'</span>' : ""; }
+  // 완료 체크: 반복 일정도 날짜별로 따로 저장 (e.doneDates["2026-11-03"]=true)
+  function isDone(e, ds){ return !!(ds && e.doneDates && e.doneDates[ds]); }
+  function toggleDone(e, ds){
+    if(!e || !ds) return;
+    e.doneDates = e.doneDates || {};
+    if(e.doneDates[ds]) delete e.doneDates[ds]; else e.doneDates[ds]=true;
+    save(); render();
+  }
   function evColor(e){ return e.color || catColor(e.cat); } // 개별 색 우선, 없으면 카테고리 색
   function evLabel(e){ return showCat ? catName(e.cat) : (e.title||"제목 없음"); } // 표시 텍스트: 분류 이름 or 제목
   function saveShowCat(){ try{ localStorage.setItem("weekly-planner-showcat", showCat?"1":"0"); }catch(e){} }
@@ -800,7 +850,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       evs.sort(function(a,b){ return a.start-b.start || a.end-b.end; });
       var clusters=clusterize(evs);
       for(var m=0;m<clusters.length;m++){ any=true;
-        col.appendChild(clusters[m].length===1 ? evNode(clusters[m][0]) : clusterNode(clusters[m]));
+        col.appendChild(clusters[m].length===1 ? evNode(clusters[m][0], ymd(d2)) : clusterNode(clusters[m], ymd(d2)));
       }
     }
 
@@ -843,7 +893,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
 
   // 겹친 묶음 카드 (개수 배지 + 첫 일정 제목, 탭하면 목록)
-  function clusterNode(cl){
+  function clusterNode(cl, ds){
     var minStart=cl[0].start, maxEnd=cl[0].end;
     for(var i=1;i<cl.length;i++){ if(cl[i].start<minStart)minStart=cl[i].start; if(cl[i].end>maxEnd)maxEnd=cl[i].end; }
     // 묶음에 든 서로 다른 색들 (중복 제거)
@@ -856,18 +906,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.height=Math.max(dur/60*hourH-2,15)+"px";
     el.style.left="calc(0% + 3px)"; el.style.width="calc(100% - 10px)";
     var inner='<span class="cbadge">'+cl.length+'</span>';
-    inner+='<div class="et">'+esc(evLabel(cl[0]))+' 외 '+(cl.length-1)+'</div>';
+    inner+='<div class="et">'+emoHtml(cl[0].cat)+esc(evLabel(cl[0]))+' 외 '+(cl.length-1)+'</div>';
     if(view==="day" || mode!=="7") inner+='<div class="etime tnum">'+minToStr(minStart)+'–'+minToStr(maxEnd)+'</div>';
     inner+='<div class="cdots">'+cols.slice(0,5).map(function(c){ return '<i style="background:'+c+'"></i>'; }).join('')+'</div>';
     el.innerHTML=inner;
-    el.addEventListener("click", function(ev){ ev.stopPropagation(); openClusterList(cl); });
+    el.addEventListener("click", function(ev){ ev.stopPropagation(); openClusterList(cl, ds); });
     return el;
   }
 
-  function evNode(e){
+  function evNode(e, ds){
     var el=document.createElement("div");
     var dur=e.end-e.start;
-    el.className="evt "+(e.type==="lecture"?"lecture":"appointment")+(dur<=35?" short":"");
+    var showChk = (view==="day" || mode!=="7");   // 주 모드는 칸이 좁아서 체크는 미리보기의 "완료"로
+    el.className="evt "+(e.type==="lecture"?"lecture":"appointment")+(dur<=35?" short":"")+(isDone(e,ds)?" done":"")+(showChk?" has-chk":"");
     el.style.setProperty("--evt", evColor(e));
     var top=(e.start-DAY_START*60)/60*hourH;
     var height=Math.max(dur/60*hourH-2, 15);
@@ -876,12 +927,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     el.style.left="calc("+(c/n*100)+"% + 3px)";
     el.style.width="calc("+(100/n)+"% - 6px)";
     el.style.zIndex=4+c;
-    var inner='<div class="et">'+esc(evLabel(e))+'</div>';
+    var inner='<div class="et">'+emoHtml(e.cat)+esc(evLabel(e))+'</div>';
     if(e.location && view==="day") inner+='<div class="eloc">'+esc(e.location)+'</div>'; // 장소는 하루보기에서만
     // 주간: 제목만 (시간은 블록 위치로 보이고, 탭하면 미리보기에 있음) / 하루보기: 시간 범위
     if(view==="day" || mode!=="7") inner+='<div class="etime tnum">'+minToStr(e.start)+"–"+minToStr(e.end)+'</div>'; // 칸이 넓은 모드는 시간도
+    if(showChk) inner+='<button class="echk" aria-label="완료 표시"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>';
     el.innerHTML=inner;
-    el.addEventListener("click", function(ev){ ev.stopPropagation(); openPeek(e); });
+    var chk=el.querySelector(".echk");
+    if(chk) chk.addEventListener("click", function(ev){ ev.stopPropagation(); toggleDone(e, ds); });
+    el.addEventListener("click", function(ev){ ev.stopPropagation(); openPeek(e, ds); });
     return el;
   }
   function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
@@ -976,16 +1030,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var listSheet=document.getElementById("listSheet");
   var catSheet=document.getElementById("catSheet");
   var menuSheet=document.getElementById("menuSheet");
-  var peekEl=document.getElementById("peek"), peekEv=null;
+  var peekEl=document.getElementById("peek"), peekEv=null, peekDate=null;
 
   // ---- 일정 미리보기 카드 (탭 → 미리보기 → 편집) ----
   function fmtMD(s){ var p=parseYmd(s); return (p.getMonth()+1)+"/"+p.getDate(); }
-  function openPeek(e){
-    peekEv=e;
+  function openPeek(e, ds){
+    peekEv=e; peekDate = ds || (e.type==="appointment" ? e.date : selDate);
+    document.getElementById("peekDone").textContent = isDone(e, peekDate) ? "완료 취소" : "완료";
     var col=evColor(e);
     peekEl.style.setProperty("--evt", col);
     document.getElementById("peekDot").style.background=col;
-    document.getElementById("peekCat").textContent=catName(e.cat);
+    document.getElementById("peekCat").textContent=(catEmoji(e.cat)?catEmoji(e.cat)+" ":"")+catName(e.cat);
     document.getElementById("peekTitle").textContent=e.title||"제목 없음";
     document.getElementById("peekTime").textContent=minToStr(e.start)+" – "+minToStr(e.end);
     var when;
@@ -1002,6 +1057,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   document.getElementById("peekClose").onclick=function(){ closeSheet(); };
   document.getElementById("peekEdit").onclick=function(){ var e=peekEv; peekEl.classList.remove("on"); openEdit(e); };
+  document.getElementById("peekDone").onclick=function(){ toggleDone(peekEv, peekDate); closeSheet(); };
   var fTitle=document.getElementById("fTitle"), fLoc=document.getElementById("fLoc"),
       fDate=document.getElementById("fDate"), fStart=document.getElementById("fStart"),
       fEnd=document.getElementById("fEnd"), errEl=document.getElementById("err");
@@ -1026,7 +1082,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function buildCatChips(){
     var h="";
     categories.forEach(function(c){
-      h+='<button class="catchip" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>';
+      h+='<button class="catchip" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+(c.emoji?esc(c.emoji)+" ":"")+esc(c.name)+'</button>';
     });
     h+='<button class="catchip addcat" id="catAddChip">+ 새 카테고리</button>';
     document.getElementById("catChips").innerHTML=h;
@@ -1080,7 +1136,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function buildMenuFilter(){
     var h="";
     categories.forEach(function(c){
-      h+='<button class="fchip'+(hidden[c.id]?" off":"")+'" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>';
+      h+='<button class="fchip'+(hidden[c.id]?" off":"")+'" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+(c.emoji?esc(c.emoji)+" ":"")+esc(c.name)+'</button>';
     });
     menuFilterEl.innerHTML=h;
   }
@@ -1102,13 +1158,27 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   document.getElementById("menuBackupBtn").onclick=function(){ menuSheet.classList.remove("on"); openBackup(); };
 
   // ---- 카테고리 관리 시트 ----
+  function emoGrid(sel){
+    var h='<button class="none'+(sel?"":" on")+'" data-emo="">없음</button>';
+    EMOJIS.forEach(function(m){ h+='<button data-emo="'+m+'"'+(m===sel?' class="on"':'')+'>'+m+'</button>'; });
+    return h;
+  }
   function buildCatList(){
     var h="";
     categories.forEach(function(c){
-      h+='<div class="crow"><span class="ldot" style="background:'+c.color+'"></span><div class="cname">'+esc(c.name)+'</div><button class="cdel" data-del="'+c.id+'" aria-label="삭제">✕</button></div>';
+      h+='<div class="crow"><span class="ldot" style="background:'+c.color+'"></span>'+
+        '<button class="cemo'+(emoTarget===c.id?" on":"")+'" data-emocat="'+c.id+'" aria-label="이모지 바꾸기">'+(c.emoji?esc(c.emoji):"＋")+'</button>'+
+        '<div class="cname">'+esc(c.name)+'</div><button class="cdel" data-del="'+c.id+'" aria-label="삭제">✕</button></div>';
+      if(emoTarget===c.id) h+='<div class="emopick"><div class="emogrid" data-for="'+c.id+'">'+emoGrid(c.emoji||"")+'</div></div>';
     });
     document.getElementById("catList").innerHTML=h;
   }
+  function buildNewCatEmojis(){ newCatEmoji=""; document.getElementById("newCatEmojis").innerHTML=emoGrid(""); }
+  document.getElementById("newCatEmojis").addEventListener("click",function(ev){
+    var b=ev.target.closest("button[data-emo]"); if(!b)return;
+    newCatEmoji=b.getAttribute("data-emo");
+    this.querySelectorAll("button").forEach(function(x){ x.classList.toggle("on", x===b); });
+  });
   function buildNewCatColors(){
     var h=""; COLORS.forEach(function(c){ h+='<button data-c="'+c+'" style="background:'+c+'"></button>'; });
     document.getElementById("newCatColors").innerHTML=h;
@@ -1120,7 +1190,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function openCatManage(fromForm){
     catReturnToForm=!!fromForm;
     if(fromForm) sheet.classList.remove("on");
-    buildCatList(); buildNewCatColors(); document.getElementById("newCatName").value="";
+    emoTarget=null; buildCatList(); buildNewCatColors(); buildNewCatEmojis(); document.getElementById("newCatName").value="";
     openSheet(catSheet);
   }
   function closeCatManage(){
@@ -1132,12 +1202,22 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   document.getElementById("catAddBtn").onclick=function(){
     var name=document.getElementById("newCatName").value.trim();
     if(!name) return;
-    categories.push({ id:"c"+uid(), name:name, color:newCatColor });
+    categories.push({ id:"c"+uid(), name:name, color:newCatColor, emoji:newCatEmoji });
     saveCategories();
     document.getElementById("newCatName").value="";
-    buildCatList(); buildNewCatColors(); buildMenuFilter();
+    buildCatList(); buildNewCatColors(); buildNewCatEmojis(); buildMenuFilter();
   };
   document.getElementById("catList").addEventListener("click",function(ev){
+    // 이모지 버튼 → 그 줄 아래에 이모지 목록 펼치기/접기
+    var eb=ev.target.closest(".cemo");
+    if(eb){ var cid=eb.getAttribute("data-emocat"); emoTarget=(emoTarget===cid)?null:cid; buildCatList(); return; }
+    var pick=ev.target.closest(".emogrid button[data-emo]");
+    if(pick){
+      var c=catById(pick.closest(".emogrid").getAttribute("data-for"));
+      if(c){ c.emoji=pick.getAttribute("data-emo"); saveCategories(); }
+      emoTarget=null; buildCatList(); buildMenuFilter(); render();
+      return;
+    }
     var d=ev.target.closest(".cdel"); if(!d)return;
     if(categories.length<=1) return;
     var id=d.getAttribute("data-del");
@@ -1155,15 +1235,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   document.getElementById("listCloseBtn").onclick=closeSheet;
 
   // 겹친 일정 목록 열기 (행 탭 → 해당 일정 편집)
-  function openClusterList(cl){
+  function openClusterList(cl, ds){
     var body=document.getElementById("listBody"); body.innerHTML="";
     cl.slice().sort(function(a,b){ return a.start-b.start || a.end-b.end; }).forEach(function(e){
-      var row=document.createElement("div"); row.className="lrow";
+      var row=document.createElement("div"); row.className="lrow"+(isDone(e,ds)?" done":"");
       row.innerHTML='<span class="ldot" style="background:'+evColor(e)+'"></span>'+
-        '<div class="lmain"><div class="ltitle">'+esc(e.title||"제목 없음")+'</div>'+
+        '<div class="lmain"><div class="ltitle">'+emoHtml(e.cat)+esc(e.title||"제목 없음")+'</div>'+
         '<div class="lmeta tnum">'+minToStr(e.start)+' ~ '+minToStr(e.end)+(e.location?' · '+esc(e.location):'')+'</div></div>'+
         '<span class="lchev">›</span>';
-      row.addEventListener("click", function(){ listSheet.classList.remove("on"); openPeek(e); });
+      row.addEventListener("click", function(){ listSheet.classList.remove("on"); openPeek(e, ds); });
       body.appendChild(row);
     });
     openSheet(listSheet);
@@ -1226,7 +1306,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       rec.date=fDate.value||form.date;
     }
 
-    if(editId){ for(var i=0;i<events.length;i++){ if(events[i].id===editId){ events[i]=rec; break; } } }
+    if(editId){ for(var i=0;i<events.length;i++){ if(events[i].id===editId){ if(events[i].doneDates) rec.doneDates=events[i].doneDates; events[i]=rec; break; } } }
     else events.push(rec);
     save(); closeSheet(); render();
   };
