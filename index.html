@@ -17,6 +17,8 @@
   --bg:#FAFAFA;
   --surface:#FFFFFF;
   --surface-2:#F3F3F3;
+  --tpage:#EEEEF0;      /* 할 일 페이지 바탕 (회색 판 위에 흰 카드) */
+  --tcard:#FFFFFF;
   --ink:#111111;
   --ink-2:#555555;
   --muted:#9B9B9B;
@@ -43,6 +45,8 @@
     --bg:#0B0B0B;
     --surface:#161616;
     --surface-2:#202020;
+  --tpage:#0B0B0B;
+  --tcard:#1B1B1B;
     --ink:#F2F2F2;
     --ink-2:#B0B0B0;
     --muted:#707070;
@@ -65,6 +69,8 @@
   --bg:#0B0B0B;
   --surface:#161616;
   --surface-2:#202020;
+  --tpage:#0B0B0B;
+  --tcard:#1B1B1B;
   --ink:#F2F2F2;
   --ink-2:#B0B0B0;
   --muted:#707070;
@@ -451,6 +457,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .crow .ldot{width:14px;height:14px;border-radius:5px;flex:none}
 .crow .cname{flex:1;font-weight:700;font-size:15px}
 .cdel{width:30px;height:30px;border-radius:9px;color:var(--muted);font-size:15px;font-weight:700;background:var(--surface-2)}
+.cdel:disabled{opacity:.25;cursor:default}
 .cdel:active{background:var(--line-strong)}
 /* 카테고리 이모지 선택 */
 .cemo{width:34px;height:34px;border-radius:10px;background:var(--surface-2);font-size:18px;line-height:1;display:grid;place-items:center;flex:none;color:var(--muted)}
@@ -583,6 +590,76 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .planner.list .dayhead,.planner.list #scroll,.planner.list #modeBtn{display:none}
 .planner:not(.list) #agenda{display:none}
 
+/* ---------- 할 일: 주간 목록과 같은 2×4 배치, 하지만 "선으로 나뉜 판" 대신 "회색 바탕 위 카드" ---------- */
+.planner.todo .dayhead,.planner.todo #scroll,.planner.todo #agenda,.planner.todo #modeBtn{display:none}
+.planner:not(.todo) #todos{display:none}
+.planner.todo .title .range{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-top:2px}
+.todos{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  background:var(--tpage);border-top:1px solid var(--line);padding:5px 5px calc(78px + var(--sab))}
+.todos::-webkit-scrollbar{display:none}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.tcell{min-height:var(--cellH,150px);min-width:0;padding:9px 9px 8px;border-radius:10px;background:var(--tcard);
+  box-shadow:0 1px 2px rgba(0,0,0,.05);cursor:pointer}
+.tcell.mcal{cursor:default;padding:8px 6px}
+.tcell.today{box-shadow:0 0 0 1.5px var(--ink) inset}
+.tcell .ahead{margin:0 2px 6px}
+.tcell.sat .adow,.tcell.sat .anum{color:var(--sat-c)}
+.tcell.sun .adow,.tcell.sun .anum,.tcell.holiday .adow,.tcell.holiday .anum{color:var(--sun-c)}
+.tcell.today .anum{background:var(--accent);color:var(--on-accent);border-radius:6px;padding:1px 5px}
+.tcell .tleft{margin-left:auto;font-size:11px;font-weight:800;color:var(--muted)}
+/* 미니 달력: 남은 할 일이 있는 날에 점 */
+.mgrid .md.has::after{content:"";position:absolute;bottom:0;left:50%;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:var(--ink-2)}
+.mgrid .md.today.has::after{background:var(--ink)}
+/* 달력 표시 카테고리(시험 · 마감 등)의 할 일이 있는 날: 카테고리 색 동그라미 */
+.mgrid .md.pin span{border-radius:6px;font-weight:800;color:var(--ink);
+  background:color-mix(in srgb,var(--pin) 30%,transparent);box-shadow:inset 0 0 0 1.6px color-mix(in srgb,var(--pin) 85%,var(--ink))}
+.mgrid .md.pin.pdone span{opacity:.4}
+.mgrid .md.pin span{position:relative}
+/* 같은 날 달력 표시 카테고리가 둘 이상: 오른쪽 위 작은 점 */
+.mgrid .md.pin.multi span::after{content:"";position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;
+  background:var(--ink-2);box-shadow:0 0 0 1.5px var(--surface)}
+.mgrid .md.today.pin span{background:var(--accent);color:var(--on-accent);box-shadow:0 0 0 1.5px var(--surface),0 0 0 3px color-mix(in srgb,var(--pin) 85%,var(--ink))}
+/* 카테고리 관리: 달력 표시 */
+.crow .cpin{flex:none;font-size:11px;font-weight:800;color:var(--ink-2);background:var(--surface-2);border-radius:6px;padding:3px 6px}
+.pinrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pinrow label{margin:0}
+.cat-scope{margin:-4px 0 10px}
+.titem{display:flex;align-items:flex-start;gap:7px;padding:4px 2px;border-radius:7px}
+.titem:active{background:var(--surface-2)}
+/* 원형 체크: 테두리 = 카테고리 색 (색 띠 대신) */
+.tchk{position:relative;flex:none;width:16px;height:16px;margin-top:1px;border-radius:50%;
+  border:1.6px solid color-mix(in srgb,var(--evt) 85%,var(--ink));display:grid;place-items:center;transition:background .2s}
+.tchk::after{content:"";position:absolute;inset:-9px}        /* 누르기 쉬운 크기 */
+.tchk svg{width:10px;height:10px;stroke:#fff;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:scale(.4);transition:opacity .18s,transform .22s}
+.titem.done .tchk{background:color-mix(in srgb,var(--evt) 85%,var(--ink))}
+.titem.done .tchk svg{opacity:1;transform:scale(1)}
+.ttx{flex:1;min-width:0;font-size:12.5px;font-weight:700;line-height:1.35;color:var(--ink);word-break:break-word;letter-spacing:-.02em;transition:color .3s;
+  --strike:color-mix(in srgb,var(--ink) 55%,var(--tcard))}
+/* 완료: 가운데 줄이 왼쪽에서 그어지고 살짝 흐려짐 */
+.ttx span{background:linear-gradient(var(--strike),var(--strike)) no-repeat 0 54%/0% 1px;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:background-size .32s ease}
+/* 흐림은 투명도 대신 글자색으로 (투명도는 줄까지 같이 흐려져 한글 획과 뭉개짐) · 줄은 글자보다 진하고 얇게 */
+.titem.done .ttx{color:color-mix(in srgb,var(--ink) 34%,var(--tcard));font-weight:600}
+.titem.done .ttx span{background-size:100% 1px}
+/* 칸에는 6개까지만, 넘치면 "… +n" */
+.tmore{padding:3px 2px 0 25px;font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.02em}
+/* 하루 확대 시트 */
+.tday-top{display:flex;align-items:center;gap:6px;margin:0 -4px 12px}
+.tday-nav{width:34px;height:34px;border-radius:10px;font-size:20px;font-weight:700;color:var(--ink-2);flex:none}
+.tday-nav:active{background:var(--surface-2)}
+.tday-t{flex:1;min-width:0;text-align:center}
+.tday-t h2{margin:0;font-size:18px}
+.tday-sub{font-size:12.5px;font-weight:600;color:var(--muted);margin-top:2px}
+.tday-add{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--accent);color:var(--on-accent)}
+.tday-add:active{transform:scale(.92)}
+.tday-add svg{width:19px;height:19px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round}
+.tday-list{min-height:120px;margin-bottom:12px}
+.tday-list .titem{gap:11px;padding:10px 4px;border-top:1px solid var(--line);border-radius:0}
+.tday-list .titem:first-child{border-top:none}
+.tday-list .tchk{width:21px;height:21px;margin-top:0}
+.tday-list .tchk svg{width:12px;height:12px}
+.tday-list .ttx{font-size:15px;line-height:1.4;cursor:pointer}
+.tday-empty{padding:34px 0;text-align:center;font-size:14px;font-weight:600;color:var(--muted)}
+
 .today-btn:active,.dh:active{transform:scale(.96)}
 .dh .dnum{transition:background .15s, color .15s}
 @media (prefers-reduced-motion: reduce){
@@ -624,12 +701,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   <!-- 주간 목록 보기 (왼쪽 위 달력에서 주 선택) -->
   <div class="agenda" id="agenda"><div class="agrid" id="agrid"></div></div>
+  <!-- 할 일 체크리스트 (일정과 따로) -->
+  <div class="todos" id="todos"><div class="tgrid" id="tgrid"></div></div>
 </div>
 
 <!-- 아래 탭 바: 시간표 / 주간 목록 -->
 <nav class="tabbar" id="tabbar" aria-label="보기 전환">
   <button id="tabGrid" class="on" aria-label="시간표 보기"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9.5h17M9 9.5v11M8 2.5v4M16 2.5v4"/></svg></button>
   <button id="tabList" aria-label="주간 목록 보기"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2"/><rect x="13" y="13" width="7.5" height="7.5" rx="2"/></svg></button>
+  <button id="tabTodo" aria-label="할 일 보기"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M8 12.3l2.8 2.8 5.4-5.6"/></svg></button>
 </nav>
 
 <div class="scrim" id="scrim"></div>
@@ -740,6 +820,35 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <div class="peek-actions"><button class="peek-edit" id="peekEdit">편집</button></div>
 </div>
 
+<!-- 할 일: 하루 확대 보기 (칸을 누르면) -->
+<div class="sheet" id="todoDaySheet" role="dialog" aria-modal="true" aria-labelledby="todoDayTitle">
+  <div class="grab"></div>
+  <div class="tday-top">
+    <button class="tday-nav" data-step="-1" aria-label="전날">‹</button>
+    <div class="tday-t"><h2 id="todoDayTitle"></h2><div class="tday-sub tnum" id="todoDaySub"></div></div>
+    <button class="tday-nav" data-step="1" aria-label="다음 날">›</button>
+    <button class="tday-add" id="todoDayAdd" aria-label="할 일 추가"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  </div>
+  <div class="tday-list" id="todoDayList"></div>
+  <div class="actions"><button class="btn-cancel" id="todoDayClose" style="flex:1">닫기</button></div>
+</div>
+
+<!-- 할 일 추가 / 편집 시트 -->
+<div class="sheet ev-sheet" id="todoSheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div class="ev-top">
+    <button class="ev-cancel" id="todoCancel">취소</button>
+    <h2 id="todoSheetTitle">할 일</h2>
+    <button class="ev-save" id="todoSave">저장</button>
+  </div>
+  <input type="text" class="ev-title" id="todoTitle" placeholder="할 일" autocomplete="off" maxlength="100" aria-label="할 일">
+  <div class="ev-group"><div class="ev-row"><span class="ev-lab">날짜</span><input type="date" id="todoDate" class="ev-in"></div></div>
+  <div class="ev-sec">카테고리</div>
+  <div class="catchips ev-cats" id="todoCats"></div>
+  <div class="err" id="todoErr"></div>
+  <button class="ev-del" id="todoDel" style="display:none">삭제</button>
+</div>
+
 <!-- 동기화(계정) 시트 -->
 <div class="sheet" id="acctSheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
@@ -801,6 +910,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="sheet" id="catSheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
   <h2>카테고리 관리</h2>
+  <div class="seg cat-scope" id="catScopeSeg">
+    <button data-scope="ev" class="on">일정</button>
+    <button data-scope="todo">할 일</button>
+  </div>
   <div id="catList"></div>
   <div class="catadd">
     <div class="field" style="margin-bottom:10px">
@@ -814,6 +927,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <div class="field" style="margin-bottom:12px">
       <label>이모지</label>
       <div class="emogrid" id="newCatEmojis"></div>
+    </div>
+    <div class="field pinrow" id="newCatPinRow" style="margin-bottom:14px">
+      <label>달력 표시</label>
+      <button class="switch" id="newCatPin" role="switch" aria-checked="false" aria-label="달력 표시"><i></i></button>
     </div>
     <button class="bk-btn" id="catAddBtn">+ 카테고리 추가</button>
   </div>
@@ -875,6 +992,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var COLOR_REMAP = { "#9EA0EA":"#8FB3E6", "#C7ACEE":"#A9B6E0", "#8CB4EC":"#8FB3E6", "#A9C9F2":"#A9B6E0", "#F5A3B5":"#E9A6B0", "#F4C58A":"#E7B98C", "#6FCBB4":"#86C6B4", "#A9B2C3":"#AEB4C2" }; // 예전 색 → 통일 세트
   var CAT_KEY = "weekly-planner-categories";
   var HIDDEN_KEY = "weekly-planner-hidden-cats";
+  var TODO_KEY = "weekly-planner-todos";
+  var TODO_CAT_KEY = "weekly-planner-todo-cats";   // 할 일 카테고리 (일정 카테고리와 따로)
   var DEFAULT_CATS = [
     { id:"lec", name:"강의", color:"#8FB3E6", emoji:"📚" },
     { id:"mtg", name:"회의", color:"#E7B98C", emoji:"💬" },
@@ -897,11 +1016,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var mode = (function(){ try{ var m=localStorage.getItem("weekly-planner-mode"); return (m==="7"||m==="5"||m==="4")?m:"4"; }catch(e){ return "4"; } })();
   var winStart = startOfDay(new Date()); // N일 모드의 첫날
   // 화면 형식: "grid"=시간표 / "list"=주간 목록 (왼쪽 위 달력 + 요일별 칸)
-  var layout = (function(){ try{ return localStorage.getItem("weekly-planner-layout")==="list" ? "list" : "grid"; }catch(e){ return "grid"; } })();
+  // 화면 형식: + "todo"=할 일 체크리스트
+  var layout = (function(){ try{ var l=localStorage.getItem("weekly-planner-layout"); return (l==="list"||l==="todo") ? l : "grid"; }catch(e){ return "grid"; } })();
   var calMonth = null;                // 주간 목록의 미니 달력이 보여주는 달 (null이면 선택한 주의 달)
   var editId = null;
   var categories = loadCategories();
   var hidden = loadHidden();         // { catId: true } — 숨긴 카테고리
+  var todos = loadTodos();           // 할 일 [{id,title,cat,date,done,doneAt,at}] — 일정과 따로, 날짜(요일)별
+  var todoCats = loadTodoCats();     // 할 일 카테고리 [{id,name,color,emoji,pin}] — 처음엔 일정 카테고리를 복사해서 시작
   (function migrateCats(){ var ch=false; for(var i=0;i<events.length;i++){ if(!events[i].cat){ events[i].cat=(events[i].type==="lecture")?"lec":"apt"; ch=true; } } if(ch) save(); })();
   // 톤 변경: 예전 보라색 일정/카테고리를 블루로 자동 이동
   (function migrateTone(){
@@ -960,6 +1082,30 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function catById(id){ for(var i=0;i<categories.length;i++){ if(categories[i].id===id) return categories[i]; } return null; }
   function catColor(id){ var c=catById(id); return c?c.color:COLORS[0]; }
   function catName(id){ var c=catById(id); return c?c.name:"기타"; }
+  // 저장 · 동기화 비교용 카테고리 모양. pin = 이 카테고리의 할 일 날짜를 왼쪽 위 달력에 표시 (시험 · 마감 등)
+  function catClean(c){ var o={ id:c.id, name:c.name, color:c.color, emoji:c.emoji||"" }; if(c.pin) o.pin=true; return o; }
+
+  // ---- 할 일 ----
+  function loadTodos(){
+    try{ var t=JSON.parse(localStorage.getItem(TODO_KEY)); if(Array.isArray(t)) return t.filter(function(x){ return x && typeof x.id==="string" && typeof x.title==="string" && typeof x.date==="string"; }); }catch(e){}
+    return [];
+  }
+  // 저장 · 동기화 비교용 모양 (키 순서 고정)
+  function todoClean(t){
+    var o={ id:t.id, title:t.title }; if(t.cat) o.cat=t.cat; o.date=t.date;
+    o.done=!!t.done; if(t.done && t.doneAt) o.doneAt=t.doneAt; o.at=t.at||0;
+    return o;
+  }
+  function loadTodoCats(){
+    try{ var c=JSON.parse(localStorage.getItem(TODO_CAT_KEY)); if(Array.isArray(c) && c.length) return c; }catch(e){}
+    var copy=categories.map(function(c){ var o={ id:c.id, name:c.name, color:c.color, emoji:c.emoji||"" }; if(c.pin) o.pin=true; return o; });
+    try{ localStorage.setItem(TODO_CAT_KEY, JSON.stringify(copy)); }catch(e){}
+    return copy;
+  }
+  function saveTodoCats(){ try{ localStorage.setItem(TODO_CAT_KEY, JSON.stringify(todoCats)); }catch(e){} onLocalChange("tcat"); }
+  function todoCatById(id){ for(var i=0;i<todoCats.length;i++){ if(todoCats[i].id===id) return todoCats[i]; } return null; }
+  function todoCatColor(id){ var c=todoCatById(id); return c?c.color:COLORS[0]; }
+  function saveTodos(){ try{ localStorage.setItem(TODO_KEY, JSON.stringify(todos.map(todoClean))); }catch(e){} onLocalChange("todo"); }
   function catEmoji(id){ var c=catById(id); return (c && c.emoji) || ""; }
   function evColor(e){ return e.color || catColor(e.cat); } // 개별 색 우선, 없으면 카테고리 색
   function evLabel(e){ return e.title||"제목 없음"; }
@@ -1023,7 +1169,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var plannerEl=document.querySelector(".planner");
   var agendaEl=document.getElementById("agenda"), agridEl=document.getElementById("agrid");
   var tabbarEl=document.getElementById("tabbar");
-  var tabGridBtn=document.getElementById("tabGrid"), tabListBtn=document.getElementById("tabList");
+  var tabGridBtn=document.getElementById("tabGrid"), tabListBtn=document.getElementById("tabList"), tabTodoBtn=document.getElementById("tabTodo");
 
   // ---- 주간 목록 보기 ----
   function renderAgenda(){
@@ -1044,20 +1190,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     agendaEl.style.setProperty("--cellH", Math.max(150, Math.floor(avail/4))+"px");
 
     // 1) 미니 달력
-    var h='<div class="acell mcal"><div class="mhead"><button data-cal="-1" aria-label="이전 달">‹</button><span class="mt">'+cm.getFullYear()+'년 '+(cm.getMonth()+1)+'월</span><button data-cal="1" aria-label="다음 달">›</button></div><div class="mgrid">';
-    for(var w=0;w<7;w++) h+='<div class="mw">'+DOW[w]+'</div>';
-    var selMon=ymd(mon), d=mondayOf(cm);
-    for(var row=0; row<6; row++){
-      if(row>0 && d.getMonth()!==cm.getMonth() && d>cm) break;   // 다음 달로 넘어가면 끝
-      var rowSel = (ymd(d)===selMon);
-      for(var c=0;c<7;c++){
-        var ds=ymd(d);
-        var cls="md"+(c===5?" sat":"")+(c===6?" sun":"")+(holidays[ds]?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(rowSel?" sel"+(c===0?" first":"")+(c===6?" last":""):"");
-        h+='<div class="'+cls+'" data-date="'+ds+'"><span>'+d.getDate()+'</span></div>';
-        d=addDays(d,1);
-      }
-    }
-    h+='</div></div>';
+    var h=miniCal("acell", mon, cm, null);
 
     // 2) 월~일 칸
     for(var k=0;k<7;k++){
@@ -1072,6 +1205,42 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     }
     agridEl.innerHTML=h;
     for(var yr in years) refreshHolidays(+yr);
+  }
+  // 달력 표시 카테고리의 할 일 → { 날짜: {color, title, done, multi} }
+  // 색: 안 끝난 할 일 중 카테고리 목록에서 더 위에 있는 카테고리 (다 끝났으면 같은 규칙으로 고르고 흐리게)
+  // multi: 그 날 달력 표시 카테고리가 2개 이상 → 오른쪽 위 작은 점
+  function todoPins(){
+    var m={}, rank={};
+    todoCats.forEach(function(c, i){ rank[c.id]=i; });
+    todos.forEach(function(t){
+      var c=t.cat && todoCatById(t.cat); if(!c || !c.pin) return;
+      var p=m[t.date] || (m[t.date]={ cats:{}, best:null });
+      p.cats[c.id]=1;
+      var b=p.best, better = !b || (b.done && !t.done) || (b.done===!!t.done && rank[c.id]<rank[b.cat]);
+      if(better) p.best={ cat:c.id, color:c.color, title:t.title, done:!!t.done };
+    });
+    var out={};
+    for(var ds in m){ var b=m[ds].best; out[ds]={ color:b.color, title:b.title, done:b.done, multi:Object.keys(m[ds].cats).length>1 }; }
+    return out;
+  }
+  // 미니 달력 (주 선택기). mark(ds)가 참인 날엔 점, 달력 표시 카테고리의 할 일이 있는 날엔 색 동그라미
+  function miniCal(cellCls, mon, cm, mark){
+    var today=ymd(new Date());
+    var h='<div class="'+cellCls+' mcal"><div class="mhead"><button data-cal="-1" aria-label="이전 달">‹</button><span class="mt">'+cm.getFullYear()+'년 '+(cm.getMonth()+1)+'월</span><button data-cal="1" aria-label="다음 달">›</button></div><div class="mgrid">';
+    for(var w=0;w<7;w++) h+='<div class="mw">'+DOW[w]+'</div>';
+    var selMon=ymd(mon), d=mondayOf(cm), pins=todoPins();
+    for(var row=0; row<6; row++){
+      if(row>0 && d.getMonth()!==cm.getMonth() && d>cm) break;   // 다음 달로 넘어가면 끝
+      var rowSel = (ymd(d)===selMon);
+      for(var c=0;c<7;c++){
+        var ds=ymd(d);
+        var mk=mark ? mark(ds) : null, pin=pins[ds];
+        var cls="md"+(c===5?" sat":"")+(c===6?" sun":"")+(holidays[ds]?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(rowSel?" sel"+(c===0?" first":"")+(c===6?" last":""):"")+(mk?" has":"")+(pin?" pin"+(pin.done?" pdone":"")+(pin.multi?" multi":""):"");
+        h+='<div class="'+cls+'" data-date="'+ds+'"'+(pin?' style="--pin:'+pin.color+'" title="'+esc(pin.title)+'"':'')+'><span>'+d.getDate()+'</span></div>';
+        d=addDays(d,1);
+      }
+    }
+    return h+'</div></div>';
   }
   agridEl.addEventListener("click", function(ev){
     var nav=ev.target.closest("[data-cal]");
@@ -1090,9 +1259,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 탭 바: 시간표 ↔ 주간 목록
   function setLayout(l){
     if(l===layout) return;
-    if(l==="list"){
-      // 지금 보던 날이 들어 있는 주로
-      anchor = (view==="day") ? parseYmd(selDate) : (mode!=="7" ? winStart : anchor);
+    if(l!=="grid"){
+      // 시간표에서 오면 지금 보던 날이 들어 있는 주로 (주간 목록 ↔ 할 일은 같은 주 그대로)
+      if(layout==="grid") anchor = (view==="day") ? parseYmd(selDate) : (mode!=="7" ? winStart : anchor);
     } else {
       // 목록에서 고른 주로 시간표를 맞춤 (오늘이 그 주면 오늘부터)
       var mon=mondayOf(anchor), t=startOfDay(new Date());
@@ -1105,12 +1274,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   tabGridBtn.onclick=function(){ setLayout("grid"); };
   tabListBtn.onclick=function(){ setLayout("list"); };
-  window.addEventListener("resize", function(){ if(layout==="list") render(); });
+  tabTodoBtn.onclick=function(){ setLayout("todo"); };
+  window.addEventListener("resize", function(){ if(layout!=="grid") render(); });
 
   function render(){
     plannerEl.classList.toggle("list", layout==="list");
-    tabGridBtn.classList.toggle("on", layout!=="list");
+    plannerEl.classList.toggle("todo", layout==="todo");
+    tabGridBtn.classList.toggle("on", layout==="grid");
     tabListBtn.classList.toggle("on", layout==="list");
+    tabTodoBtn.classList.toggle("on", layout==="todo");
+    document.getElementById("addBtn").setAttribute("aria-label", layout==="todo" ? "할 일 추가" : "일정 추가");
+    if(layout==="todo"){ renderTodos(); return; }
     if(layout==="list"){ renderAgenda(); return; }
     var isDay = (view==="day");
     var multi = !isDay && mode!=="7";             // 4일·3일 슬라이딩 모드
@@ -1301,21 +1475,24 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     });
   }
   function goPrev(){
-    if(layout==="list"){ anchor=addDays(mondayOf(anchor),-7); calMonth=null; render(); agridEl.classList.remove("anim-next","anim-prev"); void agridEl.offsetWidth; agridEl.classList.add("anim-prev"); return; }
+    if(layout!=="grid"){ anchor=addDays(mondayOf(anchor),-7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-prev"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),-1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,-1); anchor=winStart; }   // 하루씩 미끄러지기
     else anchor=addDays(mondayOf(anchor),-7);
     render(); animateNav(-1);
   }
   function goNext(){
-    if(layout==="list"){ anchor=addDays(mondayOf(anchor),7); calMonth=null; render(); agridEl.classList.remove("anim-next","anim-prev"); void agridEl.offsetWidth; agridEl.classList.add("anim-next"); return; }
+    if(layout!=="grid"){ anchor=addDays(mondayOf(anchor),7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-next"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,1); anchor=winStart; }
     else anchor=addDays(mondayOf(anchor),7);
     render(); animateNav(1);
   }
-  document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); winStart=startOfDay(new Date()); calMonth=null; render(); if(layout!=="list") scrollToNow(); };
-  document.getElementById("addBtn").onclick=function(){ openAdd(selDate, 9*60); };
+  document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); winStart=startOfDay(new Date()); calMonth=null; render(); if(layout==="grid") scrollToNow(); };
+  document.getElementById("addBtn").onclick=function(){
+    if(layout==="todo"){ var mon=mondayOf(anchor), t=startOfDay(new Date()); openTodo(null, ymd((t>=mon && t<addDays(mon,7)) ? t : mon)); }
+    else openAdd(selDate, 9*60);
+  };
   backBtn.onclick=function(){
     // 하루보기에서 다른 날로 옮겨 다녔으면, 돌아갈 때 그 날이 보이도록 창을 맞춤
     if(mode!=="7"){ var s=parseYmd(selDate); if(s<winStart || s>=addDays(winStart,+mode)) winStart=s; }
@@ -1339,7 +1516,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // 좌우 스와이프로 주/일 넘기기 (세로 스크롤과 구분: 가로 이동이 뚜렷할 때만)
   var swX=0, swY=0, swT=0;
-  [document.getElementById("scroll"), agendaEl].forEach(function(swEl){
+  [document.getElementById("scroll"), agendaEl, document.getElementById("todos")].forEach(function(swEl){
     swEl.addEventListener("touchstart", function(e){ var t=e.touches[0]; swX=t.clientX; swY=t.clientY; swT=Date.now(); }, {passive:true});
     swEl.addEventListener("touchend", function(e){
       var t=e.changedTouches[0]; var dx=t.clientX-swX, dy=t.clientY-swY;
@@ -1350,7 +1527,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 제목 탭 -> 날짜로 점프
   var jumpDate=document.getElementById("jumpDate");
   document.getElementById("titleBtn").addEventListener("click", function(){
-    jumpDate.value = (layout==="list") ? ymd(mondayOf(anchor)) : (view==="day") ? selDate : (mode!=="7" ? ymd(winStart) : ymd(mondayOf(anchor)));
+    jumpDate.value = (layout!=="grid") ? ymd(mondayOf(anchor)) : (view==="day") ? selDate : (mode!=="7" ? ymd(winStart) : ymd(mondayOf(anchor)));
     try{ if(jumpDate.showPicker) jumpDate.showPicker(); else { jumpDate.focus(); jumpDate.click(); } }catch(e){ try{ jumpDate.focus(); jumpDate.click(); }catch(_){} }
   });
   jumpDate.addEventListener("change", function(){
@@ -1360,6 +1537,153 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     render();
   });
 
+  // ================= 할 일 (요일별 체크리스트) =================
+  var todosEl=document.getElementById("todos"), tgridEl=document.getElementById("tgrid");
+  var CHECK_SVG='<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var TODO_LASTCAT_KEY="weekly-planner-todo-cat";   // 마지막에 고른 카테고리 (다음 추가 때 기본값)
+  function todoVisible(t){ return true; }   // 메뉴의 "표시"(숨김)는 일정 카테고리 전용
+  function todoOrder(a,b){
+    if(!!a.done!==!!b.done) return a.done?1:-1;                 // 안 한 것 위, 한 것 아래
+    return (a.at||0)-(b.at||0);
+  }
+  function renderTodos(){
+    var mon=mondayOf(anchor), today=ymd(new Date());
+    var week=[]; for(var i=0;i<7;i++) week.push(addDays(mon,i));
+    var cm = calMonth || new Date(addDays(mon,3).getFullYear(), addDays(mon,3).getMonth(), 1);
+    var years={}; years[cm.getFullYear()]=1; week.forEach(function(d){ years[d.getFullYear()]=1; });
+    for(var yk in years) loadHolidayCache(+yk);
+
+    // 날짜별로 묶기
+    var byDate={}, leftByDate={};
+    todos.forEach(function(t){ if(!todoVisible(t)) return; (byDate[t.date]=byDate[t.date]||[]).push(t); if(!t.done) leftByDate[t.date]=1; });
+
+    // 머리글: "할 일" + 이번 주 남은 · 완료
+    var left=0, done=0;
+    week.forEach(function(d){ (byDate[ymd(d)]||[]).forEach(function(t){ if(t.done) done++; else left++; }); });
+    var first=week[0], last=week[6];
+    var range=(first.getMonth()+1)+"월 "+first.getDate()+"일 – "+(first.getMonth()===last.getMonth() ? "" : (last.getMonth()+1)+"월 ")+last.getDate()+"일";
+    document.getElementById("monthLabel").textContent="할 일";
+    document.getElementById("rangeLabel").textContent = range + (left ? " · 남은 "+left : (done ? " · 모두 완료" : ""));
+    backBtn.style.display="none";
+
+    // 칸 높이: 주간 목록과 같게 화면을 4줄로
+    var avail=tabbarEl.getBoundingClientRect().top - todosEl.getBoundingClientRect().top - 5 - 8 - 15;   // 위 여백 · 탭 바 위 틈 · 칸 사이 3번
+    todosEl.style.setProperty("--cellH", Math.max(140, Math.floor(avail/4))+"px");
+
+    var h=miniCal("tcell", mon, cm, function(ds){ return !!leftByDate[ds]; });
+    for(var k=0;k<7;k++){
+      var dd=week[k], dds=ymd(dd), hol=holidays[dds], items=(byDate[dds]||[]).slice().sort(todoOrder);
+      var nLeft=items.filter(function(t){ return !t.done; }).length;
+      h+='<div class="tcell'+(k===5?" sat":"")+(k===6?" sun":"")+(hol?" holiday":"")+(dds===today?" today":"")+'" data-date="'+dds+'">'+
+         '<div class="ahead"><span class="adow">'+DOW[k]+'</span><span class="anum tnum">'+dd.getDate()+'</span>'+(hol?'<span class="ahol">'+esc(hol)+'</span>':'')+(nLeft?'<span class="tleft tnum">'+nLeft+'</span>':'')+'</div>';
+      items.slice(0, TODO_CELL_MAX).forEach(function(t){ h+=todoItemHtml(t); });
+      if(items.length>TODO_CELL_MAX) h+='<div class="tmore tnum">… +'+(items.length-TODO_CELL_MAX)+'</div>';
+      h+='</div>';
+    }
+    tgridEl.innerHTML=h;
+    for(var yr in years) refreshHolidays(+yr);
+  }
+  var TODO_CELL_MAX=6;   // 칸에 보이는 개수 (넘치면 "… +n", 칸을 누르면 하루 확대 보기)
+  function todoItemHtml(t){
+    return '<div class="titem'+(t.done?" done":"")+'" data-id="'+esc(t.id)+'" style="--evt:'+todoCatColor(t.cat)+'">'+
+           '<button class="tchk" aria-label="완료" aria-pressed="'+(t.done?"true":"false")+'">'+CHECK_SVG+'</button>'+
+           '<div class="ttx"><span>'+esc(t.title)+'</span></div></div>';
+  }
+  function todoById(id){ for(var i=0;i<todos.length;i++){ if(todos[i].id===id) return todos[i]; } return null; }
+  // 체크 켜고 끄기 (칸 · 확대 보기 공통): 줄 긋는 모습을 보여 준 뒤 순서 · 개수 정리
+  function toggleTodo(item, chk){
+    var t=todoById(item.getAttribute("data-id")); if(!t) return;
+    t.done=!t.done; if(t.done) t.doneAt=Date.now(); else delete t.doneAt;
+    item.classList.toggle("done", t.done); chk.setAttribute("aria-pressed", t.done?"true":"false");
+    saveTodos();
+    clearTimeout(tgridEl._t); tgridEl._t=setTimeout(function(){
+      if(layout==="todo") renderTodos();
+      if(todoDaySheet.classList.contains("on")) renderTodoDay();
+    }, 650);
+  }
+  tgridEl.addEventListener("click", function(ev){
+    var nav=ev.target.closest("[data-cal]");
+    if(nav){ var cm0=calMonth || new Date(addDays(mondayOf(anchor),3).getFullYear(), addDays(mondayOf(anchor),3).getMonth(), 1);
+      calMonth=new Date(cm0.getFullYear(), cm0.getMonth()+(+nav.getAttribute("data-cal")), 1); render(); return; }
+    var md=ev.target.closest(".md");
+    if(md){ anchor=parseYmd(md.getAttribute("data-date")); calMonth=null; render(); return; }
+    if(ev.target.closest(".mcal")) return;
+    var chk=ev.target.closest(".tchk"), cell=ev.target.closest(".tcell");
+    if(chk){ toggleTodo(chk.closest(".titem"), chk); return; }
+    if(cell) openTodoDay(cell.getAttribute("data-date"));   // 칸 누르기 → 그 날 확대 보기 (추가는 거기서 +)
+  });
+
+  // 하루 확대 보기
+  var todoDaySheet=document.getElementById("todoDaySheet"), todoDayListEl=document.getElementById("todoDayList");
+  var todoDayDate=null, todoFromDay=false;   // todoFromDay: 편집 · 추가 시트를 닫으면 확대 보기로 돌아감
+  function renderTodoDay(){
+    var d=parseYmd(todoDayDate), items=todos.filter(function(t){ return t.date===todoDayDate && todoVisible(t); }).sort(todoOrder);
+    var left=items.filter(function(t){ return !t.done; }).length, done=items.length-left;
+    document.getElementById("todoDayTitle").textContent=(d.getMonth()+1)+"월 "+d.getDate()+"일 "+DOW[wd(d)]+"요일";
+    document.getElementById("todoDaySub").textContent = !items.length ? "" : !left ? "모두 완료" : done ? ("남은 "+left+" · 완료 "+done) : ("남은 "+left);
+    todoDayListEl.innerHTML = items.length ? items.map(todoItemHtml).join("") : '<div class="tday-empty">할 일 없음</div>';
+  }
+  function openTodoDay(ds){ todoDayDate=ds; renderTodoDay(); openSheet(todoDaySheet); }
+  todoDayListEl.addEventListener("click", function(ev){
+    var chk=ev.target.closest(".tchk"), item=ev.target.closest(".titem");
+    if(chk){ toggleTodo(chk.closest(".titem"), chk); return; }
+    if(item){ var t=todoById(item.getAttribute("data-id")); if(t){ closeSheet(); todoFromDay=true; openTodo(t); } }
+  });
+  document.getElementById("todoDayAdd").onclick=function(){ closeSheet(); todoFromDay=true; openTodo(null, todoDayDate); };   // closeSheet가 표시를 지우므로 그 다음에 켬
+  document.getElementById("todoDayClose").onclick=closeSheet;
+  todoDaySheet.querySelectorAll(".tday-nav").forEach(function(b){
+    b.onclick=function(){ todoDayDate=ymd(addDays(parseYmd(todoDayDate), +b.getAttribute("data-step"))); renderTodoDay(); };
+  });
+  // 편집 · 추가 시트를 닫은 뒤: 확대 보기에서 왔으면 그리로 돌아감
+  function afterTodoSheet(){
+    var back=todoFromDay; todoFromDay=false;
+    if(back && todoDayDate){ renderTodoDay(); openSheet(todoDaySheet); }
+  }
+
+  // 추가 · 편집 시트
+  var todoSheet=document.getElementById("todoSheet"), todoTitleEl=document.getElementById("todoTitle"), todoDateEl=document.getElementById("todoDate"), todoErrEl=document.getElementById("todoErr");
+  var todoEditId=null, todoCat=null;
+  function buildTodoCats(){
+    var h="";
+    todoCats.forEach(function(c){ h+='<button class="catchip'+(c.id===todoCat?" on":"")+'" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>'; });
+    h+='<button class="catchip addcat" id="todoCatAdd" aria-label="새 카테고리">+</button>';
+    document.getElementById("todoCats").innerHTML=h;
+  }
+  function openTodo(t, date){
+    todoEditId = t ? t.id : null;
+    var last=null; try{ last=localStorage.getItem(TODO_LASTCAT_KEY); }catch(e){}
+    todoCat = t ? (t.cat||null) : ((last && todoCatById(last)) ? last : ((todoCats[0]&&todoCats[0].id) || null));
+    todoTitleEl.value = t ? t.title : "";
+    todoDateEl.value = t ? t.date : (date || ymd(new Date()));
+    todoErrEl.textContent="";
+    document.getElementById("todoSheetTitle").textContent = t ? "할 일 편집" : "할 일 추가";
+    document.getElementById("todoDel").style.display = t ? "block" : "none";
+    buildTodoCats(); openSheet(todoSheet);
+    setTimeout(function(){ todoTitleEl.focus(); }, 250);
+  }
+  document.getElementById("todoCats").addEventListener("click", function(e){
+    if(e.target.closest("#todoCatAdd")){ openCatManage("todo"); return; }   // + → 할 일 카테고리 관리, 닫으면 이 시트로
+    var b=e.target.closest(".catchip"); if(!b) return;
+    todoCat=b.getAttribute("data-cat"); buildTodoCats();
+  });
+  function saveTodoSheet(){
+    var title=todoTitleEl.value.trim(), date=todoDateEl.value;
+    if(!title){ todoErrEl.textContent="할 일을 입력하세요"; todoTitleEl.focus(); return; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ todoErrEl.textContent="날짜를 고르세요"; return; }
+    if(todoEditId){ var t=todoById(todoEditId); if(t){ t.title=title.slice(0,100); t.date=date; if(todoCat) t.cat=todoCat; else delete t.cat; } }
+    else todos.push({ id:uid(), title:title.slice(0,100), cat:todoCat||undefined, date:date, done:false, at:Date.now() });
+    if(todoCat){ try{ localStorage.setItem(TODO_LASTCAT_KEY, todoCat); }catch(e){} }
+    var back=todoFromDay; saveTodos(); closeSheet(); todoFromDay=back;
+    if(!back){ var dd=parseYmd(date); if(dd<mondayOf(anchor) || dd>=addDays(mondayOf(anchor),7)){ anchor=dd; calMonth=null; } }   // 다른 주로 옮겼으면 그 주로
+    render(); afterTodoSheet();
+  }
+  document.getElementById("todoSave").onclick=saveTodoSheet;
+  todoTitleEl.addEventListener("keydown", function(e){ if(e.isComposing || e.keyCode===229) return; if(e.key==="Enter"){ e.preventDefault(); saveTodoSheet(); } });
+  document.getElementById("todoCancel").onclick=function(){ var back=todoFromDay; closeSheet(); todoFromDay=back; afterTodoSheet(); };
+  document.getElementById("todoDel").onclick=function(){
+    todos=todos.filter(function(t){ return t.id!==todoEditId; });
+    var back=todoFromDay; saveTodos(); closeSheet(); todoFromDay=back; render(); afterTodoSheet();
+  };
   // ================= Sheets =================
   var scrim=document.getElementById("scrim");
   var sheet=document.getElementById("sheet");
@@ -1522,21 +1846,33 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     EMOJIS.forEach(function(m){ h+='<button data-emo="'+m+'"'+(m===sel?' class="on"':'')+'>'+m+'</button>'; });
     return h;
   }
+  var catScope="ev";   // 카테고리 관리 화면이 보여 주는 목록: "ev"=일정 / "todo"=할 일
+  function scopeCats(){ return catScope==="todo" ? todoCats : categories; }
+  function scopeCatById(id){ return catScope==="todo" ? todoCatById(id) : catById(id); }
+  function saveScopeCats(){ if(catScope==="todo") saveTodoCats(); else saveCategories(); }
+  function setCatScope(sc){
+    catScope=sc; editCat=null;
+    document.querySelectorAll("#catScopeSeg button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-scope")===sc); });
+    document.getElementById("newCatPinRow").style.display = (sc==="todo") ? "" : "none";   // 달력 표시는 할 일 카테고리만
+    buildCatList();
+  }
+  document.getElementById("catScopeSeg").addEventListener("click", function(e){ var b=e.target.closest("button[data-scope]"); if(b) setCatScope(b.getAttribute("data-scope")); });
   function buildCatList(){
-    var h="";
-    categories.forEach(function(c){
+    var h="", only=scopeCats().length<=1;   // 마지막 하나는 지울 수 없음 → ✕ 비활성
+    scopeCats().forEach(function(c){
       var on = editCat && editCat.id===c.id;
       h+='<div class="crow'+(on?" on":"")+'" data-edit="'+c.id+'"><span class="ldot" style="background:'+c.color+'"></span>'+
         '<span class="cemo">'+(c.emoji?esc(c.emoji):"")+'</span>'+
-        '<div class="cname">'+esc(c.name)+'</div>'+
+        '<div class="cname">'+esc(c.name)+'</div>'+(catScope==="todo" && c.pin?'<span class="cpin">달력</span>':'')+
         '<button class="cpen" aria-label="수정"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg></button>'+
-        '<button class="cdel" data-del="'+c.id+'" aria-label="삭제">✕</button></div>';
+        '<button class="cdel" data-del="'+c.id+'"'+(only?' disabled aria-label="삭제 (마지막 하나는 남아야 해요)"':' aria-label="삭제"')+'>✕</button></div>';
       if(on){
         var cols=COLORS.indexOf(editCat.color)<0 ? COLORS.concat([editCat.color]) : COLORS;
         h+='<div class="cedit">'+
           '<div class="field"><label>이름</label><input type="text" id="editCatName" maxlength="10" autocomplete="off" value="'+esc(editCat.name)+'"></div>'+
           '<div class="field"><label>색상</label><div class="swatches" id="editCatColors">'+cols.map(function(x){ return '<button data-c="'+x+'" style="background:'+x+'"'+(x===editCat.color?' class="on"':'')+'></button>'; }).join('')+'</div></div>'+
           '<div class="field"><label>이모지</label><div class="emogrid" id="editCatEmojis">'+emoGrid(editCat.emoji||"")+'</div></div>'+
+          (catScope!=="todo" ? '' : '<div class="field pinrow"><label>달력 표시</label><button class="switch'+(editCat.pin?" on":"")+'" data-epin role="switch" aria-checked="'+(editCat.pin?"true":"false")+'" aria-label="달력 표시"><i></i></button></div>')+
           '<div class="acts"><button class="btn-cancel" data-ecancel>취소</button><button class="btn-save" data-esave>저장</button></div>'+
         '</div>';
       }
@@ -1544,17 +1880,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     document.getElementById("catList").innerHTML=h;
   }
   function saveCatEdit(){
-    var c=catById(editCat.id); if(!c){ editCat=null; buildCatList(); return; }
+    var c=scopeCatById(editCat.id); if(!c){ editCat=null; buildCatList(); return; }
     var name=document.getElementById("editCatName").value.trim();
     if(!name){ document.getElementById("editCatName").focus(); return; }
     // 색을 바꾸면, 카테고리 색을 그대로 쓰던 일정도 새 색으로 (따로 색을 고른 일정은 그대로)
-    if(editCat.color!==c.color){
+    if(catScope==="ev" && editCat.color!==c.color){
       var ch=false;
       events.forEach(function(e){ if(e.cat===c.id && (!e.color || e.color===c.color)){ e.color=editCat.color; ch=true; } });
       if(ch) save();
     }
-    c.name=name; c.color=editCat.color; c.emoji=editCat.emoji;
-    saveCategories();
+    c.name=name; c.color=editCat.color; c.emoji=editCat.emoji; if(catScope==="todo" && editCat.pin) c.pin=true; else delete c.pin;
+    saveScopeCats();
     editCat=null; buildCatList(); buildMenuFilter(); render();
   }
   function buildNewCatEmojis(){ newCatEmoji=""; document.getElementById("newCatEmojis").innerHTML=emoGrid(""); }
@@ -1571,24 +1907,34 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function syncNewCatColor(){ document.querySelectorAll("#newCatColors button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-c")===newCatColor); }); }
   document.getElementById("newCatColors").addEventListener("click",function(ev){ var b=ev.target.closest("button"); if(!b)return; newCatColor=b.getAttribute("data-c"); syncNewCatColor(); });
 
+  var newCatPin=false, newCatPinEl=document.getElementById("newCatPin");
+  function setNewCatPin(v){ newCatPin=v; newCatPinEl.classList.toggle("on", v); newCatPinEl.setAttribute("aria-checked", v?"true":"false"); }
+  newCatPinEl.onclick=function(){ setNewCatPin(!newCatPin); };
+  var catReturnToTodo=false;
   function openCatManage(fromForm){
-    catReturnToForm=!!fromForm;
-    if(fromForm) sheet.classList.remove("on");
-    editCat=null; buildCatList(); buildNewCatColors(); buildNewCatEmojis(); document.getElementById("newCatName").value="";
+    catReturnToForm = (fromForm===true);
+    catReturnToTodo = (fromForm==="todo");
+    if(catReturnToForm) sheet.classList.remove("on");
+    if(catReturnToTodo) todoSheet.classList.remove("on");
+    // 할 일 쪽에서 열면 할 일 카테고리, 아니면 일정 카테고리 (메뉴에서는 지금 보는 화면 기준)
+    setCatScope((catReturnToTodo || (fromForm===false && layout==="todo")) ? "todo" : "ev");
+    buildNewCatColors(); buildNewCatEmojis(); document.getElementById("newCatName").value=""; setNewCatPin(false);
     openSheet(catSheet);
   }
   function closeCatManage(){
     catSheet.classList.remove("on");
     if(catReturnToForm){ catReturnToForm=false; buildCatChips(); if(!catById(form.cat)) form.cat=categories[0].id; syncCat(); sheet.classList.add("on"); }
+    else if(catReturnToTodo){ catReturnToTodo=false; if(todoCat && !todoCatById(todoCat)) todoCat=(todoCats[0]&&todoCats[0].id)||null; buildTodoCats(); todoSheet.classList.add("on"); }
     else closeSheet();
   }
   document.getElementById("catCloseBtn").onclick=closeCatManage;
   document.getElementById("catAddBtn").onclick=function(){
     var name=document.getElementById("newCatName").value.trim();
     if(!name) return;
-    categories.push({ id:"c"+uid(), name:name, color:newCatColor, emoji:newCatEmoji });
-    saveCategories();
-    document.getElementById("newCatName").value="";
+    var nc={ id:"c"+uid(), name:name, color:newCatColor, emoji:newCatEmoji }; if(catScope==="todo" && newCatPin) nc.pin=true;
+    scopeCats().push(nc);
+    saveScopeCats();
+    document.getElementById("newCatName").value=""; setNewCatPin(false);
     buildCatList(); buildNewCatColors(); buildNewCatEmojis(); buildMenuFilter();
   };
   document.getElementById("catList").addEventListener("click",function(ev){
@@ -1598,14 +1944,23 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       if(cb){ editCat.color=cb.getAttribute("data-c"); document.querySelectorAll("#editCatColors button").forEach(function(x){ x.classList.toggle("on", x===cb); }); return; }
       var pick=ev.target.closest("#editCatEmojis button[data-emo]");
       if(pick){ editCat.emoji=pick.getAttribute("data-emo"); document.querySelectorAll("#editCatEmojis button").forEach(function(x){ x.classList.toggle("on", x===pick); }); return; }
+      var pn=ev.target.closest("[data-epin]");
+      if(pn){ editCat.pin=!editCat.pin; pn.classList.toggle("on", editCat.pin); pn.setAttribute("aria-checked", editCat.pin?"true":"false"); return; }
       if(ev.target.closest("[data-esave]")){ saveCatEdit(); return; }
       if(ev.target.closest("[data-ecancel]")){ editCat=null; buildCatList(); }
       return;
     }
     var d=ev.target.closest(".cdel");
     if(d){
-      if(categories.length<=1) return;
+      if(scopeCats().length<=1) return;
       var id=d.getAttribute("data-del");
+      if(catScope==="todo"){
+        if(!confirm("이 카테고리를 삭제할까요?\n(해당 할 일은 그대로 남아요)")) return;
+        todoCats=todoCats.filter(function(c){ return c.id!==id; });
+        if(editCat && editCat.id===id) editCat=null;
+        saveTodoCats(); buildCatList(); render();
+        return;
+      }
       if(!confirm("이 카테고리를 삭제할까요?\n(해당 일정은 저장된 색으로 계속 표시돼요)")) return;
       categories=categories.filter(function(c){ return c.id!==id; });
       if(hidden[id]){ delete hidden[id]; saveHidden(); }
@@ -1615,14 +1970,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     }
     // 줄(또는 연필) 탭 → 수정 패널 펼치기/접기
     var row=ev.target.closest(".crow"); if(!row) return;
-    var c=catById(row.getAttribute("data-edit")); if(!c) return;
-    editCat = (editCat && editCat.id===c.id) ? null : { id:c.id, name:c.name, color:c.color, emoji:c.emoji||"" };
+    var c=scopeCatById(row.getAttribute("data-edit")); if(!c) return;
+    editCat = (editCat && editCat.id===c.id) ? null : { id:c.id, name:c.name, color:c.color, emoji:c.emoji||"", pin:!!c.pin };
     buildCatList();
     if(editCat){ var inp=document.getElementById("editCatName"); if(inp) inp.closest(".cedit").scrollIntoView({block:"nearest", behavior:"smooth"}); }
   });
 
   function openSheet(el){ scrim.classList.add("on"); el.classList.add("on"); }
-  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); menuSheet.classList.remove("on"); acctSheet.classList.remove("on"); peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad"); }
+  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); catReturnToTodo=false; menuSheet.classList.remove("on"); acctSheet.classList.remove("on"); todoSheet.classList.remove("on"); todoDaySheet.classList.remove("on"); todoFromDay=false; peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad"); }
   scrim.onclick=closeSheet;
   document.getElementById("cancelBtn").onclick=closeSheet;
   document.getElementById("bkCloseBtn").onclick=closeSheet;
@@ -1714,9 +2069,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       if(!c || typeof c!=="object" || !ID_RE.test(c.id) || seen[c.id]) return;
       var name=str(c.name,20).trim(); if(!name) return;
       seen[c.id]=1;
-      out.push({ id:c.id, name:name, color:COLOR_RE.test(c.color)?c.color:COLORS[0], emoji:str(c.emoji,8) });
+      out.push(catClean({ id:c.id, name:name, color:COLOR_RE.test(c.color)?c.color:COLORS[0], emoji:str(c.emoji,8), pin:c.pin===true }));
     });
     return out;
+  }
+  function sanitizeTodo(t){
+    if(!t || typeof t!=="object") return null;
+    var title=str(t.title,100).trim(); if(!title || !DATE_RE.test(t.date)) return null;
+    var o={ id:ID_RE.test(t.id)?t.id:uid(), title:title, date:t.date, done:t.done===true, at:(isFinite(+t.at) && +t.at>0) ? Math.round(+t.at) : Date.now() };
+    if(ID_RE.test(t.cat)) o.cat=t.cat;
+    if(o.done && isFinite(+t.doneAt) && +t.doneAt>0) o.doneAt=Math.round(+t.doneAt);
+    return todoClean(o);
   }
   function sanitizeEvent(e){
     if(!e || typeof e!=="object") return null;
@@ -1753,7 +2116,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     bkLast.textContent=relTime(m.lastExport);
   }
   document.getElementById("exportBtn").onclick=function(){
-    var payload={ app:"weekly-planner", v:2, exportedAt:new Date().toISOString(), events:cleanEvents(), categories:categories, hiddenCats:hidden };
+    var payload={ app:"weekly-planner", v:2, exportedAt:new Date().toISOString(), events:cleanEvents(), categories:categories, hiddenCats:hidden, todos:todos.map(todoClean), todoCategories:todoCats.map(catClean) };
     var json=JSON.stringify(payload,null,2);
     var fname="플래너-백업-"+ymd(new Date())+".json";
     var blob=new Blob([json],{type:"application/json"});
@@ -1786,7 +2149,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       }catch(e){ bkLast.textContent="⚠️ 파일을 읽을 수 없어요 (형식 확인)"; return; }
       var valid=arr.map(sanitizeEvent).filter(Boolean);
       var cats = (d && Array.isArray(d.categories)) ? sanitizeCats(d.categories) : null; // 예전(v1) 백업엔 카테고리가 없음
-      var msg="현재 일정을 이 백업으로 덮어쓸까요?\n(불러올 일정: "+valid.length+"개"+(cats&&cats.length ? ", 카테고리: "+cats.length+"개" : "")+")";
+      var tds = (d && Array.isArray(d.todos)) ? d.todos.map(sanitizeTodo).filter(Boolean) : null;   // 할 일은 이후 백업부터
+      var msg="현재 일정을 이 백업으로 덮어쓸까요?\n(불러올 일정: "+valid.length+"개"+(cats&&cats.length ? ", 카테고리: "+cats.length+"개" : "")+(tds ? ", 할 일: "+tds.length+"개" : "")+")";
       if(!confirm(msg)) return;
       if(cats && cats.length){
         categories=cats; saveCategories();
@@ -1798,6 +2162,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         valid.forEach(function(e){ if(e.cat && !catById(e.cat)){ categories.push({ id:e.cat, name:"복원된 태그", color:e.color||COLORS[0], emoji:"" }); } });
         saveCategories();
       }
+      if(tds){ todos=tds; saveTodos(); }
+      var tcs=(d && Array.isArray(d.todoCategories)) ? sanitizeCats(d.todoCategories) : null;
+      if(tcs && tcs.length){ todoCats=tcs; saveTodoCats(); }
       events=valid; save(); buildMenuFilter(); render(); closeSheet();
     };
     r.readAsText(f);
@@ -1813,16 +2180,22 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function loadJSON(k){ try{ return JSON.parse(localStorage.getItem(k)||"null"); }catch(e){ return null; } }
   function putJSON(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
   // base: 서버와 마지막으로 맞춘 내용 / at: 그때 서버 시각 / pend: 아직 안 올린 변경(고친 시각) / mark: pend를 찍을 때의 내용
-  function newSync(){ return { base:{ev:{},cat:{},prefs:null}, at:{ev:{},cat:{},prefs:0}, pend:{ev:{},cat:{},prefs:0}, mark:{ev:{},cat:{}}, last:0, err:"" }; }
+  function newSync(){ return { base:{ev:{},cat:{},todo:{},tcat:{},prefs:null}, at:{ev:{},cat:{},todo:{},tcat:{},prefs:0}, pend:{ev:{},cat:{},todo:{},tcat:{},prefs:0}, mark:{ev:{},cat:{},todo:{},tcat:{}}, last:0, err:"" }; }
+  // 할 일 기능 전에 저장된 동기화 기록에도 칸을 채워 둠
+  function normSync(s){ if(s) ["base","at","pend","mark"].forEach(function(k){ if(s[k]){ if(!s[k].todo) s[k].todo={}; if(!s[k].tcat) s[k].tcat={}; } }); return s; }
+  var TABLES = { ev:"events", cat:"categories", todo:"todos", tcat:"todo_categories" };
+  var tableMissing = {};  // 서버에 아직 없는 표(할 일 · 할 일 카테고리) → 그 종류만 기기에 모아 두고 나머지는 평소처럼
   var auth = loadJSON(AUTH_KEY);
-  var sy = (auth && loadJSON(SYNC_KEY)) || newSync();
+  var sy = normSync(auth && loadJSON(SYNC_KEY)) || newSync();
   if(auth && !localStorage.getItem(OWNER_KEY)) putJSON(OWNER_KEY, auth.user.id);
   var applying = false, syncing = null, syncAgain = false, syncTimer = null, refreshing = null;
 
   function objMap(kind){
     var m={};
     if(kind==="ev") cleanEvents().forEach(function(e){ if(e.id) m[e.id]=e; });
-    else categories.forEach(function(c){ m[c.id]={ id:c.id, name:c.name, color:c.color, emoji:c.emoji||"" }; });
+    else if(kind==="todo") todos.forEach(function(t){ if(t.id) m[t.id]=todoClean(t); });
+    else if(kind==="tcat") todoCats.forEach(function(c){ m[c.id]=catClean(c); });
+    else categories.forEach(function(c){ m[c.id]=catClean(c); });
     return m;
   }
   // 폰에서 바뀐 항목 찾아서 "올릴 목록"에 표시
@@ -1890,7 +2263,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // ---- 받아오기: 서버에서 바뀐 항목을 폰에 반영 (폰에서 더 나중에 고친 건 유지) ----
   function applyRows(kind, rows){
-    var list = (kind==="ev") ? events : categories;
+    var list = (kind==="ev") ? events : (kind==="todo") ? todos : (kind==="tcat") ? todoCats : categories;
     var map={}, order=[], ch=false;
     list.forEach(function(x){ map[x.id]=x; order.push(x.id); });
     (rows||[]).forEach(function(rw){
@@ -1898,48 +2271,57 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       var ts=+rw.updated_at||0, p=sy.pend[kind][rw.id];
       if(p && p>=ts) return;                                            // 내 폰 쪽이 더 최근
       if(ts<=(sy.at[kind][rw.id]||0)) return;                           // 이미 받은 내용
-      var obj = rw.deleted ? null : (kind==="ev" ? sanitizeEvent(rw.data) : (sanitizeCats([rw.data])[0]||null));
+      var obj = rw.deleted ? null : (kind==="ev" ? sanitizeEvent(rw.data) : kind==="todo" ? sanitizeTodo(rw.data) : (sanitizeCats([rw.data])[0]||null));   // cat · tcat
       if(obj && obj.id!==rw.id) obj=null;
       if(!obj){ if(rw.id in map){ delete map[rw.id]; ch=true; } delete sy.base[kind][rw.id]; }
       else {
         if(!(rw.id in map)) order.push(rw.id);
         map[rw.id]=obj; ch=true;
-        sy.base[kind][rw.id]=JSON.stringify(kind==="ev" ? obj : { id:obj.id, name:obj.name, color:obj.color, emoji:obj.emoji||"" });
+        sy.base[kind][rw.id]=JSON.stringify((kind==="cat" || kind==="tcat") ? catClean(obj) : obj);
       }
       sy.at[kind][rw.id]=ts; delete sy.pend[kind][rw.id]; delete sy.mark[kind][rw.id];
     });
     if(ch){
       var out=order.filter(function(id){ return id in map; }).map(function(id){ return map[id]; });
-      if(kind==="ev") events=out; else if(out.length) categories=out;
+      if(kind==="ev") events=out; else if(kind==="todo") todos=out; else if(kind==="tcat"){ if(out.length) todoCats=out; } else if(out.length) categories=out;
     }
     return ch;
   }
   function pull(){
     var sel="?select=id,data,deleted,updated_at";
-    return Promise.all([ api("GET","/rest/v1/events"+sel), api("GET","/rest/v1/categories"+sel), api("GET","/rest/v1/prefs?select=data,updated_at") ])
+    // 나중에 생긴 표: 서버에 아직 없으면(404 · PGRST205) 그 종류만 건너뜀
+    function optGet(kind){
+      tableMissing[kind]=false;
+      return api("GET","/rest/v1/"+TABLES[kind]+sel).catch(function(e){
+        if(/HTTP 404|PGRST205/.test((e && e.message)||"")){ tableMissing[kind]=true; return []; }
+        throw e;
+      });
+    }
+    return Promise.all([ api("GET","/rest/v1/events"+sel), api("GET","/rest/v1/categories"+sel), api("GET","/rest/v1/prefs?select=data,updated_at"), optGet("todo"), optGet("tcat") ])
       .then(function(res){
         if(!auth) return false;   // 받는 사이에 로그아웃했으면 버림
         applying=true;
         try{
-          var chE=applyRows("ev",res[0]), chC=applyRows("cat",res[1]), chP=false, pr=(res[2]||[])[0];
+          var chE=applyRows("ev",res[0]), chC=applyRows("cat",res[1]), chT=applyRows("todo",res[3]), chTC=applyRows("tcat",res[4]), chP=false, pr=(res[2]||[])[0];
           if(pr && +pr.updated_at>(sy.at.prefs||0) && !(sy.pend.prefs && sy.pend.prefs>=+pr.updated_at)){
             var h={}; if(pr.data && typeof pr.data==="object") for(var k in pr.data){ if(ID_RE.test(k) && pr.data[k]===true) h[k]=true; }
             hidden=h; sy.base.prefs=JSON.stringify(h); sy.at.prefs=+pr.updated_at; sy.pend.prefs=0; delete sy.mark.prefs; chP=true;
           }
-          if(chE) save(); if(chC) saveCategories(); if(chP) saveHidden();
+          if(chE) save(); if(chC) saveCategories(); if(chP) saveHidden(); if(chT) saveTodos(); if(chTC) saveTodoCats();
           putJSON(SYNC_KEY, sy);
-          return chE||chC||chP;
+          return chE||chC||chP||chT||chTC;
         } finally { applying=false; }
       });
   }
   // ---- 올리기: 아직 안 올린 변경만 ----
   function push(){
     var jobs=[];
-    ["ev","cat"].forEach(function(kind){
+    ["ev","cat","todo","tcat"].forEach(function(kind){
+      if(tableMissing[kind]) return;
       var cur=objMap(kind), pend=sy.pend[kind], rows=[];
       for(var id in pend){ var o=cur[id]; rows.push({ user_id:auth.user.id, id:id, data:o||{}, deleted:!o, updated_at:pend[id] }); }
       if(!rows.length) return;
-      jobs.push(api("POST", "/rest/v1/"+(kind==="ev"?"events":"categories")+"?on_conflict=user_id,id", rows, { Prefer:"resolution=merge-duplicates,return=minimal" })
+      jobs.push(api("POST", "/rest/v1/"+TABLES[kind]+"?on_conflict=user_id,id", rows, { Prefer:"resolution=merge-duplicates,return=minimal" })
         .then(function(){
           rows.forEach(function(rw){
             if(rw.deleted) delete sy.base[kind][rw.id]; else sy.base[kind][rw.id]=JSON.stringify(rw.data);
@@ -1961,7 +2343,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     syncStatusUI("busy");
     // 받아온 "다음에" 폰 쪽 변경을 찾음 → 처음 로그인 때 같은 항목은 서버 것이 이김 (평소 수정은 저장할 때 이미 표시됨)
     syncing = pull()
-      .then(function(changed){ if(!auth) return; markDirty("ev"); markDirty("cat"); markDirty("prefs"); if(changed){ buildMenuFilter(); render(); } return push(); })
+      .then(function(changed){ if(!auth) return; markDirty("ev"); markDirty("cat"); markDirty("todo"); markDirty("tcat"); markDirty("prefs"); if(changed){ buildMenuFilter(); render(); } return push(); })
       .then(function(){ if(auth){ sy.last=Date.now(); sy.err=""; } })
       .catch(function(e){
         if(e && e.signedOut){ sy.err="relogin"; return; }
@@ -1976,7 +2358,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       });
     return syncing;
   }
-  function pendCount(){ var n=0, k; for(k in sy.pend.ev) n++; for(k in sy.pend.cat) n++; if(sy.pend.prefs) n++; return n; }
+  function pendCount(){ var n=0, k; for(k in sy.pend.ev) n++; for(k in sy.pend.cat) n++; for(k in (sy.pend.todo||{})) n++; for(k in (sy.pend.tcat||{})) n++; if(sy.pend.prefs) n++; return n; }
 
   // ---- 화면: 메뉴의 동기화 줄 + 동기화 시트 ----
   var acctSheet=document.getElementById("acctSheet");
@@ -2036,7 +2418,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     putJSON(OWNER_KEY, s.user.id);
     setSession(s);
     var old=loadJSON(SYNC_KEY);
-    sy = (old && old.uid===auth.user.id) ? old : newSync();
+    sy = (old && old.uid===auth.user.id) ? normSync(old) : newSync();
     sy.uid=auth.user.id; sy.err=""; putJSON(SYNC_KEY, sy);
     syncStatusUI();
     return sync();

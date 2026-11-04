@@ -58,3 +58,37 @@ drop trigger if exists keep_newer on public.prefs;
 create trigger keep_newer before update on public.events     for each row execute function public.keep_newer();
 create trigger keep_newer before update on public.categories for each row execute function public.keep_newer();
 create trigger keep_newer before update on public.prefs      for each row execute function public.keep_newer();
+
+-- ============================================================
+-- 할 일(체크리스트) — 2026-11-04 추가. 이 부분만 따로 실행해도 됨
+-- ============================================================
+create table if not exists public.todos (
+  user_id    uuid    not null default auth.uid() references auth.users (id) on delete cascade,
+  id         text    not null check (char_length(id) between 1 and 40),
+  data       jsonb   not null check (pg_column_size(data) < 8192),   -- {id,title,cat,date,done,doneAt,at}
+  deleted    boolean not null default false,
+  updated_at bigint  not null,
+  primary key (user_id, id)
+);
+alter table public.todos enable row level security;
+drop policy if exists "own rows" on public.todos;
+create policy "own rows" on public.todos for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+drop trigger if exists keep_newer on public.todos;
+create trigger keep_newer before update on public.todos for each row execute function public.keep_newer();
+
+-- 할 일 카테고리 (일정 카테고리와 따로) — 2026-11-04 추가
+create table if not exists public.todo_categories (
+  user_id    uuid    not null default auth.uid() references auth.users (id) on delete cascade,
+  id         text    not null check (char_length(id) between 1 and 40),
+  data       jsonb   not null check (pg_column_size(data) < 8192),   -- {id,name,color,emoji,pin}
+  deleted    boolean not null default false,
+  updated_at bigint  not null,
+  primary key (user_id, id)
+);
+alter table public.todo_categories enable row level security;
+drop policy if exists "own rows" on public.todo_categories;
+create policy "own rows" on public.todo_categories for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+drop trigger if exists keep_newer on public.todo_categories;
+create trigger keep_newer before update on public.todo_categories for each row execute function public.keep_newer();

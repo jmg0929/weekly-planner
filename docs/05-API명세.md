@@ -126,6 +126,10 @@
 | R4 | 일정 올리기 | POST | `/rest/v1/events?on_conflict=user_id,id` | `Prefer: resolution=merge-duplicates,return=minimal` | `[{user_id, id, data, deleted, updated_at}]` | `201`, 본문 없음 |
 | R5 | 카테고리 올리기 | POST | `/rest/v1/categories?on_conflict=user_id,id` | 위와 같음 | 위와 같음 | `201` |
 | R6 | 설정 올리기 | POST | `/rest/v1/prefs?on_conflict=user_id` | 위와 같음 | `[{user_id, data, updated_at}]` | `201` |
+| R7 | 할 일 받기 (v45) | GET | `/rest/v1/todos?select=id,data,deleted,updated_at` | | — | R1과 같음. **표가 없으면 `404`(`PGRST205`) → 할 일만 건너뛰고 동기화는 성공 처리** |
+| R8 | 할 일 올리기 (v45) | POST | `/rest/v1/todos?on_conflict=user_id,id` | R4와 같음 | R4와 같음 | `201` (R7에서 표 없음이면 보내지 않음) |
+| R9 | 할 일 카테고리 받기 (v45) | GET | `/rest/v1/todo_categories?select=id,data,deleted,updated_at` | | — | R7과 같은 규칙 |
+| R10 | 할 일 카테고리 올리기 (v45) | POST | `/rest/v1/todo_categories?on_conflict=user_id,id` | R4와 같음 | R4와 같음 | `201` (R9에서 표 없음이면 보내지 않음) |
 
 | 항목 | 설명 |
 |---|---|
