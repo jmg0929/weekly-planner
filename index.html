@@ -2217,7 +2217,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(applying || !auth) return;
     markDirty(kind); syncSoon();
   }
-  function syncSoon(){ if(!auth) return; clearTimeout(syncTimer); syncTimer=setTimeout(sync, 1200); }
+  function syncSoon(){ if(!auth) return; clearTimeout(syncTimer); syncTimer=setTimeout(function(){ sync(true); }, 1200); }
 
   // ---- 서버 요청 ----
   function authReq(path, body, tok, method){
@@ -2289,15 +2289,30 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   function pull(){
     var sel="?select=id,data,deleted,updated_at";
+    // 서버는 한 번에 최대 1000줄만 줌(Supabase 기본값) → id 순서로 1000줄씩, "마지막 id 다음부터" 이어 받기
+    // (offset 대신 id 기준이라 받는 도중 다른 기기가 줄을 추가해도 건너뛰지 않음. 한 쪽이라도 실패하면 전체 실패 → 반쯤 받은 내용은 반영 안 함)
+    var PAGE=1000, MAX_PAGES=200;
+    function getAll(kind){
+      var out=[];
+      function page(after, n){
+        return api("GET","/rest/v1/"+TABLES[kind]+sel+"&order=id.asc&limit="+PAGE+(after!=null ? "&id=gt."+encodeURIComponent(after) : "")).then(function(rows){
+          rows=Array.isArray(rows) ? rows : [];
+          out=out.concat(rows);
+          if(rows.length<PAGE || n>=MAX_PAGES) return out;
+          return page(rows[rows.length-1].id, n+1);
+        });
+      }
+      return page(null, 1);
+    }
     // 나중에 생긴 표: 서버에 아직 없으면(404 · PGRST205) 그 종류만 건너뜀
     function optGet(kind){
       tableMissing[kind]=false;
-      return api("GET","/rest/v1/"+TABLES[kind]+sel).catch(function(e){
+      return getAll(kind).catch(function(e){
         if(/HTTP 404|PGRST205/.test((e && e.message)||"")){ tableMissing[kind]=true; return []; }
         throw e;
       });
     }
-    return Promise.all([ api("GET","/rest/v1/events"+sel), api("GET","/rest/v1/categories"+sel), api("GET","/rest/v1/prefs?select=data,updated_at"), optGet("todo"), optGet("tcat") ])
+    return Promise.all([ getAll("ev"), getAll("cat"), api("GET","/rest/v1/prefs?select=data,updated_at"), optGet("todo"), optGet("tcat") ])
       .then(function(res){
         if(!auth) return false;   // 받는 사이에 로그아웃했으면 버림
         applying=true;
@@ -2337,9 +2352,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     }
     return Promise.all(jobs);
   }
-  function sync(){
+  // again=true: 이 기기에서 고친 게 있어 진행 중인 동기화가 끝나면 한 번 더 올려야 함 (수정 직후 예약).
+  // 화면 복귀 · 5분 타이머 · 온라인 복귀처럼 "그냥 맞춰 봐"는 진행 중인 동기화로 충분 → 전체를 다시 받지 않음
+  function sync(again){
     if(!auth) return Promise.resolve();
-    if(syncing){ syncAgain=true; return syncing; }
+    if(syncing){ if(again===true) syncAgain=true; return syncing; }
     syncStatusUI("busy");
     // 받아온 "다음에" 폰 쪽 변경을 찾음 → 처음 로그인 때 같은 항목은 서버 것이 이김 (평소 수정은 저장할 때 이미 표시됨)
     syncing = pull()

@@ -131,6 +131,8 @@
 | R9 | 할 일 카테고리 받기 (v45) | GET | `/rest/v1/todo_categories?select=id,data,deleted,updated_at` | | — | R7과 같은 규칙 |
 | R10 | 할 일 카테고리 올리기 (v45) | POST | `/rest/v1/todo_categories?on_conflict=user_id,id` | R4와 같음 | R4와 같음 | `201` (R9에서 표 없음이면 보내지 않음) |
 
+> **나눠 받기 (v46)** — R1 · R2 · R7 · R9는 실제로 `&order=id.asc&limit=1000`을 붙여 보내고, 1000행이 오면 `&id=gt.<마지막 id>`를 붙여 다음 쪽을 이어 받는다. Supabase(PostgREST)는 설정상 한 응답에 최대 1000행만 주고 나머지는 경고 없이 잘라내므로, 이 처리가 없으면 1000행을 넘는 데이터가 다른 기기에 내려오지 않는다.
+
 | 항목 | 설명 |
 |---|---|
 | upsert | `on_conflict` + `merge-duplicates` → `INSERT ... ON CONFLICT DO UPDATE`. 서버 `keep_newer` 트리거가 옛 시각 업데이트를 무시 |
