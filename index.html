@@ -1116,8 +1116,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function ymd(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
   function parseYmd(s){ var p=s.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); }
   function wd(d){ return (d.getDay()+6)%7; } // weekday Mon=0..Sun=6
-  function mondayOf(d){ var x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-wd(x)); return x; }
-  // 주간 목록 · 할 일 · 달력은 일요일 시작 (시간표는 월요일 시작 그대로). DOW · wd는 데이터(반복 요일) 기준이라 그대로 둠
+  // 주는 일요일 시작 (시간표 · 주간 목록 · 할 일 · 달력 모두). DOW · wd는 데이터(반복 요일, 월=0) 기준이라 그대로 둠
   function weekStartOf(d){ var x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
   function dayCls(d){ var g=d.getDay(); return g===6 ? " sat" : g===0 ? " sun" : ""; }
   var CAL_DOW=[6,0,1,2,3,4,5].map(function(i){ return DOW[i]; });   // 일 월 화 수 목 금 토
@@ -1162,7 +1161,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function evColor(e){ return e.color || catColor(e.cat); } // 개별 색 우선, 없으면 카테고리 색
   function evLabel(e){ return e.title||"제목 없음"; }
 
-  function weekDates(){ var mon=mondayOf(anchor); var arr=[]; for(var i=0;i<7;i++)arr.push(addDays(mon,i)); return arr; }
+  function weekDates(){ var mon=weekStartOf(anchor); var arr=[]; for(var i=0;i<7;i++)arr.push(addDays(mon,i)); return arr; }
   function startOfDay(d){ var x=new Date(d); x.setHours(0,0,0,0); return x; }
   function eventsForDate(d){
     var wday=wd(d), ds=ymd(d), out=[];
@@ -1321,7 +1320,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     } else {
       // 목록에서 고른 주로 시간표를 맞춤 (오늘이 그 주면 오늘부터)
       var ws=weekStartOf(anchor), t=startOfDay(new Date());
-      winStart = (t>=ws && t<addDays(ws,7)) ? t : addDays(ws,1); anchor=winStart;
+      winStart = (t>=ws && t<addDays(ws,7)) ? t : ws; anchor=winStart;
     }
     view="week"; calMonth=null; layout=l;
     try{ localStorage.setItem("weekly-planner-layout", l); }catch(e){}
@@ -1534,14 +1533,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(layout!=="grid"){ anchor=addDays(weekStartOf(anchor),-7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-prev"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),-1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,-1); anchor=winStart; }   // 하루씩 미끄러지기
-    else anchor=addDays(mondayOf(anchor),-7);
+    else anchor=addDays(weekStartOf(anchor),-7);
     render(); animateNav(-1);
   }
   function goNext(){
     if(layout!=="grid"){ anchor=addDays(weekStartOf(anchor),7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-next"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,1); anchor=winStart; }
-    else anchor=addDays(mondayOf(anchor),7);
+    else anchor=addDays(weekStartOf(anchor),7);
     render(); animateNav(1);
   }
   document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); winStart=startOfDay(new Date()); calMonth=null; render(); if(layout==="grid") scrollToNow(); };
@@ -1563,7 +1562,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     // 지금 보던 날짜를 기준으로 이어서 보여주기
     var base;
     if(view==="day") base=parseYmd(selDate);
-    else if(mode==="7"){ var mon=mondayOf(anchor), t=startOfDay(new Date()); base=(t>=mon && t<addDays(mon,7)) ? t : mon; }
+    else if(mode==="7"){ var mon=weekStartOf(anchor), t=startOfDay(new Date()); base=(t>=mon && t<addDays(mon,7)) ? t : mon; }
     else base=winStart;
     winStart=startOfDay(base); anchor=winStart;
     mode=next; try{ localStorage.setItem("weekly-planner-mode", mode); }catch(e){}
@@ -1584,7 +1583,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 제목 탭 -> 날짜로 점프
   var jumpDate=document.getElementById("jumpDate");
   document.getElementById("titleBtn").addEventListener("click", function(){
-    jumpDate.value = (layout!=="grid") ? ymd(weekStartOf(anchor)) : (view==="day") ? selDate : (mode!=="7" ? ymd(winStart) : ymd(mondayOf(anchor)));
+    jumpDate.value = (layout!=="grid") ? ymd(weekStartOf(anchor)) : (view==="day") ? selDate : (mode!=="7" ? ymd(winStart) : ymd(weekStartOf(anchor)));
     try{ if(jumpDate.showPicker) jumpDate.showPicker(); else { jumpDate.focus(); jumpDate.click(); } }catch(e){ try{ jumpDate.focus(); jumpDate.click(); }catch(_){} }
   });
   jumpDate.addEventListener("change", function(){
@@ -1941,7 +1940,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       rangeField=document.getElementById("rangeField");
   var fFrom=document.getElementById("fFrom"), fUntil=document.getElementById("fUntil");
 
-  (function(){ var h=""; for(var i=0;i<7;i++)h+='<button data-d="'+i+'">'+DOW[i]+'</button>'; document.getElementById("dayChips").innerHTML=h; })();
+  (function(){ var h=""; [6,0,1,2,3,4,5].forEach(function(i){ h+='<button data-d="'+i+'">'+DOW[i]+'</button>'; }); document.getElementById("dayChips").innerHTML=h; })();
 
   document.getElementById("typeSeg").addEventListener("click",function(ev){
     var b=ev.target.closest("button"); if(!b)return;
