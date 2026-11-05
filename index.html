@@ -662,6 +662,33 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .tday-list .tchk svg{width:12px;height:12px}
 .tday-list .tchk::after{inset:-9px}
 .tday-list .ttx{font-size:15px;line-height:1.4;cursor:pointer}
+/* 꾸욱 눌러 끌어서 순서 바꾸기 */
+.titem{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.titem.lift{position:relative;z-index:5;background:var(--tcard);border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.18),0 0 0 1px var(--line)}
+.tday-list .titem.lift{background:var(--surface);border-top-color:transparent}
+.titem.shift{transition:transform .18s ease}
+/* 할 일 편집: 날짜 빠르게 · 복사 */
+.ev-row.tquick{min-height:50px;gap:6px}
+.tq{padding:7px 12px;border-radius:9px;background:var(--surface);font-size:13.5px;font-weight:700;color:var(--ink-2)}
+.tq:active{transform:scale(.95)}
+.tcopy{display:block;width:100%;margin-top:18px;padding:13px;border-radius:14px;background:var(--surface-2);color:var(--ink);font-weight:700;font-size:15px}
+.tcopy:active{opacity:.7}
+.tnote{min-height:0;font-size:13px;font-weight:700;color:var(--ink-2);text-align:center;margin-top:8px}
+.tnote:empty{display:none}
+/* 복사할 날짜 고르기 */
+.tp-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px}
+.tp-head .mt{font-size:15px;font-weight:800}
+.tp-head button{width:38px;height:34px;border-radius:10px;font-size:20px;font-weight:700;color:var(--ink-2)}
+.tp-head button:active{background:var(--surface-2)}
+.tp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:10px}
+.tp-grid .w{font-size:11px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0}
+.tp-grid button{height:42px;padding:0;border-radius:10px;font-size:15px;font-weight:700;color:var(--ink)}
+.tp-grid button.sat{color:var(--sat-c)}
+.tp-grid button.sun{color:var(--sun-c)}
+.tp-grid button.other{opacity:.35}
+.tp-grid button.src{box-shadow:inset 0 0 0 1.6px var(--line-strong)}
+.tp-grid button.on{background:var(--accent);color:var(--on-accent);opacity:1;box-shadow:none}
+.ev-save:disabled{opacity:.35}
 .tday-empty{padding:34px 0;text-align:center;font-size:14px;font-weight:600;color:var(--muted)}
 
 .today-btn:active,.dh:active{transform:scale(.96)}
@@ -846,11 +873,27 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <button class="ev-save" id="todoSave">저장</button>
   </div>
   <input type="text" class="ev-title" id="todoTitle" placeholder="할 일" autocomplete="off" maxlength="100" aria-label="할 일">
-  <div class="ev-group"><div class="ev-row"><span class="ev-lab">날짜</span><input type="date" id="todoDate" class="ev-in"></div></div>
+  <div class="ev-group">
+    <div class="ev-row"><span class="ev-lab">날짜</span><input type="date" id="todoDate" class="ev-in"></div>
+    <div class="ev-row tquick" id="todoQuick"><span class="ev-lab"></span><button class="tq" data-tq="today">오늘</button><button class="tq" data-tq="tmr">내일</button><button class="tq" data-tq="week">1주 뒤</button></div>
+  </div>
   <div class="ev-sec">카테고리</div>
   <div class="catchips ev-cats" id="todoCats"></div>
   <div class="err" id="todoErr"></div>
+  <button class="tcopy" id="todoCopy" style="display:none">다른 날에 복사</button>
+  <div class="tnote" id="todoNote"></div>
   <button class="ev-del" id="todoDel" style="display:none">삭제</button>
+</div>
+
+<!-- 할 일: 복사할 날짜 고르기 (여러 날 선택) -->
+<div class="sheet" id="todoPickSheet" role="dialog" aria-modal="true" aria-labelledby="todoPickTitle">
+  <div class="grab"></div>
+  <div class="ev-top">
+    <button class="ev-cancel" id="tpCancel">취소</button>
+    <h2 id="todoPickTitle">복사할 날짜</h2>
+    <button class="ev-save" id="tpOk" disabled>복사</button>
+  </div>
+  <div id="tpCal"></div>
 </div>
 
 <!-- 동기화(계정) 시트 -->
@@ -1098,6 +1141,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function todoClean(t){
     var o={ id:t.id, title:t.title }; if(t.cat) o.cat=t.cat; o.date=t.date;
     o.done=!!t.done; if(t.done && t.doneAt) o.doneAt=t.doneAt; o.at=t.at||0;
+    if(typeof t.ord==="number") o.ord=t.ord;   // 끌어서 바꾼 순서 (없으면 만든 순)
     return o;
   }
   function loadTodoCats(){
@@ -1527,6 +1571,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   [document.getElementById("scroll"), agendaEl, document.getElementById("todos")].forEach(function(swEl){
     swEl.addEventListener("touchstart", function(e){ var t=e.touches[0]; swX=t.clientX; swY=t.clientY; swT=Date.now(); }, {passive:true});
     swEl.addEventListener("touchend", function(e){
+      if(tdrag || Date.now()-tdragEnd<450) return;   // 할 일 끌기 중엔 주를 넘기지 않음
       var t=e.changedTouches[0]; var dx=t.clientX-swX, dy=t.clientY-swY;
       if(Date.now()-swT<600 && Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.6){ if(dx<0) goNext(); else goPrev(); }
     }, {passive:true});
@@ -1552,7 +1597,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function todoVisible(t){ return true; }   // 메뉴의 "표시"(숨김)는 일정 카테고리 전용
   function todoOrder(a,b){
     if(!!a.done!==!!b.done) return a.done?1:-1;                 // 안 한 것 위, 한 것 아래
-    return (a.at||0)-(b.at||0);
+    return todoKey(a)-todoKey(b);
+  }
+  // 끌어서 순서를 바꾼 날은 ord(0,1,2…), 아니면 만든 시각 → 새로 추가한 건 항상 맨 아래
+  function todoKey(t){ return typeof t.ord==="number" ? t.ord : (t.at||0);
   }
   function renderTodos(){
     var mon=mondayOf(anchor), today=ymd(new Date());
@@ -1627,6 +1675,68 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       });
     });
   }
+  // 꾸욱(0.38초) 눌러 들어 올린 뒤 위아래로 끌어 같은 날 안에서 순서 바꾸기 (칸 · 하루 확대 보기 공통)
+  // 놓으면 그 날 전체를 ord 0,1,2…로 다시 매김. 끄는 동안엔 스크롤 · 주 넘기기 스와이프 · 클릭을 막음
+  var TODO_HOLD_MS=380, tpress=null, tdrag=null, tdragEnd=0;
+  function tdLift(item, y){
+    var list=item.parentNode, items=[].slice.call(list.querySelectorAll(".titem"));
+    if(items.length<2) return;
+    var rects=items.map(function(it){ return it.getBoundingClientRect(); }), idx=items.indexOf(item);
+    tdrag={ item:item, list:list, items:items, rects:rects, idx:idx, to:idx, y0:y, h:rects[idx].height };
+    item.classList.add("lift"); item.style.transition="none"; item.style.transform="scale(1.03)";
+    items.forEach(function(it){ if(it!==item) it.classList.add("shift"); });
+  }
+  function tdMove(y){
+    var g=tdrag, r=g.rects, n=r.length, me=r[g.idx];
+    var dy=Math.max(r[0].top-me.top, Math.min(r[n-1].bottom-me.bottom, y-g.y0));
+    g.item.style.transform="translateY("+dy+"px) scale(1.03)";
+    // 끄는 항목의 아래 끝이 아래 항목 가운데를 넘거나, 위 끝이 위 항목 가운데를 넘으면 자리 바꿈 (맨 끝까지 끌면 맨 끝)
+    var top=me.top+dy, bot=me.bottom+dy, to=g.idx;
+    for(var j=g.idx+1;j<n;j++){ if(bot>r[j].top+r[j].height/2) to=j; }
+    for(var k=g.idx-1;k>=0;k--){ if(top<r[k].top+r[k].height/2) to=k; }
+    g.to=to;
+    g.items.forEach(function(it, j){
+      if(j===g.idx) return;
+      var s = (j>g.idx && j<=to) ? -g.h : (j<g.idx && j>=to) ? g.h : 0;
+      it.style.transform = s ? "translateY("+s+"px)" : "";
+    });
+  }
+  function tdDrop(){
+    var g=tdrag; tdrag=null; tdragEnd=Date.now();
+    g.items.forEach(function(it){ it.classList.remove("lift","shift"); it.style.transition=""; it.style.transform=""; });
+    if(g.to===g.idx) return;
+    var ids=g.items.map(function(it){ return it.getAttribute("data-id"); });
+    var moved=ids.splice(g.idx,1)[0]; ids.splice(g.to,0,moved);
+    var first=todoById(moved); if(!first) return;
+    // 그 날 전체 순서 = 화면에 보인 것(새 순서) + 칸에 안 보이던 나머지(원래 순서)
+    var day=todos.filter(function(t){ return t.date===first.date; }).sort(todoOrder), seen={};
+    ids.forEach(function(id){ seen[id]=1; });
+    var order=ids.map(todoById).filter(Boolean).concat(day.filter(function(t){ return !seen[t.id]; }));
+    order.forEach(function(t, i){ t.ord=i; });
+    saveTodos();
+    if(layout==="todo") renderTodos();
+    if(todoDaySheet.classList.contains("on")) renderTodoDay();
+  }
+  function tdCancelPress(){ if(tpress){ clearTimeout(tpress.t); tpress=null; } }
+  [tgridEl, document.getElementById("todoDayList")].forEach(function(box){
+    box.addEventListener("pointerdown", function(e){
+      if(e.button>0 || tdrag) return;
+      var item=e.target.closest(".titem"); if(!item) return;
+      tdCancelPress();
+      tpress={ x:e.clientX, y:e.clientY, t:setTimeout(function(){ var p=tpress; tpress=null; if(p) tdLift(item, p.y); }, TODO_HOLD_MS) };
+    });
+    box.addEventListener("contextmenu", function(e){ if(e.target.closest(".titem")) e.preventDefault(); });
+  });
+  document.addEventListener("pointermove", function(e){
+    if(tdrag){ tdMove(e.clientY); return; }
+    if(tpress && Math.abs(e.clientX-tpress.x)+Math.abs(e.clientY-tpress.y)>8) tdCancelPress();   // 움직이면 스크롤 · 스와이프로 양보
+  });
+  document.addEventListener("touchmove", function(e){ if(tdrag) e.preventDefault(); }, { passive:false });
+  document.addEventListener("pointerup", function(){ tdCancelPress(); if(tdrag) tdDrop(); });
+  document.addEventListener("pointercancel", function(){ tdCancelPress(); if(tdrag) tdDrop(); });
+  // 끌기를 놓은 직후의 클릭(체크 · 확대 보기 · 편집 열기)은 무시
+  document.addEventListener("click", function(e){ if(Date.now()-tdragEnd<450){ e.stopPropagation(); e.preventDefault(); } }, true);
+
   // 체크 동그라미 · 그 줄 왼쪽 여백 어디를 눌러도 그 줄의 체크 (옆 줄로 새지 않음)
   function chkFromEvent(ev){
     var chk=ev.target.closest(".tchk"); if(chk) return chk;
@@ -1674,7 +1784,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // 추가 · 편집 시트
   var todoSheet=document.getElementById("todoSheet"), todoTitleEl=document.getElementById("todoTitle"), todoDateEl=document.getElementById("todoDate"), todoErrEl=document.getElementById("todoErr");
-  var todoEditId=null, todoCat=null;
+  var todoEditId=null, todoCat=null, todoNoteEl=document.getElementById("todoNote");
   function buildTodoCats(){
     var h="";
     todoCats.forEach(function(c){ h+='<button class="catchip'+(c.id===todoCat?" on":"")+'" data-cat="'+c.id+'"><span class="cdot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>'; });
@@ -1690,6 +1800,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     todoErrEl.textContent="";
     document.getElementById("todoSheetTitle").textContent = t ? "할 일 편집" : "할 일 추가";
     document.getElementById("todoDel").style.display = t ? "block" : "none";
+    document.getElementById("todoCopy").style.display = t ? "block" : "none";
+    todoNoteEl.textContent="";
     buildTodoCats(); openSheet(todoSheet);
     setTimeout(function(){ todoTitleEl.focus(); }, 250);
   }
@@ -1702,7 +1814,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var title=todoTitleEl.value.trim(), date=todoDateEl.value;
     if(!title){ todoErrEl.textContent="할 일을 입력하세요"; todoTitleEl.focus(); return; }
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ todoErrEl.textContent="날짜를 고르세요"; return; }
-    if(todoEditId){ var t=todoById(todoEditId); if(t){ t.title=title.slice(0,100); t.date=date; if(todoCat) t.cat=todoCat; else delete t.cat; } }
+    if(todoEditId){ var t=todoById(todoEditId); if(t){ t.title=title.slice(0,100); if(t.date!==date) delete t.ord; t.date=date; if(todoCat) t.cat=todoCat; else delete t.cat; } }
     else todos.push({ id:uid(), title:title.slice(0,100), cat:todoCat||undefined, date:date, done:false, at:Date.now() });
     if(todoCat){ try{ localStorage.setItem(TODO_LASTCAT_KEY, todoCat); }catch(e){} }
     var back=todoFromDay; saveTodos(); closeSheet(); todoFromDay=back;
@@ -1710,6 +1822,58 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     render(); afterTodoSheet();
   }
   document.getElementById("todoSave").onclick=saveTodoSheet;
+  // 날짜 빠르게: 오늘 · 내일 · (고른 날짜) 1주 뒤
+  document.getElementById("todoQuick").addEventListener("click", function(e){
+    var b=e.target.closest("[data-tq]"); if(!b) return;
+    var k=b.getAttribute("data-tq"), base=DATE_RE.test(todoDateEl.value) ? parseYmd(todoDateEl.value) : startOfDay(new Date());
+    todoDateEl.value = k==="today" ? ymd(new Date()) : k==="tmr" ? ymd(addDays(startOfDay(new Date()),1)) : ymd(addDays(base,7));
+  });
+
+  // 다른 날에 복사: 달력에서 여러 날 골라 한 번에 (복사본은 안 한 상태로, 그 날 맨 아래)
+  var tpSheet=document.getElementById("todoPickSheet"), tpCalEl=document.getElementById("tpCal"), tpOk=document.getElementById("tpOk");
+  var tpMonth=null, tpSel={}, tpSrc=null;
+  function renderPick(){
+    var cm=tpMonth, today=ymd(new Date()), d=mondayOf(cm);
+    var h='<div class="tp-head"><button data-tpm="-1" aria-label="이전 달">‹</button><span class="mt">'+cm.getFullYear()+'년 '+(cm.getMonth()+1)+'월</span><button data-tpm="1" aria-label="다음 달">›</button></div><div class="tp-grid">';
+    for(var w=0;w<7;w++) h+='<div class="w">'+DOW[w]+'</div>';
+    for(var row=0; row<6; row++){
+      if(row>0 && d.getMonth()!==cm.getMonth() && d>cm) break;
+      for(var c=0;c<7;c++){
+        var ds=ymd(d);
+        var cls=(c===5?"sat ":"")+(c===6||holidays[ds]?"sun ":"")+(d.getMonth()!==cm.getMonth()?"other ":"")+(ds===tpSrc?"src ":"")+(tpSel[ds]?"on":"");
+        h+='<button class="'+cls+'" data-ds="'+ds+'" aria-pressed="'+(tpSel[ds]?"true":"false")+'"'+(ds===today?' aria-current="date"':'')+'>'+d.getDate()+'</button>';
+        d=addDays(d,1);
+      }
+    }
+    tpCalEl.innerHTML=h+'</div>';
+    var n=Object.keys(tpSel).length; tpOk.disabled=!n; tpOk.textContent = n ? "복사 "+n : "복사";
+  }
+  tpCalEl.addEventListener("click", function(e){
+    var m=e.target.closest("[data-tpm]");
+    if(m){ tpMonth=new Date(tpMonth.getFullYear(), tpMonth.getMonth()+(+m.getAttribute("data-tpm")), 1); renderPick(); return; }
+    var b=e.target.closest("[data-ds]"); if(!b) return;
+    var ds=b.getAttribute("data-ds"); if(tpSel[ds]) delete tpSel[ds]; else tpSel[ds]=1; renderPick();
+  });
+  function backToTodoSheet(){ tpSheet.classList.remove("on"); todoSheet.classList.add("on"); }
+  document.getElementById("todoCopy").onclick=function(){
+    tpSrc = DATE_RE.test(todoDateEl.value) ? todoDateEl.value : null; tpSel={};
+    var b=tpSrc ? parseYmd(tpSrc) : new Date(); tpMonth=new Date(b.getFullYear(), b.getMonth(), 1);
+    todoNoteEl.textContent=""; renderPick();
+    todoSheet.classList.remove("on"); tpSheet.classList.add("on");
+  };
+  document.getElementById("tpCancel").onclick=backToTodoSheet;
+  tpOk.onclick=function(){
+    var src=todoById(todoEditId), dates=Object.keys(tpSel).sort(); if(!src || !dates.length) return;
+    var title=(todoTitleEl.value.trim() || src.title).slice(0,100), now=Date.now();
+    dates.forEach(function(ds, i){
+      var o={ id:uid(), title:title, date:ds, done:false, at:now+i }; if(todoCat) o.cat=todoCat;
+      todos.push(o);
+    });
+    saveTodos(); render();
+    if(todoDaySheet.classList.contains("on")) renderTodoDay();
+    todoNoteEl.textContent = dates.length===1 ? (function(d){ return (d.getMonth()+1)+"월 "+d.getDate()+"일에 복사됨"; })(parseYmd(dates[0])) : dates.length+"일에 복사됨";
+    backToTodoSheet();
+  };
   todoTitleEl.addEventListener("keydown", function(e){ if(e.isComposing || e.keyCode===229) return; if(e.key==="Enter"){ e.preventDefault(); saveTodoSheet(); } });
   document.getElementById("todoCancel").onclick=function(){ var back=todoFromDay; closeSheet(); todoFromDay=back; afterTodoSheet(); };
   document.getElementById("todoDel").onclick=function(){
@@ -2009,7 +2173,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
 
   function openSheet(el){ scrim.classList.add("on"); el.classList.add("on"); }
-  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); catReturnToTodo=false; menuSheet.classList.remove("on"); acctSheet.classList.remove("on"); todoSheet.classList.remove("on"); todoDaySheet.classList.remove("on"); todoFromDay=false; peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad"); }
+  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); catReturnToTodo=false; menuSheet.classList.remove("on"); acctSheet.classList.remove("on"); todoSheet.classList.remove("on"); if(tpSheet) tpSheet.classList.remove("on"); todoDaySheet.classList.remove("on"); todoFromDay=false; peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad"); }
   scrim.onclick=closeSheet;
   document.getElementById("cancelBtn").onclick=closeSheet;
   document.getElementById("bkCloseBtn").onclick=closeSheet;
@@ -2111,6 +2275,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var o={ id:ID_RE.test(t.id)?t.id:uid(), title:title, date:t.date, done:t.done===true, at:(isFinite(+t.at) && +t.at>0) ? Math.round(+t.at) : Date.now() };
     if(ID_RE.test(t.cat)) o.cat=t.cat;
     if(o.done && isFinite(+t.doneAt) && +t.doneAt>0) o.doneAt=Math.round(+t.doneAt);
+    if(typeof t.ord==="number" && isFinite(t.ord) && t.ord>=0 && t.ord<1e6) o.ord=Math.round(t.ord);
     return todoClean(o);
   }
   function sanitizeEvent(e){
