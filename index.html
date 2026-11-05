@@ -1117,6 +1117,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function parseYmd(s){ var p=s.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); }
   function wd(d){ return (d.getDay()+6)%7; } // weekday Mon=0..Sun=6
   function mondayOf(d){ var x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-wd(x)); return x; }
+  // 주간 목록 · 할 일 · 달력은 일요일 시작 (시간표는 월요일 시작 그대로). DOW · wd는 데이터(반복 요일) 기준이라 그대로 둠
+  function weekStartOf(d){ var x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-x.getDay()); return x; }
+  function dayCls(d){ var g=d.getDay(); return g===6 ? " sat" : g===0 ? " sun" : ""; }
+  var CAL_DOW=[6,0,1,2,3,4,5].map(function(i){ return DOW[i]; });   // 일 월 화 수 목 금 토
   function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
   function minToStr(m){ return pad(Math.floor(m/60))+":"+pad(m%60); }
   function strToMin(s){ var p=s.split(":"); return (+p[0])*60+(+p[1]); }
@@ -1221,9 +1225,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // ---- 주간 목록 보기 ----
   function renderAgenda(){
-    var mon=mondayOf(anchor), today=ymd(new Date());
+    var mon=weekStartOf(anchor), today=ymd(new Date());
     var week=[]; for(var i=0;i<7;i++) week.push(addDays(mon,i));
-    var cm = calMonth || new Date(addDays(mon,3).getFullYear(), addDays(mon,3).getMonth(), 1); // 주의 목요일이 속한 달
+    var cm = calMonth || new Date(addDays(mon,3).getFullYear(), addDays(mon,3).getMonth(), 1); // 주의 가운데(수요일)가 속한 달
     var years={}; years[cm.getFullYear()]=1; week.forEach(function(d){ years[d.getFullYear()]=1; });
     for(var yk in years) loadHolidayCache(+yk);
 
@@ -1240,11 +1244,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     // 1) 미니 달력
     var h=miniCal("acell", mon, cm, null);
 
-    // 2) 월~일 칸
+    // 2) 일~토 칸
     for(var k=0;k<7;k++){
       var dd=week[k], dds=ymd(dd), hol=holidays[dds];
-      var ccls="acell"+(k===5?" sat":"")+(k===6?" sun":"")+(hol?" holiday":"")+(dds===today?" today":"");
-      h+='<div class="'+ccls+'" data-date="'+dds+'"><div class="ahead"><span class="adow">'+DOW[k]+'</span><span class="anum tnum">'+dd.getDate()+'</span>'+(hol?'<span class="ahol">'+esc(hol)+'</span>':'')+'</div>';
+      var ccls="acell"+dayCls(dd)+(hol?" holiday":"")+(dds===today?" today":"");
+      h+='<div class="'+ccls+'" data-date="'+dds+'"><div class="ahead"><span class="adow">'+DOW[wd(dd)]+'</span><span class="anum tnum">'+dd.getDate()+'</span>'+(hol?'<span class="ahol">'+esc(hol)+'</span>':'')+'</div>';
       var evs=eventsForDate(dd).slice().sort(function(a,b){ return a.start-b.start || a.end-b.end; });
       evs.forEach(function(e){
         h+='<div class="arow" data-id="'+esc(e.id)+'" style="--evt:'+evColor(e)+'"><span class="at">'+esc(evLabel(e))+'</span><span class="atm tnum">'+minToStr(e.start)+'</span></div>';
@@ -1279,15 +1283,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function miniCal(cellCls, mon, cm, mark){
     var today=ymd(new Date());
     var h='<div class="'+cellCls+' mcal"><div class="mhead"><button data-cal="-1" aria-label="이전 달">‹</button><span class="mt">'+cm.getFullYear()+'년 '+(cm.getMonth()+1)+'월</span><button data-cal="1" aria-label="다음 달">›</button></div><div class="mgrid">';
-    for(var w=0;w<7;w++) h+='<div class="mw">'+DOW[w]+'</div>';
-    var selMon=ymd(mon), d=mondayOf(cm), pins=todoPins();
+    for(var w=0;w<7;w++) h+='<div class="mw">'+CAL_DOW[w]+'</div>';
+    var selMon=ymd(mon), d=weekStartOf(cm), pins=todoPins();
     for(var row=0; row<6; row++){
       if(row>0 && d.getMonth()!==cm.getMonth() && d>cm) break;   // 다음 달로 넘어가면 끝
       var rowSel = (ymd(d)===selMon);
       for(var c=0;c<7;c++){
         var ds=ymd(d);
         var mk=mark ? mark(ds) : null, pin=pins[ds];
-        var cls="md"+(c===5?" sat":"")+(c===6?" sun":"")+(holidays[ds]?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(rowSel?" sel"+(c===0?" first":"")+(c===6?" last":""):"")+(mk?" has":"")+(pin?" pin"+(pin.done?" pdone":"")+(pin.multi?" multi":""):"");
+        var cls="md"+dayCls(d)+(holidays[ds]?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(rowSel?" sel"+(c===0?" first":"")+(c===6?" last":""):"")+(mk?" has":"")+(pin?" pin"+(pin.done?" pdone":"")+(pin.multi?" multi":""):"");
         h+='<div class="'+cls+'" data-date="'+ds+'"'+(pin?' style="--pin:'+pin.color+(pin.color2?';--pin2:'+pin.color2:'')+'" title="'+esc(pin.title)+'"':'')+'><span>'+d.getDate()+'</span></div>';
         d=addDays(d,1);
       }
@@ -1296,7 +1300,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   agridEl.addEventListener("click", function(ev){
     var nav=ev.target.closest("[data-cal]");
-    if(nav){ var cm0=calMonth || new Date(addDays(mondayOf(anchor),3).getFullYear(), addDays(mondayOf(anchor),3).getMonth(), 1);
+    if(nav){ var cm0=calMonth || new Date(addDays(weekStartOf(anchor),3).getFullYear(), addDays(weekStartOf(anchor),3).getMonth(), 1);
       calMonth=new Date(cm0.getFullYear(), cm0.getMonth()+(+nav.getAttribute("data-cal")), 1); render(); return; }
     var md=ev.target.closest(".md");
     if(md){ anchor=parseYmd(md.getAttribute("data-date")); calMonth=null; render(); return; }   // 날짜 탭 → 그 주 보기
@@ -1316,8 +1320,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       if(layout==="grid") anchor = (view==="day") ? parseYmd(selDate) : (mode!=="7" ? winStart : anchor);
     } else {
       // 목록에서 고른 주로 시간표를 맞춤 (오늘이 그 주면 오늘부터)
-      var mon=mondayOf(anchor), t=startOfDay(new Date());
-      winStart = (t>=mon && t<addDays(mon,7)) ? t : mon; anchor=winStart;
+      var ws=weekStartOf(anchor), t=startOfDay(new Date());
+      winStart = (t>=ws && t<addDays(ws,7)) ? t : addDays(ws,1); anchor=winStart;
     }
     view="week"; calMonth=null; layout=l;
     try{ localStorage.setItem("weekly-planner-layout", l); }catch(e){}
@@ -1527,14 +1531,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     });
   }
   function goPrev(){
-    if(layout!=="grid"){ anchor=addDays(mondayOf(anchor),-7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-prev"); return; }
+    if(layout!=="grid"){ anchor=addDays(weekStartOf(anchor),-7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-prev"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),-1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,-1); anchor=winStart; }   // 하루씩 미끄러지기
     else anchor=addDays(mondayOf(anchor),-7);
     render(); animateNav(-1);
   }
   function goNext(){
-    if(layout!=="grid"){ anchor=addDays(mondayOf(anchor),7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-next"); return; }
+    if(layout!=="grid"){ anchor=addDays(weekStartOf(anchor),7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-next"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,1); anchor=winStart; }
     else anchor=addDays(mondayOf(anchor),7);
@@ -1542,7 +1546,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); winStart=startOfDay(new Date()); calMonth=null; render(); if(layout==="grid") scrollToNow(); };
   document.getElementById("addBtn").onclick=function(){
-    if(layout==="todo"){ var mon=mondayOf(anchor), t=startOfDay(new Date()); openTodo(null, ymd((t>=mon && t<addDays(mon,7)) ? t : mon)); }
+    if(layout==="todo"){ var mon=weekStartOf(anchor), t=startOfDay(new Date()); openTodo(null, ymd((t>=mon && t<addDays(mon,7)) ? t : mon)); }
     else openAdd(selDate, 9*60);
   };
   backBtn.onclick=function(){
@@ -1580,7 +1584,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 제목 탭 -> 날짜로 점프
   var jumpDate=document.getElementById("jumpDate");
   document.getElementById("titleBtn").addEventListener("click", function(){
-    jumpDate.value = (layout!=="grid") ? ymd(mondayOf(anchor)) : (view==="day") ? selDate : (mode!=="7" ? ymd(winStart) : ymd(mondayOf(anchor)));
+    jumpDate.value = (layout!=="grid") ? ymd(weekStartOf(anchor)) : (view==="day") ? selDate : (mode!=="7" ? ymd(winStart) : ymd(mondayOf(anchor)));
     try{ if(jumpDate.showPicker) jumpDate.showPicker(); else { jumpDate.focus(); jumpDate.click(); } }catch(e){ try{ jumpDate.focus(); jumpDate.click(); }catch(_){} }
   });
   jumpDate.addEventListener("change", function(){
@@ -1603,7 +1607,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function todoKey(t){ return typeof t.ord==="number" ? t.ord : (t.at||0);
   }
   function renderTodos(){
-    var mon=mondayOf(anchor), today=ymd(new Date());
+    var mon=weekStartOf(anchor), today=ymd(new Date());
     var week=[]; for(var i=0;i<7;i++) week.push(addDays(mon,i));
     var cm = calMonth || new Date(addDays(mon,3).getFullYear(), addDays(mon,3).getMonth(), 1);
     var years={}; years[cm.getFullYear()]=1; week.forEach(function(d){ years[d.getFullYear()]=1; });
@@ -1630,8 +1634,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     for(var k=0;k<7;k++){
       var dd=week[k], dds=ymd(dd), hol=holidays[dds], items=(byDate[dds]||[]).slice().sort(todoOrder);
       var nLeft=items.filter(function(t){ return !t.done; }).length;
-      h+='<div class="tcell'+(k===5?" sat":"")+(k===6?" sun":"")+(hol?" holiday":"")+(dds===today?" today":"")+'" data-date="'+dds+'">'+
-         '<div class="ahead"><span class="adow">'+DOW[k]+'</span><span class="anum tnum">'+dd.getDate()+'</span>'+(hol?'<span class="ahol">'+esc(hol)+'</span>':'')+(nLeft?'<span class="tleft tnum">'+nLeft+'</span>':'')+'</div>';
+      h+='<div class="tcell'+dayCls(dd)+(hol?" holiday":"")+(dds===today?" today":"")+'" data-date="'+dds+'">'+
+         '<div class="ahead"><span class="adow">'+DOW[wd(dd)]+'</span><span class="anum tnum">'+dd.getDate()+'</span>'+(hol?'<span class="ahol">'+esc(hol)+'</span>':'')+(nLeft?'<span class="tleft tnum">'+nLeft+'</span>':'')+'</div>';
       items.slice(0, TODO_CELL_MAX).forEach(function(t){ h+=todoItemHtml(t); });
       if(items.length>TODO_CELL_MAX) h+='<div class="tmore tnum">… +'+(items.length-TODO_CELL_MAX)+'</div>';
       h+='</div>';
@@ -1745,7 +1749,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   tgridEl.addEventListener("click", function(ev){
     var nav=ev.target.closest("[data-cal]");
-    if(nav){ var cm0=calMonth || new Date(addDays(mondayOf(anchor),3).getFullYear(), addDays(mondayOf(anchor),3).getMonth(), 1);
+    if(nav){ var cm0=calMonth || new Date(addDays(weekStartOf(anchor),3).getFullYear(), addDays(weekStartOf(anchor),3).getMonth(), 1);
       calMonth=new Date(cm0.getFullYear(), cm0.getMonth()+(+nav.getAttribute("data-cal")), 1); render(); return; }
     var md=ev.target.closest(".md");
     if(md){ anchor=parseYmd(md.getAttribute("data-date")); calMonth=null; render(); return; }
@@ -1818,7 +1822,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     else todos.push({ id:uid(), title:title.slice(0,100), cat:todoCat||undefined, date:date, done:false, at:Date.now() });
     if(todoCat){ try{ localStorage.setItem(TODO_LASTCAT_KEY, todoCat); }catch(e){} }
     var back=todoFromDay; saveTodos(); closeSheet(); todoFromDay=back;
-    if(!back){ var dd=parseYmd(date); if(dd<mondayOf(anchor) || dd>=addDays(mondayOf(anchor),7)){ anchor=dd; calMonth=null; } }   // 다른 주로 옮겼으면 그 주로
+    if(!back){ var dd=parseYmd(date); if(dd<weekStartOf(anchor) || dd>=addDays(weekStartOf(anchor),7)){ anchor=dd; calMonth=null; } }   // 다른 주로 옮겼으면 그 주로
     render(); afterTodoSheet();
   }
   document.getElementById("todoSave").onclick=saveTodoSheet;
@@ -1833,14 +1837,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var tpSheet=document.getElementById("todoPickSheet"), tpCalEl=document.getElementById("tpCal"), tpOk=document.getElementById("tpOk");
   var tpMonth=null, tpSel={}, tpSrc=null;
   function renderPick(){
-    var cm=tpMonth, today=ymd(new Date()), d=mondayOf(cm);
+    var cm=tpMonth, today=ymd(new Date()), d=weekStartOf(cm);
     var h='<div class="tp-head"><button data-tpm="-1" aria-label="이전 달">‹</button><span class="mt">'+cm.getFullYear()+'년 '+(cm.getMonth()+1)+'월</span><button data-tpm="1" aria-label="다음 달">›</button></div><div class="tp-grid">';
-    for(var w=0;w<7;w++) h+='<div class="w">'+DOW[w]+'</div>';
+    for(var w=0;w<7;w++) h+='<div class="w">'+CAL_DOW[w]+'</div>';
     for(var row=0; row<6; row++){
       if(row>0 && d.getMonth()!==cm.getMonth() && d>cm) break;
       for(var c=0;c<7;c++){
         var ds=ymd(d);
-        var cls=(c===5?"sat ":"")+(c===6||holidays[ds]?"sun ":"")+(d.getMonth()!==cm.getMonth()?"other ":"")+(ds===tpSrc?"src ":"")+(tpSel[ds]?"on":"");
+        var cls=(d.getDay()===6?"sat ":"")+(d.getDay()===0||holidays[ds]?"sun ":"")+(d.getMonth()!==cm.getMonth()?"other ":"")+(ds===tpSrc?"src ":"")+(tpSel[ds]?"on":"");
         h+='<button class="'+cls+'" data-ds="'+ds+'" aria-pressed="'+(tpSel[ds]?"true":"false")+'"'+(ds===today?' aria-current="date"':'')+'>'+d.getDate()+'</button>';
         d=addDays(d,1);
       }
