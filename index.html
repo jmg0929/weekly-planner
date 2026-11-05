@@ -609,15 +609,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .tcell .tleft{margin-left:auto;font-size:11px;font-weight:800;color:var(--muted)}
 /* 미니 달력: 남은 할 일이 있는 날에 점 */
 .mgrid .md.has::after{content:"";position:absolute;bottom:0;left:50%;width:3px;height:3px;margin-left:-1.5px;border-radius:50%;background:var(--ink-2)}
-.mgrid .md.today.has::after{background:var(--ink)}
+/* 한 날짜엔 표시 하나: 오늘 · 달력 표시 네모가 있으면 점은 숨김 (네모 위에 점이 겹치지 않게) */
+.mgrid .md.today.has::after,.mgrid .md.pin.has::after{display:none}
 /* 달력 표시 카테고리(시험 · 마감 등)의 할 일이 있는 날: 카테고리 색 동그라미 */
 .mgrid .md.pin span{border-radius:6px;font-weight:800;color:var(--ink);
-  background:color-mix(in srgb,var(--pin) 30%,transparent);box-shadow:inset 0 0 0 1.6px color-mix(in srgb,var(--pin) 85%,var(--ink))}
+  background:color-mix(in srgb,var(--pin) 30%,var(--tcard,var(--surface)));box-shadow:inset 0 0 0 1.6px color-mix(in srgb,var(--pin) 85%,var(--ink))}
 .mgrid .md.pin.pdone span{opacity:.4}
 .mgrid .md.pin span{position:relative}
-/* 같은 날 달력 표시 카테고리가 둘 이상: 오른쪽 위 작은 점 */
-.mgrid .md.pin.multi span::after{content:"";position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;
-  background:var(--ink-2);box-shadow:0 0 0 1.5px var(--surface)}
+/* 같은 날 달력 표시 카테고리가 둘 이상: 점 대신 뒤에 한 장 더 겹친 카드 (두 번째 카테고리 색 테두리) */
+.mgrid .md.pin.multi span{box-shadow:inset 0 0 0 1.6px color-mix(in srgb,var(--pin) 85%,var(--ink)),
+  2.5px 2.5px 0 0 var(--tcard,var(--surface)),2.5px 2.5px 0 1.4px color-mix(in srgb,var(--pin2) 85%,var(--ink))}
 .mgrid .md.today.pin span{background:var(--accent);color:var(--on-accent);box-shadow:0 0 0 1.5px var(--surface),0 0 0 3px color-mix(in srgb,var(--pin) 85%,var(--ink))}
 /* 카테고리 관리: 달력 표시 */
 .crow .cpin{flex:none;font-size:11px;font-weight:800;color:var(--ink-2);background:var(--surface-2);border-radius:6px;padding:3px 6px}
@@ -627,16 +628,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .titem{display:flex;align-items:flex-start;gap:7px;padding:4px 2px;border-radius:7px}
 .titem:active{background:var(--surface-2)}
 /* 원형 체크: 테두리 = 카테고리 색 (색 띠 대신) */
-.tchk{position:relative;flex:none;width:16px;height:16px;margin-top:1px;border-radius:50%;
+/* padding:0 — 아이폰 사파리는 버튼 기본 좌우 여백(6px)이 있어 16px 동그라미 안 공간이 거의 0 → 체크가 오른쪽으로 밀려 나감 */
+.tchk{position:relative;flex:none;width:16px;height:16px;margin-top:1px;padding:0;border-radius:50%;
   border:1.6px solid color-mix(in srgb,var(--evt) 85%,var(--ink));display:grid;place-items:center;transition:background .2s}
-.tchk::after{content:"";position:absolute;inset:-9px}        /* 누르기 쉬운 크기 */
-.tchk svg{width:10px;height:10px;stroke:#fff;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:scale(.4);transition:opacity .18s,transform .22s}
+.tchk::after{content:"";position:absolute;inset:-4px}        /* 옆 줄을 침범하지 않게 (줄 왼쪽 여백 탭도 체크: JS) */
+.tchk svg{position:absolute;inset:0;margin:auto;width:10px;height:10px;stroke:#fff;stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:scale(.4);transition:opacity .18s,transform .22s}
 .titem.done .tchk{background:color-mix(in srgb,var(--evt) 85%,var(--ink))}
 .titem.done .tchk svg{opacity:1;transform:scale(1)}
 .ttx{flex:1;min-width:0;font-size:12.5px;font-weight:700;line-height:1.35;color:var(--ink);word-break:break-word;letter-spacing:-.02em;transition:color .3s;
   --strike:color-mix(in srgb,var(--ink) 55%,var(--tcard))}
 /* 완료: 가운데 줄이 왼쪽에서 그어지고 살짝 흐려짐 */
-.ttx span{background:linear-gradient(var(--strike),var(--strike)) no-repeat 0 54%/0% 1px;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:background-size .32s ease}
+/* 줄 높이 = 글자 상자 정가운데(50%): Pretendard는 한글 글자(획) 가운데가 글자 상자 가운데와 같음 (54%는 0.5px 아래로 처졌음) */
+.ttx span{background:linear-gradient(var(--strike),var(--strike)) no-repeat 0 50%/0% 1px;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:background-size .32s ease}
 /* 흐림은 투명도 대신 글자색으로 (투명도는 줄까지 같이 흐려져 한글 획과 뭉개짐) · 줄은 글자보다 진하고 얇게 */
 .titem.done .ttx{color:color-mix(in srgb,var(--ink) 34%,var(--tcard));font-weight:600}
 .titem.done .ttx span{background-size:100% 1px}
@@ -657,6 +660,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .tday-list .titem:first-child{border-top:none}
 .tday-list .tchk{width:21px;height:21px;margin-top:0}
 .tday-list .tchk svg{width:12px;height:12px}
+.tday-list .tchk::after{inset:-9px}
 .tday-list .ttx{font-size:15px;line-height:1.4;cursor:pointer}
 .tday-empty{padding:34px 0;text-align:center;font-size:14px;font-weight:600;color:var(--muted)}
 
@@ -1208,19 +1212,23 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   // 달력 표시 카테고리의 할 일 → { 날짜: {color, title, done, multi} }
   // 색: 안 끝난 할 일 중 카테고리 목록에서 더 위에 있는 카테고리 (다 끝났으면 같은 규칙으로 고르고 흐리게)
-  // multi: 그 날 달력 표시 카테고리가 2개 이상 → 오른쪽 위 작은 점
+  // multi: 그 날 달력 표시 카테고리가 2개 이상 → 뒤에 겹친 카드 (color2 = 같은 규칙으로 두 번째)
   function todoPins(){
     var m={}, rank={};
     todoCats.forEach(function(c, i){ rank[c.id]=i; });
+    function better(a, b){ return !b || (b.done && !a.done) || (b.done===a.done && rank[a.cat]<rank[b.cat]); }
     todos.forEach(function(t){
       var c=t.cat && todoCatById(t.cat); if(!c || !c.pin) return;
-      var p=m[t.date] || (m[t.date]={ cats:{}, best:null });
-      p.cats[c.id]=1;
-      var b=p.best, better = !b || (b.done && !t.done) || (b.done===!!t.done && rank[c.id]<rank[b.cat]);
-      if(better) p.best={ cat:c.id, color:c.color, title:t.title, done:!!t.done };
+      var day=m[t.date] || (m[t.date]={});
+      var e={ cat:c.id, color:c.color, title:t.title, done:!!t.done };
+      if(better(e, day[c.id])) day[c.id]=e;            // 카테고리마다 대표 하나
     });
     var out={};
-    for(var ds in m){ var b=m[ds].best; out[ds]={ color:b.color, title:b.title, done:b.done, multi:Object.keys(m[ds].cats).length>1 }; }
+    for(var ds in m){
+      var list=Object.keys(m[ds]).map(function(k){ return m[ds][k]; }).sort(function(a, b){ return better(a, b) ? -1 : 1; });
+      var b=list[0];
+      out[ds]={ color:b.color, title:b.title, done:b.done, multi:list.length>1, color2:list.length>1 ? list[1].color : null };
+    }
     return out;
   }
   // 미니 달력 (주 선택기). mark(ds)가 참인 날엔 점, 달력 표시 카테고리의 할 일이 있는 날엔 색 동그라미
@@ -1236,7 +1244,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         var ds=ymd(d);
         var mk=mark ? mark(ds) : null, pin=pins[ds];
         var cls="md"+(c===5?" sat":"")+(c===6?" sun":"")+(holidays[ds]?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(rowSel?" sel"+(c===0?" first":"")+(c===6?" last":""):"")+(mk?" has":"")+(pin?" pin"+(pin.done?" pdone":"")+(pin.multi?" multi":""):"");
-        h+='<div class="'+cls+'" data-date="'+ds+'"'+(pin?' style="--pin:'+pin.color+'" title="'+esc(pin.title)+'"':'')+'><span>'+d.getDate()+'</span></div>';
+        h+='<div class="'+cls+'" data-date="'+ds+'"'+(pin?' style="--pin:'+pin.color+(pin.color2?';--pin2:'+pin.color2:'')+'" title="'+esc(pin.title)+'"':'')+'><span>'+d.getDate()+'</span></div>';
         d=addDays(d,1);
       }
     }
@@ -1590,16 +1598,40 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
            '<div class="ttx"><span>'+esc(t.title)+'</span></div></div>';
   }
   function todoById(id){ for(var i=0;i<todos.length;i++){ if(todos[i].id===id) return todos[i]; } return null; }
-  // 체크 켜고 끄기 (칸 · 확대 보기 공통): 줄 긋는 모습을 보여 준 뒤 순서 · 개수 정리
+  // 체크 켜고 끄기 (칸 · 확대 보기 공통)
+  // 바로 아래로 내리면 다음 항목이 손가락 밑으로 올라와 연달아 누를 때 엉뚱한 게 체크됨
+  // → 그 자리에 둔 채 줄만 긋고, 마지막 체크 뒤 1.5초 동안 손을 안 대면 스르륵 정리
+  var TODO_SETTLE_MS=1500;
   function toggleTodo(item, chk){
     var t=todoById(item.getAttribute("data-id")); if(!t) return;
     t.done=!t.done; if(t.done) t.doneAt=Date.now(); else delete t.doneAt;
     item.classList.toggle("done", t.done); chk.setAttribute("aria-pressed", t.done?"true":"false");
     saveTodos();
-    clearTimeout(tgridEl._t); tgridEl._t=setTimeout(function(){
-      if(layout==="todo") renderTodos();
-      if(todoDaySheet.classList.contains("on")) renderTodoDay();
-    }, 650);
+    clearTimeout(tgridEl._t); tgridEl._t=setTimeout(settleTodos, TODO_SETTLE_MS);
+  }
+  // 다시 그리면서 항목이 옮겨 가는 모습을 보여 줌 (어디로 갔는지 눈으로 따라갈 수 있게)
+  function settleTodos(){
+    var lists=[tgridEl, todoDayListEl], before=lists.map(function(el){
+      var m={}; el.querySelectorAll(".titem").forEach(function(it){ m[it.getAttribute("data-id")]=it.getBoundingClientRect().top; }); return m;
+    });
+    if(layout==="todo") renderTodos();
+    if(todoDaySheet.classList.contains("on")) renderTodoDay();
+    if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    lists.forEach(function(el, i){
+      el.querySelectorAll(".titem").forEach(function(it){
+        var y0=before[i][it.getAttribute("data-id")]; if(y0==null) return;
+        var dy=y0-it.getBoundingClientRect().top; if(Math.abs(dy)<1) return;
+        it.style.transition="none"; it.style.transform="translateY("+dy+"px)";
+        it.getBoundingClientRect();
+        it.style.transition="transform .3s ease"; it.style.transform="";
+      });
+    });
+  }
+  // 체크 동그라미 · 그 줄 왼쪽 여백 어디를 눌러도 그 줄의 체크 (옆 줄로 새지 않음)
+  function chkFromEvent(ev){
+    var chk=ev.target.closest(".tchk"); if(chk) return chk;
+    var it=ev.target.closest(".titem"); if(!it) return null;
+    var c=it.querySelector(".tchk"); return ev.clientX <= c.getBoundingClientRect().right+4 ? c : null;
   }
   tgridEl.addEventListener("click", function(ev){
     var nav=ev.target.closest("[data-cal]");
@@ -1608,7 +1640,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var md=ev.target.closest(".md");
     if(md){ anchor=parseYmd(md.getAttribute("data-date")); calMonth=null; render(); return; }
     if(ev.target.closest(".mcal")) return;
-    var chk=ev.target.closest(".tchk"), cell=ev.target.closest(".tcell");
+    var chk=chkFromEvent(ev), cell=ev.target.closest(".tcell");
     if(chk){ toggleTodo(chk.closest(".titem"), chk); return; }
     if(cell) openTodoDay(cell.getAttribute("data-date"));   // 칸 누르기 → 그 날 확대 보기 (추가는 거기서 +)
   });
@@ -1625,7 +1657,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   function openTodoDay(ds){ todoDayDate=ds; renderTodoDay(); openSheet(todoDaySheet); }
   todoDayListEl.addEventListener("click", function(ev){
-    var chk=ev.target.closest(".tchk"), item=ev.target.closest(".titem");
+    var chk=chkFromEvent(ev), item=ev.target.closest(".titem");
     if(chk){ toggleTodo(chk.closest(".titem"), chk); return; }
     if(item){ var t=todoById(item.getAttribute("data-id")); if(t){ closeSheet(); todoFromDay=true; openTodo(t); } }
   });
