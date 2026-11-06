@@ -210,6 +210,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   background:var(--surface);border:1px solid var(--line);
 }
 .today-btn:active{transform:scale(.95)}
+/* PC(마우스)에서만: 오늘 양옆 ‹ › — 폰은 스와이프라 숨김 */
+.navgrp{display:flex;align-items:center;gap:6px}
+.nav-btn{display:none}
+@media (hover:hover) and (pointer:fine){
+  .nav-btn{display:grid;place-items:center;width:32px;height:38px;border-radius:12px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line)}
+  .nav-btn:hover{color:var(--ink);background:var(--surface-2)}
+  .nav-btn:active{transform:scale(.92)}
+  .nav-btn svg{width:17px;height:17px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+}
 /* 보기 모드 버튼 (4일/3일/주) */
 .mode-btn{height:38px;min-width:46px;padding:0 11px;border-radius:12px;font-weight:800;font-size:13.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line)}
 .mode-btn:active{transform:scale(.95)}
@@ -711,7 +720,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       <input type="date" id="jumpDate" aria-label="날짜로 이동" style="position:absolute;left:14px;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0">
       <div class="ctrls">
         <button class="mode-btn" id="modeBtn" aria-label="보기 모드 바꾸기">4일</button>
-        <button class="today-btn" id="todayBtn">오늘</button>
+        <div class="navgrp">
+          <button class="nav-btn" id="prevBtn" aria-label="이전" title="이전 (←)"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <button class="today-btn" id="todayBtn">오늘</button>
+          <button class="nav-btn" id="nextBtn" aria-label="다음" title="다음 (→)"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        </div>
         <button class="iconbtn add-btn" id="addBtn" aria-label="일정 추가"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
         <button class="iconbtn" id="menuBtn" aria-label="메뉴"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       </div>
@@ -1578,6 +1591,34 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       var t=e.changedTouches[0]; var dx=t.clientX-swX, dy=t.clientY-swY;
       if(Date.now()-swT<600 && Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.6){ if(dx<0) goNext(); else goPrev(); }
     }, {passive:true});
+  });
+
+  // PC: ‹ › 버튼 · 키보드 ← → · 트랙패드 가로 밀기 (스크롤처럼 민 만큼 연속으로 넘김)
+  document.getElementById("prevBtn").onclick=goPrev;
+  document.getElementById("nextBtn").onclick=goNext;
+  document.addEventListener("keydown", function(e){
+    if(e.key!=="ArrowLeft" && e.key!=="ArrowRight") return;
+    if(e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.isComposing) return;
+    var t=e.target; if(t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if(document.querySelector(".sheet.on")) return;   // 시트 열려 있으면 무시
+    e.preventDefault(); if(e.key==="ArrowLeft") goPrev(); else goNext();
+  });
+  // 예전엔 "한 번 밀면 한 번"이었는데, 관성 신호가 계속 들어와 다음 밀기까지 막혀 연속으로 못 넘겼음
+  // → 민 거리를 모아 한 칸(하루 120px · 한 주 240px)마다 넘김. 너무 빨리 넘어가 눈이 못 따라가지 않게 최소 90ms 간격
+  var whAcc=0, whLast=0, whT=null;
+  [document.getElementById("scroll"), agendaEl, document.getElementById("todos"), document.getElementById("hdays")].forEach(function(el){
+    el.addEventListener("wheel", function(e){
+      if(e.ctrlKey || Math.abs(e.deltaX)<=Math.abs(e.deltaY)) return;   // 세로 스크롤 · 확대는 그대로
+      e.preventDefault();                                                 // 브라우저 뒤로 가기 제스처 막기
+      var dx=e.deltaX*(e.deltaMode===1 ? 30 : 1);                          // 줄 단위(마우스 휠)도 px로
+      if(whAcc && (whAcc>0)!==(dx>0)) whAcc=0;                            // 방향 바꾸면 새로
+      whAcc+=dx;
+      clearTimeout(whT); whT=setTimeout(function(){ whAcc=0; }, 250);
+      var step=(layout==="grid" && (view==="day" || mode!=="7")) ? 120 : 240, now=Date.now();
+      if(Math.abs(whAcc)>=step && now-whLast>=90){
+        whLast=now; if(whAcc>0){ whAcc-=step; goNext(); } else { whAcc+=step; goPrev(); }
+      }
+    }, { passive:false });
   });
 
   // 제목 탭 -> 날짜로 점프
