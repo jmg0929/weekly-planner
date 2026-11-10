@@ -1413,7 +1413,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   tabGridBtn.onclick=function(){ setLayout("grid"); };
   tabListBtn.onclick=function(){ setLayout("list"); };
   tabTodoBtn.onclick=function(){ setLayout("todo"); };
-  window.addEventListener("resize", function(){ if(layout!=="grid") render(); });
+  window.addEventListener("resize", function(){ if(layout!=="grid") bgRender(); });
+  // 사용자가 누르지 않았는데 오는 다시 그리기(1분 타이머 · 화면 크기 변경 · 동기화)는
+  // 할 일을 꾹 누르거나 끄는 중, 체크 뒤 1.5초 정리 대기 중이면 건너뜀 → 끝날 때 tdDrop · settleTodos가 다시 그림
+  // (그대로 그리면 끌던 항목이 손가락 밑에서 사라지거나, 체크하자마자 줄이 내려가 다음 탭이 엇나감)
+  function bgRender(){ if(tdrag || tpress || (layout==="todo" && tgridEl._t)) return; render(); }
 
   function render(){
     autoCompletePins();
@@ -1828,6 +1832,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   // 다시 그리면서 항목이 옮겨 가는 모습을 보여 줌 (어디로 갔는지 눈으로 따라갈 수 있게)
   function settleTodos(){
+    tgridEl._t=null;
     var lists=[tgridEl, todoDayListEl], before=lists.map(function(el){
       var m={}; el.querySelectorAll(".titem").forEach(function(it){ m[it.getAttribute("data-id")]=it.getBoundingClientRect().top; }); return m;
     });
@@ -2884,7 +2889,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     syncStatusUI("busy");
     // 받아온 "다음에" 폰 쪽 변경을 찾음 → 처음 로그인 때 같은 항목은 서버 것이 이김 (평소 수정은 저장할 때 이미 표시됨)
     syncing = pull()
-      .then(function(changed){ if(!auth) return; markDirty("ev"); markDirty("cat"); markDirty("todo"); markDirty("tcat"); markDirty("prefs"); if(changed){ buildMenuFilter(); render(); } return push(); })
+      .then(function(changed){ if(!auth) return; markDirty("ev"); markDirty("cat"); markDirty("todo"); markDirty("tcat"); markDirty("prefs"); if(changed){ buildMenuFilter(); bgRender(); } return push(); })
       .then(function(){ if(auth){ sy.last=Date.now(); sy.err=""; } })
       .catch(function(e){
         if(e && e.signedOut){ sy.err="relogin"; return; }
@@ -3157,7 +3162,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   buildMenuFilter();
   render();
   (function(){ var m=Math.max(8*60, new Date().getHours()*60); var y=(m-DAY_START*60)/60*hourH-120; scrollEl.scrollTop=Math.max(0,y); })();
-  setInterval(render, 60000);
+  setInterval(bgRender, 60000);
   syncStatusUI();
   if(auth) sync();
 
