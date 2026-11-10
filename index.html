@@ -698,6 +698,31 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .tp-grid button.src{box-shadow:inset 0 0 0 1.6px var(--line-strong)}
 .tp-grid button.on{background:var(--accent);color:var(--on-accent);opacity:1;box-shadow:none}
 .ev-save:disabled{opacity:.35}
+/* 스낵바(방금 한 일 + 되돌리기) · 확인 창 · 최근 제목 칩 */
+.snack{position:fixed;left:50%;bottom:calc(84px + var(--sab));z-index:60;display:flex;align-items:center;gap:14px;width:max-content;max-width:min(464px,calc(100% - 32px));
+  padding:11px 10px 11px 18px;border-radius:14px;background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;box-shadow:0 10px 28px rgba(0,0,0,.22);
+  opacity:0;transform:translate(-50%,10px);pointer-events:none;transition:opacity .18s,transform .22s}
+.snack.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.snack button{flex:none;padding:6px 8px;border-radius:9px;font-weight:800;font-size:14px;color:inherit}
+.snack button[hidden]{display:none}
+.snack button:active{opacity:.6}
+.dlg{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:24px;background:rgba(15,15,25,.42);opacity:0;pointer-events:none;transition:opacity .15s}
+.dlg.on{opacity:1;pointer-events:auto}
+.dlg-box{width:min(300px,100%);background:var(--surface);border-radius:20px;padding:24px 16px 16px;box-shadow:var(--shadow);transform:scale(.96);transition:transform .18s}
+.dlg.on .dlg-box{transform:scale(1)}
+.dlg-box h3{margin:0 0 20px;font-size:16.5px;font-weight:800;text-align:center;letter-spacing:-.02em;word-break:keep-all}
+.dlg-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dlg-acts button{padding:13px;border-radius:13px;font-weight:800;font-size:15px;background:var(--surface-2);color:var(--ink)}
+.dlg-acts .crit{background:var(--now);color:#fff}
+.dlg-acts button:active{opacity:.7}
+.recent{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:-8px -20px 16px;padding:0 20px 2px}
+.recent[hidden]{display:none}
+.recent::-webkit-scrollbar{display:none}
+.recent button{flex:none;display:flex;align-items:center;gap:6px;max-width:170px;padding:7px 12px;border-radius:999px;background:var(--surface-2);font-size:13px;font-weight:700;color:var(--ink-2)}
+.recent button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent .cdot{width:7px;height:7px;border-radius:50%;flex:none}
+.recent button:active{transform:scale(.96)}
+.two.range{grid-template-columns:1fr auto 1fr;align-items:center}
 .tday-empty{padding:34px 0;text-align:center;font-size:14px;font-weight:600;color:var(--muted)}
 
 .today-btn:active,.dh:active{transform:scale(.96)}
@@ -769,6 +794,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   </div>
 
   <input type="text" class="ev-title" id="fTitle" placeholder="제목" autocomplete="off" aria-label="제목">
+  <div class="recent" id="evRecent" hidden></div>
 
   <div class="seg ev-seg" id="typeSeg">
     <button data-type="lecture" class="on">매주 반복</button>
@@ -801,19 +827,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <button type="button" class="adv-toggle" id="advToggle">장소 · 기간 · 색 <span class="advcaret">▾</span></button>
   <div id="advanced" hidden>
     <div class="field">
-      <label>장소 <span style="font-weight:500;color:var(--muted)">(선택)</span></label>
+      <label>장소</label>
       <input type="text" id="fLoc" placeholder="예: 공학관 302호" autocomplete="off">
     </div>
     <div class="field" id="rangeField">
-      <label>반복 기간 <span style="font-weight:500;color:var(--muted)">(선택 · 비우면 계속 반복)</span></label>
-      <div class="two">
+      <label>반복 기간</label>
+      <div class="two range">
         <input type="date" id="fFrom" aria-label="반복 시작일">
+        <span class="ev-arrow">→</span>
         <input type="date" id="fUntil" aria-label="반복 종료일">
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px;font-weight:500">시작일 ~ 종료일 (예: 학기 기간)</div>
     </div>
     <div class="field">
-      <label>색상 <span style="font-weight:500;color:var(--muted)">(카테고리 색이 기본 · 바꾸면 이 일정만)</span></label>
+      <label>색상</label>
       <div class="swatches" id="swatches"></div>
     </div>
   </div>
@@ -821,6 +847,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <div class="err" id="err"></div>
 
   <button class="ev-del" id="delBtn" style="display:none">일정 삭제</button>
+</div>
+
+<div class="snack" id="snack" role="status" aria-live="polite"><span id="snackText"></span><button id="snackAct" hidden></button></div>
+<div class="dlg" id="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlgT">
+  <div class="dlg-box"><h3 id="dlgT"></h3><div class="dlg-acts"><button id="dlgNo"></button><button id="dlgYes" class="crit"></button></div></div>
 </div>
 
 <!-- Backup sheet -->
@@ -886,6 +917,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <button class="ev-save" id="todoSave">저장</button>
   </div>
   <input type="text" class="ev-title" id="todoTitle" placeholder="할 일" autocomplete="off" maxlength="100" aria-label="할 일">
+  <div class="recent" id="todoRecent" hidden></div>
   <div class="ev-group">
     <div class="ev-row"><span class="ev-lab">날짜</span><input type="date" id="todoDate" class="ev-in"></div>
     <div class="ev-row tquick" id="todoQuick"><span class="ev-lab"></span><button class="tq" data-tq="today">오늘</button><button class="tq" data-tq="tmr">내일</button><button class="tq" data-tq="week">1주 뒤</button></div>
@@ -1598,7 +1630,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   document.getElementById("nextBtn").onclick=goNext;
   // PC 키보드: Esc 뒤로(열린 창의 취소 · 닫기 버튼과 똑같이) · Ctrl(⌘)+Enter 저장 · ← → 넘기기 · N 추가 · T 오늘 · 1 2 3 화면
   // 위에 있는 창부터 확인 (하위 창은 부모 창을 숨기고 열리므로 보통 하나만 열려 있음)
-  var KEY_LAYERS=[["todoPickSheet","tpCancel","tpOk"],["catSheet","catCloseBtn"],["todoSheet","todoCancel","todoSave"],["sheet","cancelBtn","saveBtn"],
+  var KEY_LAYERS=[["dlg","dlgNo"],["todoPickSheet","tpCancel","tpOk"],["catSheet","catCloseBtn"],["todoSheet","todoCancel","todoSave"],["sheet","cancelBtn","saveBtn"],
     ["acctSheet","acctClose"],["backupSheet","bkCloseBtn"],["listSheet","listCloseBtn"],["menuSheet","menuCloseBtn"],["todoDaySheet","todoDayClose"],["peek","peekClose","peekEdit"]];
   function topLayer(){ for(var i=0;i<KEY_LAYERS.length;i++){ var el=document.getElementById(KEY_LAYERS[i][0]); if(el && el.classList.contains("on")) return KEY_LAYERS[i]; } return null; }
   // 닫힌 창 안에 포커스가 남으면 다음 키(← → 등)가 입력칸으로 가서 안 먹음 → 풀어 줌
@@ -1613,6 +1645,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       else if(layout==="grid" && view==="day"){ e.preventDefault(); backBtn.click(); }   // 하루 보기 → 주간
       return;
     }
+    if((e.ctrlKey || e.metaKey) && !e.shiftKey && e.code==="KeyZ" && snackFn && !isTyping(e.target) && !(top && top[0]==="dlg")){ e.preventDefault(); snackBtn.click(); return; }   // Ctrl(⌘)+Z = 되돌리기
     if(e.key==="Enter" && (e.ctrlKey || e.metaKey)){ if(top && top[2] && top[0]!=="peek"){ e.preventDefault(); pressKeyBtn(top[2]); } return; }
     if(e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || isTyping(e.target)) return;
     if(e.key==="Enter" && top && top[0]==="peek"){ e.preventDefault(); pressKeyBtn("peekEdit"); return; }   // 미리보기 → 편집
@@ -1860,8 +1893,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   function openTodo(t, date){
     todoEditId = t ? t.id : null;
-    var last=null; try{ last=localStorage.getItem(TODO_LASTCAT_KEY); }catch(e){}
-    todoCat = t ? (t.cat||null) : ((last && todoCatById(last)) ? last : ((todoCats[0]&&todoCats[0].id) || null));
+    todoCat = t ? (t.cat||null) : defaultTodoCat();
     todoTitleEl.value = t ? t.title : "";
     todoDateEl.value = t ? t.date : (date || ymd(new Date()));
     todoErrEl.textContent="";
@@ -1869,9 +1901,32 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     document.getElementById("todoDel").style.display = t ? "block" : "none";
     document.getElementById("todoCopy").style.display = t ? "block" : "none";
     todoNoteEl.textContent="";
-    buildTodoCats(); openSheet(todoSheet);
+    buildTodoCats(); renderTodoRecent(); todoSig0=todoSig(); openSheet(todoSheet);
     setTimeout(function(){ todoTitleEl.focus(); }, 250);
   }
+  // 기본 카테고리: 마지막에 쓴 것, 단 '달력 표시'(시험 · 마감 등)는 기본으로 잡지 않음 → 아무 할 일이 달력에 찍히지 않게
+  function defaultTodoCat(){
+    var last=null; try{ last=localStorage.getItem(TODO_LASTCAT_KEY); }catch(e){}
+    var lc=last && todoCatById(last); if(lc && !lc.pin) return lc.id;
+    for(var i=0;i<todoCats.length;i++){ if(!todoCats[i].pin) return todoCats[i].id; }
+    return (todoCats[0] && todoCats[0].id) || null;
+  }
+  var todoSig0="";
+  function todoSig(){ return JSON.stringify([todoTitleEl.value.trim(), todoDateEl.value, todoCat]); }
+  function todoDirty(){ return todoSheet.classList.contains("on") && todoSig()!==todoSig0 && !!(todoEditId || todoTitleEl.value.trim()); }
+  function renderTodoRecent(){
+    var box=document.getElementById("todoRecent");
+    var list=todoEditId ? [] : recentFrom(todos.slice().sort(function(a,b){ return (a.at||0)-(b.at||0); }), todoTitleEl.value);
+    box._list=list; box.hidden=!list.length;
+    box.innerHTML=list.map(function(t, i){ var c=t.cat && todoCatById(t.cat); return '<button type="button" data-i="'+i+'"><i class="cdot" style="background:'+(c ? esc(c.color) : "var(--line-strong)")+'"></i><span>'+esc(t.title)+'</span></button>'; }).join("");
+  }
+  document.getElementById("todoRecent").addEventListener("click", function(ev){
+    var b=ev.target.closest("button"), t=b && this._list[+b.getAttribute("data-i")]; if(!t) return;
+    todoTitleEl.value=t.title; if(t.cat && todoCatById(t.cat)) todoCat=t.cat;
+    buildTodoCats(); renderTodoRecent(); todoTitleEl.focus();
+  });
+  todoTitleEl.addEventListener("input", function(){ renderTodoRecent(); if(todoErrEl.textContent.indexOf("할 일")===0) todoErrEl.textContent=""; });
+  todoDateEl.addEventListener("change", function(){ if(todoErrEl.textContent.indexOf("날짜")===0) todoErrEl.textContent=""; });
   document.getElementById("todoCats").addEventListener("click", function(e){
     if(e.target.closest("#todoCatAdd")){ openCatManage("todo"); return; }   // + → 할 일 카테고리 관리, 닫으면 이 시트로
     var b=e.target.closest(".catchip"); if(!b) return;
@@ -1879,8 +1934,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
   function saveTodoSheet(){
     var title=todoTitleEl.value.trim(), date=todoDateEl.value;
-    if(!title){ todoErrEl.textContent="할 일을 입력하세요"; todoTitleEl.focus(); return; }
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ todoErrEl.textContent="날짜를 고르세요"; return; }
+    if(!title){ todoErrEl.textContent="할 일을 입력해 주세요"; todoTitleEl.focus(); return; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ todoErrEl.textContent="날짜를 골라 주세요"; return; }
     if(todoEditId){ var t=todoById(todoEditId); if(t){ t.title=title.slice(0,100); if(t.date!==date) delete t.ord; t.date=date; if(todoCat) t.cat=todoCat; else delete t.cat; } }
     else todos.push({ id:uid(), title:title.slice(0,100), cat:todoCat||undefined, date:date, done:false, at:Date.now() });
     if(todoCat){ try{ localStorage.setItem(TODO_LASTCAT_KEY, todoCat); }catch(e){} }
@@ -1943,10 +1998,20 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   };
   todoTitleEl.addEventListener("keydown", function(e){ if(e.isComposing || e.keyCode===229 || !todoSheet.classList.contains("on")) return; if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); saveTodoSheet(); } });
   document.getElementById("fTitle").addEventListener("keydown", function(e){ if(e.isComposing || e.keyCode===229 || !sheet.classList.contains("on")) return; if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); document.getElementById("saveBtn").click(); } });
-  document.getElementById("todoCancel").onclick=function(){ var back=todoFromDay; closeSheet(); todoFromDay=back; afterTodoSheet(); };
+  document.getElementById("todoCancel").onclick=function(){
+    function go(){ var back=todoFromDay; closeSheet(); todoFromDay=back; afterTodoSheet(); }
+    if(todoDirty()) askDiscard(!!todoEditId, "할 일", go); else go();
+  };
   document.getElementById("todoDel").onclick=function(){
-    todos=todos.filter(function(t){ return t.id!==todoEditId; });
+    var idx=-1; for(var i=0;i<todos.length;i++){ if(todos[i].id===todoEditId){ idx=i; break; } }
+    if(idx<0) return;
+    var gone=todos.splice(idx,1)[0];
     var back=todoFromDay; saveTodos(); closeSheet(); todoFromDay=back; render(); afterTodoSheet();
+    showSnack("할 일을 삭제했어요", "되돌리기", function(){
+      if(todoById(gone.id)) return;
+      todos.splice(Math.min(idx, todos.length), 0, gone); saveTodos(); render();
+      if(todoDaySheet.classList.contains("on")) renderTodoDay();
+    });
   };
   // ================= Sheets =================
   var scrim=document.getElementById("scrim");
@@ -1989,7 +2054,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function checkTimes(){
     var bad = fStart.value && fEnd.value && strToMin(fEnd.value) <= strToMin(fStart.value);
     fEnd.classList.toggle("bad", !!bad);
-    if(bad) errEl.textContent="종료 시간은 시작 시간보다 늦어야 해요.";
+    if(bad) errEl.textContent="종료 시간이 시작 시간보다 늦어야 해요";
     else if(errEl.textContent.indexOf("종료 시간")===0) errEl.textContent="";
     return !bad;
   }
@@ -2015,6 +2080,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var b=ev.target.closest("button"); if(!b)return;
     var d=+b.getAttribute("data-d"); var i=form.days.indexOf(d);
     if(i>=0)form.days.splice(i,1); else form.days.push(d);
+    if(errEl.textContent.indexOf("요일")===0) errEl.textContent="";
     syncChips();
   });
 
@@ -2038,6 +2104,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var b=ev.target.closest(".catchip[data-cat]"); if(!b)return;
     form.cat=b.getAttribute("data-cat");
     form.color=catColor(form.cat);   // 카테고리 고르면 색도 그 색으로 따라옴
+    if(editId==null && !endTouched) setEndByDur(durOf(form.cat));
     syncCat(); syncSwatch();
   });
 
@@ -2185,6 +2252,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     buildNewCatColors(); buildNewCatEmojis(); document.getElementById("newCatName").value=""; setNewCatPin(false);
     openSheet(catSheet);
   }
+  function afterCatUndo(){
+    if(catSheet.classList.contains("on")) buildCatList();
+    buildMenuFilter();
+    if(sheet.classList.contains("on")) buildCatChips();
+    if(todoSheet.classList.contains("on")) buildTodoCats();
+    render();
+  }
   function closeCatManage(){
     catSheet.classList.remove("on");
     if(catReturnToForm){ catReturnToForm=false; buildCatChips(); if(!catById(form.cat)) form.cat=categories[0].id; syncCat(); sheet.classList.add("on"); }
@@ -2218,18 +2292,29 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(d){
       if(scopeCats().length<=1) return;
       var id=d.getAttribute("data-del");
+      // 확인 창 대신 바로 지우고 4초 동안 되돌리기 (한 번 덜 누름)
       if(catScope==="todo"){
-        if(!confirm("이 카테고리를 삭제할까요?\n(해당 할 일은 그대로 남아요)")) return;
-        todoCats=todoCats.filter(function(c){ return c.id!==id; });
+        var ti=-1; todoCats.forEach(function(c, i){ if(c.id===id) ti=i; }); if(ti<0) return;
+        var tgone=todoCats.splice(ti,1)[0];
         if(editCat && editCat.id===id) editCat=null;
         saveTodoCats(); buildCatList(); render();
+        showSnack("카테고리를 삭제했어요", "되돌리기", function(){
+          if(todoCatById(tgone.id)) return;
+          todoCats.splice(Math.min(ti, todoCats.length), 0, tgone); saveTodoCats(); afterCatUndo();
+        });
         return;
       }
-      if(!confirm("이 카테고리를 삭제할까요?\n(해당 일정은 저장된 색으로 계속 표시돼요)")) return;
-      categories=categories.filter(function(c){ return c.id!==id; });
-      if(hidden[id]){ delete hidden[id]; saveHidden(); }
+      var ci=-1; categories.forEach(function(c, i){ if(c.id===id) ci=i; }); if(ci<0) return;
+      var cgone=categories.splice(ci,1)[0], wasHidden=!!hidden[id];
+      if(wasHidden){ delete hidden[id]; saveHidden(); }
       if(editCat && editCat.id===id) editCat=null;
       saveCategories(); buildCatList(); buildMenuFilter(); render();
+      showSnack("카테고리를 삭제했어요", "되돌리기", function(){
+        if(catById(cgone.id)) return;
+        categories.splice(Math.min(ci, categories.length), 0, cgone);
+        if(wasHidden){ hidden[cgone.id]=true; saveHidden(); }
+        saveCategories(); afterCatUndo();
+      });
       return;
     }
     // 줄(또는 연필) 탭 → 수정 패널 펼치기/접기
@@ -2244,8 +2329,35 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); catReturnToTodo=false; menuSheet.classList.remove("on"); acctSheet.classList.remove("on"); todoSheet.classList.remove("on"); if(tpSheet) tpSheet.classList.remove("on"); todoDaySheet.classList.remove("on"); todoFromDay=false; peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad");
     var a=document.activeElement; if(a && a.closest && a.closest(".sheet,.peek")) a.blur();   // 닫힌 창의 입력칸에 커서가 남으면 다음 키가 거기로 감
   }
-  scrim.onclick=closeSheet;
-  document.getElementById("cancelBtn").onclick=closeSheet;
+  // 바깥 탭 = Esc = 맨 위 창의 취소 · 닫기 (하위 창은 부모 창으로, 쓰던 내용이 있으면 묻기)
+  scrim.onclick=function(){ var top=topLayer(); if(top && top[0]!=="dlg") pressKeyBtn(top[1]); else if(!top) closeSheet(); };
+  document.getElementById("cancelBtn").onclick=function(){ if(evDirty()) askDiscard(!!editId, "일정", closeSheet); else closeSheet(); };
+
+  // ===== 스낵바: 방금 한 일 + 되돌리기 (당근 SEED: 4초, 버튼 하나, 누르고 있으면 멈춤) =====
+  var snackEl=document.getElementById("snack"), snackTx=document.getElementById("snackText"), snackBtn=document.getElementById("snackAct"), snackT=null, snackFn=null;
+  function hideSnack(){ clearTimeout(snackT); snackEl.classList.remove("on"); snackFn=null; }
+  function snackTimer(ms){ clearTimeout(snackT); snackT=setTimeout(hideSnack, ms); }
+  function showSnack(text, act, fn){
+    snackTx.textContent=text; snackFn=fn||null;
+    snackBtn.hidden=!fn; snackBtn.textContent=act||"";
+    snackEl.classList.add("on"); snackTimer(4000);
+  }
+  snackBtn.onclick=function(){ var f=snackFn; hideSnack(); if(f) f(); };
+  snackEl.addEventListener("pointerdown", function(){ clearTimeout(snackT); });
+  ["pointerup","pointerleave"].forEach(function(t){ snackEl.addEventListener(t, function(){ if(snackEl.classList.contains("on")) snackTimer(2500); }); });
+
+  // ===== 확인 창: 쓰던 내용을 버릴 때만 (버튼 2개, 위험한 쪽만 빨강, 바깥 탭으로는 안 닫힘) =====
+  var dlgEl=document.getElementById("dlg"), dlgYesFn=null;
+  function askConfirm(title, noLabel, yesLabel, onYes){
+    document.getElementById("dlgT").textContent=title;
+    document.getElementById("dlgNo").textContent=noLabel; document.getElementById("dlgYes").textContent=yesLabel;
+    dlgYesFn=onYes; dlgEl.classList.add("on");
+    setTimeout(function(){ document.getElementById("dlgNo").focus(); }, 0);   // Enter를 눌러도 안전한 쪽(계속 쓰기)
+  }
+  function closeDlg(){ dlgEl.classList.remove("on"); dlgYesFn=null; var a=document.activeElement; if(a && dlgEl.contains(a)) a.blur(); }
+  document.getElementById("dlgNo").onclick=closeDlg;
+  document.getElementById("dlgYes").onclick=function(){ var f=dlgYesFn; closeDlg(); if(f) f(); };
+  function askDiscard(isEdit, what, done){ askConfirm("저장하지 않고 나갈까요?", "계속 쓰기", "나가기", done); }   // 결과(저장 안 됨)가 제목에 보이게
   document.getElementById("bkCloseBtn").onclick=closeSheet;
   document.getElementById("listCloseBtn").onclick=closeSheet;
 
@@ -2274,8 +2386,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     form.color=catColor(form.cat);                      // 새 일정은 카테고리 색으로 시작
     fTitle.value=""; fLoc.value=""; fDate.value=dateStr;
     fFrom.value=""; fUntil.value="";
-    fStart.value=minToStr(startMin); fEnd.value=minToStr(Math.min(startMin+60,24*60-1));
-    syncType(); syncChips(); buildCatChips(); syncSwatch(); setAdvanced(false);
+    var dur=durOf(form.cat); lastDur=dur; endTouched=false;
+    fStart.value=minToStr(startMin); fEnd.value=minToStr(Math.min(startMin+dur,24*60-1));
+    errEl.textContent="";
+    syncType(); syncChips(); buildCatChips(); syncSwatch(); setAdvanced(false); renderEvRecent();
+    evSig0=evSig();
     openSheet(sheet); setTimeout(function(){ fTitle.focus(); },300);
   }
   function openEdit(e){
@@ -2293,22 +2408,70 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     fStart.value=minToStr(e.start); fEnd.value=minToStr(e.end);
     syncType(); syncChips(); buildCatChips(); syncSwatch();
     setAdvanced(!!(e.location||e.from||e.until)); // 세부값 있으면 펼친 채로
+    endTouched=true; errEl.textContent=""; renderEvRecent();
+    evSig0=evSig();
     openSheet(sheet);
   }
 
+  // ===== 쓰던 내용 보호 · 최근 제목 · 카테고리별 길이 =====
+  var evSig0="";
+  function evSig(){ return JSON.stringify([fTitle.value.trim(), form.type, form.days.slice().sort(), fDate.value, fStart.value, fEnd.value, form.cat, form.color, fLoc.value.trim(), fFrom.value, fUntil.value]); }
+  function evDirty(){ return sheet.classList.contains("on") && evSig()!==evSig0 && !!(editId || fTitle.value.trim()); }
+  // 최근에 쓴 제목 (새로 추가할 때만). 쓰는 중이면 그 글자가 들어간 것만
+  function recentFrom(list, cur){
+    var seen={}, out=[], q=cur.trim();
+    for(var i=list.length-1;i>=0 && out.length<8;i--){
+      var x=list[i], t=(x.title||"").trim(); if(!t || seen[t]) continue; seen[t]=1;
+      if(q && (t===q || t.indexOf(q)<0)) continue;
+      out.push(x);
+    }
+    return out;
+  }
+  function renderEvRecent(){
+    var box=document.getElementById("evRecent"), list=(editId==null) ? recentFrom(events, fTitle.value) : [];
+    box._list=list; box.hidden=!list.length;
+    box.innerHTML=list.map(function(e, i){ return '<button type="button" data-i="'+i+'"><i class="cdot" style="background:'+esc(evColor(e))+'"></i><span>'+esc(e.title)+'</span></button>'; }).join("");
+  }
+  document.getElementById("evRecent").addEventListener("click", function(ev){
+    var b=ev.target.closest("button"), e=b && this._list[+b.getAttribute("data-i")]; if(!e) return;
+    fTitle.value=e.title;
+    if(e.cat && catById(e.cat)) form.cat=e.cat;
+    form.color=e.color || catColor(form.cat);
+    fLoc.value=e.location || "";
+    setEndByDur(Math.max(5, e.end-e.start)); endTouched=true;   // 그 일정의 길이
+    syncCat(); syncSwatch(); renderEvRecent();
+    if(e.location) setAdvanced(true);
+  });
+  fTitle.addEventListener("input", function(){ renderEvRecent(); if(errEl.textContent.indexOf("제목")===0) errEl.textContent=""; });
+  fFrom.addEventListener("change", function(){ if(errEl.textContent.indexOf("반복")===0) errEl.textContent=""; });
+  fUntil.addEventListener("change", function(){ if(errEl.textContent.indexOf("반복")===0) errEl.textContent=""; });
+  // 카테고리별로 마지막에 쓴 길이 (강의 75분, 약속 2시간 …) → 새 일정 종료 시간 기본값
+  var DUR_KEY="weekly-planner-ev-dur", endTouched=false;
+  function durMap(){ try{ var m=JSON.parse(localStorage.getItem(DUR_KEY)||"{}"); return (m && typeof m==="object" && !Array.isArray(m)) ? m : {}; }catch(e){ return {}; } }
+  function durOf(cat){ var d=durMap()[cat]; return (typeof d==="number" && d>=5 && d<=24*60) ? d : 60; }
+  function rememberDur(cat, d){ var m=durMap(); m[cat]=d; try{ localStorage.setItem(DUR_KEY, JSON.stringify(m)); }catch(e){} }
+  function setEndByDur(d){ var st=strToMin(fStart.value||"09:00"); fEnd.value=minToStr(Math.min(st+d, 24*60-1)); lastDur=d; checkTimes(); }
+  fEnd.addEventListener("change", function(){ endTouched=true; });
+
   document.getElementById("delBtn").onclick=function(){
     if(editId==null)return;
-    events=events.filter(function(e){ return e.id!==editId; });
+    var idx=-1; for(var i=0;i<events.length;i++){ if(events[i].id===editId){ idx=i; break; } }
+    if(idx<0) return;
+    var gone=events.splice(idx,1)[0];
     save(); closeSheet(); render();
+    showSnack("일정을 삭제했어요", "되돌리기", function(){
+      if(events.some(function(e){ return e.id===gone.id; })) return;
+      events.splice(Math.min(idx, events.length), 0, gone); save(); render();
+    });
   };
 
   document.getElementById("saveBtn").onclick=function(){
     var title=fTitle.value.trim();
-    if(!title){ errEl.textContent="제목을 입력해 주세요."; return; }
+    if(!title){ errEl.textContent="제목을 입력해 주세요"; fTitle.focus(); return; }
     var s=strToMin(fStart.value||"0:0"), en=strToMin(fEnd.value||"0:0");
     if(en<=s){ checkTimes(); fEnd.focus(); return; }
-    if(form.type==="lecture" && form.days.length===0){ errEl.textContent="요일을 하나 이상 선택해 주세요."; return; }
-    if(form.type==="lecture" && fFrom.value && fUntil.value && fUntil.value < fFrom.value){ errEl.textContent="반복 종료일이 시작일보다 빨라요."; return; }
+    if(form.type==="lecture" && form.days.length===0){ errEl.textContent="요일을 하나 이상 골라 주세요"; return; }
+    if(form.type==="lecture" && fFrom.value && fUntil.value && fUntil.value < fFrom.value){ errEl.textContent="반복 종료일이 시작일보다 빨라요"; setAdvanced(true); return; }
 
     var cat = catById(form.cat) ? form.cat : categories[0].id;
     var rec={ id: editId||uid(), type:form.type, title:title, location:fLoc.value.trim(),
@@ -2323,6 +2486,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
     if(editId){ for(var i=0;i<events.length;i++){ if(events[i].id===editId){ events[i]=rec; break; } } }
     else events.push(rec);
+    rememberDur(cat, en-s);
     save(); closeSheet(); render();
   };
 
@@ -2678,17 +2842,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var REDIRECT=location.origin+location.pathname.replace(/index\.html$/,"");
   function authMsg(e){
     var c=(e && e.code)||"", m=(e && e.message)||"";
-    if(navigator.onLine===false) return "인터넷 연결을 확인하세요";
+    if(navigator.onLine===false) return "인터넷 연결을 확인해 주세요";
     if(c==="invalid_credentials" || /invalid login/i.test(m)) return "이메일 또는 비밀번호가 틀려요";
-    if(c==="user_already_exists" || /already registered/i.test(m)) return "이미 가입된 이메일 · 로그인을 누르세요";
+    if(c==="user_already_exists" || /already registered/i.test(m)) return "이미 가입된 이메일 · 로그인을 눌러 주세요";
     if(c==="same_password" || /different from the old/i.test(m)) return "지금과 같은 비밀번호예요";
     if(c==="weak_password" || /password should/i.test(m)) return "비밀번호는 6자 이상";
-    if(c==="reauthentication_needed") return "다시 로그인 후 시도하세요";
+    if(c==="reauthentication_needed") return "다시 로그인한 뒤 시도해 주세요";
     if(c==="email_not_confirmed" || /not confirmed/i.test(m)) return "메일 인증이 아직이에요";
     if(c==="otp_expired" || /token has expired|invalid.*otp|otp.*invalid/i.test(m)) return "인증번호가 틀렸거나 만료됐어요";
     if(c==="signup_disabled" || /signups not allowed/i.test(m)) return "가입이 닫혀 있어요";
-    if(c==="email_address_invalid" || c==="validation_failed" || /email.*invalid|invalid.*email/i.test(m)) return "이메일 형식을 확인하세요";
-    if(c==="over_request_rate_limit" || e.status===429) return "잠시 후 다시 시도하세요";
+    if(c==="email_address_invalid" || c==="validation_failed" || /email.*invalid|invalid.*email/i.test(m)) return "이메일 형식을 확인해 주세요";
+    if(c==="over_request_rate_limit" || e.status===429) return "잠시 후 다시 시도해 주세요";
     return "실패 · "+m.slice(0,60);
   }
   // 로그인 성공 → 같은 계정이면 이전 기록 이어서 / 처음이면: 서버 것 받고 → 폰에만 있던 것 올림 (합치기)
@@ -2710,7 +2874,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function doAuth(kind){
     var em=acctEmail.value.trim(), pw=acctPw.value;
     acctErr.textContent=""; showMsg("");
-    if(!em || !pw){ acctErr.textContent="이메일과 비밀번호를 입력하세요"; return; }
+    if(!em || !pw){ acctErr.textContent="이메일과 비밀번호를 입력해 주세요"; return; }
     if(kind==="signup" && pw.length<6){ acctErr.textContent="비밀번호는 6자 이상"; return; }
     var btns=[document.getElementById("acctLogin"), document.getElementById("acctSignup")];
     btns.forEach(function(b){ b.disabled=true; });
@@ -2719,7 +2883,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         if(s.access_token){ acctPw.value=""; return startSession(s); }
         // 메일 인증을 켜 두면 가입 직후엔 세션이 없음. 이미 인증된 이메일이면 identities 가 빈 배열로 옴
         var u=s.user||s;
-        if(Array.isArray(u.identities) && !u.identities.length){ acctErr.textContent="이미 가입된 이메일 · 로그인을 누르세요"; return; }
+        if(Array.isArray(u.identities) && !u.identities.length){ acctErr.textContent="이미 가입된 이메일 · 로그인을 눌러 주세요"; return; }
         acctPw.value="";
         codeMode("signup", em);
       })
@@ -2733,7 +2897,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   document.getElementById("acctForgot").onclick=function(){
     var em=acctEmail.value.trim(), btn=this;
     acctErr.textContent=""; showMsg("");
-    if(!em){ acctErr.textContent="이메일을 입력하세요"; acctEmail.focus(); return; }
+    if(!em){ acctErr.textContent="이메일을 입력해 주세요"; acctEmail.focus(); return; }
     btn.disabled=true;
     authReq("recover?redirect_to="+encodeURIComponent(REDIRECT), { email:em })
       .then(function(){ codeMode("recovery", em); })
@@ -2762,7 +2926,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var what=document.getElementById("acctCodeWhat");
     if(!codeFor || !codeUntil) return;
     var left=Math.max(0, Math.ceil((codeUntil-Date.now())/1000));
-    what.textContent = left ? (CODE_MIN+"분 안에 입력하세요 · "+Math.floor(left/60)+":"+("0"+left%60).slice(-2)) : "시간 초과 · 다시 보내기를 누르세요";
+    what.textContent = left ? (CODE_MIN+"분 안에 입력해 주세요 · "+Math.floor(left/60)+":"+("0"+left%60).slice(-2)) : "시간 초과 · 다시 보내기를 눌러 주세요";
     what.classList.toggle("warn", !left);
     if(!left){ clearInterval(codeTimer); codeTimer=null; }
   }
@@ -2776,7 +2940,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(kind){
       document.getElementById("acctCodeMail").textContent=em;
       var what=document.getElementById("acctCodeWhat"); what.classList.remove("warn");
-      if(notYet) what.textContent="메일 인증이 아직이에요 · 다시 보내기를 누르세요";
+      if(notYet) what.textContent="메일 인증이 아직이에요 · 다시 보내기를 눌러 주세요";
       else startCodeTimer();
       acctCode.focus();
     }
@@ -2786,8 +2950,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var tk=acctCode.value.replace(/\s/g,""), f=codeFor, btn=document.getElementById("acctCodeGo");
     codeErr.textContent=""; codeSent("");
     if(!f || btn.disabled) return;
-    if(!/^\d{6}$/.test(tk)){ codeErr.textContent="메일로 온 숫자 6자리를 입력하세요"; return; }
-    if(codeUntil && Date.now()>codeUntil){ codeErr.textContent="시간 초과 · 다시 보내기를 누르세요"; return; }
+    if(!/^\d{6}$/.test(tk)){ codeErr.textContent="메일로 온 숫자 6자리를 입력해 주세요"; return; }
+    if(codeUntil && Date.now()>codeUntil){ codeErr.textContent="시간 초과 · 다시 보내기를 눌러 주세요"; return; }
     btn.disabled=true;
     authReq("verify", { type:(f.kind==="signup" ? "email" : "recovery"), email:f.email, token:tk })
       .then(function(s){
@@ -2830,7 +2994,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var cur=pwCur.value, nw=pwNew.value, em=auth && auth.user.email;
     pwErr.textContent="";
     if(!auth){ pwErr.textContent="로그인이 필요해요"; return; }
-    if(!cur || !nw){ pwErr.textContent="비밀번호를 입력하세요"; return; }
+    if(!cur || !nw){ pwErr.textContent="비밀번호를 입력해 주세요"; return; }
     if(nw.length<6){ pwErr.textContent="비밀번호는 6자 이상"; return; }
     if(nw!==pwNew2.value){ pwErr.textContent="새 비밀번호가 서로 달라요"; return; }
     if(nw===cur){ pwErr.textContent="지금과 같은 비밀번호예요"; return; }
@@ -2862,7 +3026,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var nw=recNew.value, btn=document.getElementById("acctRecSave");
     recErr.textContent="";
     if(!recov) return;
-    if(!nw){ recErr.textContent="비밀번호를 입력하세요"; return; }
+    if(!nw){ recErr.textContent="비밀번호를 입력해 주세요"; return; }
     if(nw.length<6){ recErr.textContent="비밀번호는 6자 이상"; return; }
     if(nw!==recNew2.value){ recErr.textContent="새 비밀번호가 서로 달라요"; return; }
     btn.disabled=true;
@@ -2912,7 +3076,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var at=hp.get("access_token"), type=hp.get("type");
     if(!at){
       openAccount();
-      acctErr.textContent = /expired|invalid/i.test(hp.get("error_description")||hp.get("error_code")||"") ? "링크가 만료됐어요 · 다시 요청하세요" : "링크 오류 · 다시 요청하세요";
+      acctErr.textContent = /expired|invalid/i.test(hp.get("error_description")||hp.get("error_code")||"") ? "링크가 만료됐어요 · 다시 요청해 주세요" : "링크 오류 · 다시 요청해 주세요";
       return;
     }
     // 링크의 토큰은 남이 만든 것일 수도 있음 → 이걸로 로그인하거나 이 기기 일정을 올리지 않음
@@ -2922,12 +3086,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         document.getElementById("acctRecMail").textContent=recov.email;
         document.getElementById("acctRecUser").value=recov.email;
         openAccount(); recNew.focus();
-      }).catch(function(){ openAccount(); acctErr.textContent="링크가 만료됐어요 · 다시 요청하세요"; });
+      }).catch(function(){ openAccount(); acctErr.textContent="링크가 만료됐어요 · 다시 요청해 주세요"; });
     } else {
       authReq("logout?scope=local", {}, at).catch(function(){});   // 인증만 하고 임시 로그인은 폐기
       openAccount();
       if(auth){ var ok=document.getElementById("acctPwOk"); ok.textContent="메일 인증 완료"; ok.hidden=false; }
-      else showMsg("메일 인증 완료 · 로그인하세요");
+      else showMsg("메일 인증 완료 · 로그인해 주세요");
     }
   })();
 })();

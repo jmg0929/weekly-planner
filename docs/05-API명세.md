@@ -40,9 +40,9 @@
 | 항목 | 내용 |
 |---|---|
 | 요청 본문 | `{ "email": string, "password": string }` |
-| 클라이언트 사전 검증 | 이메일·비밀번호 비어 있으면 "이메일과 비밀번호를 입력하세요", 비밀번호 6자 미만이면 "비밀번호는 6자 이상" |
+| 클라이언트 사전 검증 | 이메일·비밀번호 비어 있으면 "이메일과 비밀번호를 입력해 주세요", 비밀번호 6자 미만이면 "비밀번호는 6자 이상" |
 | 응답 (메일 확인 켜짐) | 세션 없음, 사용자 객체(`user` 또는 최상위). 앱이 쓰는 필드: `identities` |
-| 응답 처리 | `access_token` 있으면 즉시 `startSession()` · `identities`가 빈 배열이면 "이미 가입된 이메일 · 로그인을 누르세요" · 그 외 → 인증번호 화면 |
+| 응답 처리 | `access_token` 있으면 즉시 `startSession()` · `identities`가 빈 배열이면 "이미 가입된 이메일 · 로그인을 눌러 주세요" · 그 외 → 인증번호 화면 |
 | 서버 부수효과 | 6자리 인증번호 메일 발송 |
 
 #### A2. 로그인 (비밀번호 grant)
@@ -52,7 +52,7 @@
 | 요청 본문 | `{ "email": string, "password": string }` |
 | 응답 (200) | `{ access_token, refresh_token, expires_in, user: { id, email, ... } }` |
 | 앱 저장 | `{ access_token, refresh_token, expires_at = now + expires_in·1000, user: { id, email } }` |
-| 오류 | `invalid_credentials` → "이메일 또는 비밀번호가 틀려요" · `email_not_confirmed` → 인증번호 화면("메일 인증이 아직이에요 · 다시 보내기를 누르세요") |
+| 오류 | `invalid_credentials` → "이메일 또는 비밀번호가 틀려요" · `email_not_confirmed` → 인증번호 화면("메일 인증이 아직이에요 · 다시 보내기를 눌러 주세요") |
 | 비밀번호 변경용 재확인 | `invalid_credentials`면 "현재 비밀번호가 틀려요", 성공 시 새 세션 저장 후 A8 |
 
 #### A3. 토큰 갱신
@@ -70,7 +70,7 @@
 | 항목 | 내용 |
 |---|---|
 | 요청 본문 | `{ "type": "email" \| "recovery", "email": string, "token": "6자리" }` |
-| 클라이언트 사전 검증 | `^\d{6}$` 아니면 "메일로 온 숫자 6자리를 입력하세요" · 5분 경과면 "시간 초과 · 다시 보내기를 누르세요" (요청 안 함) |
+| 클라이언트 사전 검증 | `^\d{6}$` 아니면 "메일로 온 숫자 6자리를 입력해 주세요" · 5분 경과면 "시간 초과 · 다시 보내기를 눌러 주세요" (요청 안 함) |
 | 응답 | 세션 (`access_token`, `user` 없으면 "인증 실패" 처리) |
 | 처리 | `email` → `startSession()` · `recovery` → 메모리 `recov`에 보관 후 새 비밀번호 화면 |
 | 오류 | `otp_expired` 등 → "인증번호가 틀렸거나 만료됐어요", 칸 빨강·비움 |
@@ -82,14 +82,14 @@
 |---|---|
 | 요청 본문 | `{ "type": "signup", "email": string }` |
 | 성공 | "다시 보냈어요", 칸 비움, 5분 타이머 재시작 |
-| 오류 | `over_request_rate_limit` / `429` → "잠시 후 다시 시도하세요" |
+| 오류 | `over_request_rate_limit` / `429` → "잠시 후 다시 시도해 주세요" |
 
 #### A6. 비밀번호 찾기
 
 | 항목 | 내용 |
 |---|---|
 | 요청 본문 | `{ "email": string }` |
-| 클라이언트 사전 검증 | 이메일 비면 "이메일을 입력하세요" |
+| 클라이언트 사전 검증 | 이메일 비면 "이메일을 입력해 주세요" |
 | 성공 | 인증번호 화면 — **계정이 없어도 같은 화면** (계정 존재 여부 비노출) |
 
 #### A7. 사용자 정보 (호환용)
@@ -98,7 +98,7 @@
 |---|---|
 | 용도 | 예전 재설정 링크(`#access_token&type=recovery`)로 열린 경우, 토큰 주인의 이메일만 확인해 화면에 표시 |
 | 응답 | `{ id, email, ... }` — 앱은 `email`만 사용 |
-| 오류 | "링크가 만료됐어요 · 다시 요청하세요" |
+| 오류 | "링크가 만료됐어요 · 다시 요청해 주세요" |
 
 #### A8. 비밀번호 변경
 
@@ -106,7 +106,7 @@
 |---|---|
 | 요청 본문 | `{ "password": string }` |
 | 클라이언트 사전 검증 | 6자 이상, 두 칸 일치("새 비밀번호가 서로 달라요"), 현재와 다름("지금과 같은 비밀번호예요") |
-| 오류 | `same_password` → "지금과 같은 비밀번호예요" · `weak_password` → "비밀번호는 6자 이상" · `reauthentication_needed` → "다시 로그인 후 시도하세요" |
+| 오류 | `same_password` → "지금과 같은 비밀번호예요" · `weak_password` → "비밀번호는 6자 이상" · `reauthentication_needed` → "다시 로그인한 뒤 시도해 주세요" |
 
 #### A9. 로그아웃
 
@@ -148,32 +148,32 @@
 
 | 조건 (code 또는 message 정규식) | 표시 문구 |
 |---|---|
-| `navigator.onLine === false` | 인터넷 연결을 확인하세요 |
+| `navigator.onLine === false` | 인터넷 연결을 확인해 주세요 |
 | `invalid_credentials` · `/invalid login/i` | 이메일 또는 비밀번호가 틀려요 |
-| `user_already_exists` · `/already registered/i` | 이미 가입된 이메일 · 로그인을 누르세요 |
+| `user_already_exists` · `/already registered/i` | 이미 가입된 이메일 · 로그인을 눌러 주세요 |
 | `same_password` · `/different from the old/i` | 지금과 같은 비밀번호예요 |
 | `weak_password` · `/password should/i` | 비밀번호는 6자 이상 |
-| `reauthentication_needed` | 다시 로그인 후 시도하세요 |
+| `reauthentication_needed` | 다시 로그인한 뒤 시도해 주세요 |
 | `email_not_confirmed` · `/not confirmed/i` | 메일 인증이 아직이에요 |
 | `otp_expired` · `/token has expired\|invalid.*otp\|otp.*invalid/i` | 인증번호가 틀렸거나 만료됐어요 |
 | `signup_disabled` · `/signups not allowed/i` | 가입이 닫혀 있어요 |
-| `email_address_invalid` · `validation_failed` · `/email.*invalid\|invalid.*email/i` | 이메일 형식을 확인하세요 |
-| `over_request_rate_limit` · HTTP `429` | 잠시 후 다시 시도하세요 |
+| `email_address_invalid` · `validation_failed` · `/email.*invalid\|invalid.*email/i` | 이메일 형식을 확인해 주세요 |
+| `over_request_rate_limit` · HTTP `429` | 잠시 후 다시 시도해 주세요 |
 | 그 외 | 실패 · (원문 60자) |
 
 화면별 추가 문구 (클라이언트 검증·흐름):
 
 | 상황 | 문구 |
 |---|---|
-| 로그인/가입 칸 비움 | 이메일과 비밀번호를 입력하세요 |
-| 비밀번호 찾기 이메일 비움 | 이메일을 입력하세요 |
+| 로그인/가입 칸 비움 | 이메일과 비밀번호를 입력해 주세요 |
+| 비밀번호 찾기 이메일 비움 | 이메일을 입력해 주세요 |
 | 비밀번호 변경 · 현재 비밀번호 틀림 | 현재 비밀번호가 틀려요 |
 | 새 비밀번호 불일치 | 새 비밀번호가 서로 달라요 |
-| 인증번호 6자리 아님 | 메일로 온 숫자 6자리를 입력하세요 |
-| 인증번호 시간 초과 | 시간 초과 · 다시 보내기를 누르세요 |
+| 인증번호 6자리 아님 | 메일로 온 숫자 6자리를 입력해 주세요 |
+| 인증번호 시간 초과 | 시간 초과 · 다시 보내기를 눌러 주세요 |
 | 합치기 취소 | 로그인 취소됨 |
 | 재설정 완료(로그인 안 된 경우) | 비밀번호 변경됨 · 새 비밀번호로 로그인 |
-| 메일 링크 오류 | 링크가 만료됐어요 · 다시 요청하세요 / 링크 오류 · 다시 요청하세요 |
+| 메일 링크 오류 | 링크가 만료됐어요 · 다시 요청해 주세요 / 링크 오류 · 다시 요청해 주세요 |
 
 동기화 오류(`sync()` catch) → 상태:
 
