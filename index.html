@@ -651,7 +651,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .ttx span{background:linear-gradient(var(--strike),var(--strike)) no-repeat 0 50%/0% 1px;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:background-size .32s ease}
 /* 흐림은 투명도 대신 글자색으로 (투명도는 줄까지 같이 흐려져 한글 획과 뭉개짐) · 줄은 글자보다 진하고 얇게 */
 .titem.done .ttx{color:color-mix(in srgb,var(--ink) 34%,var(--tcard));font-weight:600}
-.titem.done .ttx span{background-size:100% 1px}
+/* 완료 = 흐림만 (가운데 줄은 그리지 않음, v54) */
 /* 칸에는 6개까지만, 넘치면 "… +n" */
 .tmore{padding:3px 2px 0 25px;font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.02em}
 /* 하루 확대 시트 */
@@ -723,6 +723,37 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .recent .cdot{width:7px;height:7px;border-radius:50%;flex:none}
 .recent button:active{transform:scale(.96)}
 .two.range{grid-template-columns:1fr auto 1fr;align-items:center}
+/* 달력 표시 카테고리(시험 · 마감 등) 할 일: 달력의 둥근 네모와 같은 모양 · 색으로 + D-day */
+/* 칠한 바탕은 양옆으로 4px 더 넓게(음수 여백) → 체크 · 글자 위치는 일반 할 일과 똑같이 */
+.titem.pin{background:color-mix(in srgb,var(--evt) 16%,var(--tcard));padding:4px 6px;margin:1px -4px}
+.titem.pin .tchk{border-radius:5px}
+.titem.pin .ttx{font-weight:800}
+.tdday{flex:none;align-self:center;font-size:10.5px;font-weight:800;letter-spacing:.01em;color:color-mix(in srgb,var(--evt) 70%,var(--ink))}
+/* 끝난 시험 · 마감: 색은 빼고 회색 카드로 남김 (지난 일정은 회색 — 애플 캘린더 · 지갑의 만료 카드처럼) + 완료 */
+.titem.pin.done{background:color-mix(in srgb,var(--ink) 6%,var(--tcard))}
+.titem.pin.done .tdday{color:var(--muted)}
+.tday-list .titem.pin{border-radius:10px;padding:10px;margin:0 -6px;border-top-color:transparent}
+.tday-list .titem.pin + .titem{border-top-color:transparent}
+.tday-list .titem.pin .tchk{border-radius:6px}
+.tday-list .tdday{font-size:12.5px}
+/* 미니 달력 제목 = 큰 달력 열기, 달 넘기기 버튼은 누르는 범위만 넓게 */
+.mhead .mt{width:auto;height:auto;padding:3px 5px;border-radius:7px;font-size:13px;font-weight:800;color:var(--ink)}
+.mhead .mt .car{font-size:9px;color:var(--muted);margin-left:3px}
+.mhead button[data-cal]{position:relative}
+.mhead button[data-cal]::after{content:"";position:absolute;inset:-6px -4px}
+/* 큰 달력 (손가락 크기 칸) */
+.bigcal.mcal{padding:0 2px}
+.bigcal .mhead{margin:0 0 10px}
+.bigcal .mhead .mt{font-size:18px;padding:6px 8px}
+.bigcal .mhead .mt .car{display:none}
+.bigcal .mhead button[data-cal]{width:44px;height:44px;border-radius:12px;font-size:24px}
+.bigcal .mgrid{row-gap:4px}
+.bigcal .mgrid .mw{font-size:12px;padding-bottom:6px}
+.bigcal .mgrid .md{height:46px;font-size:16px}
+.bigcal .mgrid .md span{min-width:36px;height:36px;border-radius:11px}
+.bigcal .mgrid .md.sel.first{border-radius:12px 0 0 12px}
+.bigcal .mgrid .md.sel.last{border-radius:0 12px 12px 0}
+.bigcal .mgrid .md.has::after{width:5px;height:5px;margin-left:-2.5px;bottom:0}
 .tday-empty{padding:34px 0;text-align:center;font-size:14px;font-weight:600;color:var(--muted)}
 
 .today-btn:active,.dh:active{transform:scale(.96)}
@@ -849,6 +880,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   <button class="ev-del" id="delBtn" style="display:none">일정 삭제</button>
 </div>
 
+<div class="sheet" id="calSheet" role="dialog" aria-modal="true" aria-label="달력">
+  <div class="grab"></div>
+  <div id="calBig"></div>
+  <div class="actions"><button class="btn-cancel" id="calClose">닫기</button></div>
+</div>
 <div class="snack" id="snack" role="status" aria-live="polite"><span id="snackText"></span><button id="snackAct" hidden></button></div>
 <div class="dlg" id="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlgT">
   <div class="dlg-box"><h3 id="dlgT"></h3><div class="dlg-acts"><button id="dlgNo"></button><button id="dlgYes" class="crit"></button></div></div>
@@ -1190,6 +1226,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var o={ id:t.id, title:t.title }; if(t.cat) o.cat=t.cat; o.date=t.date;
     o.done=!!t.done; if(t.done && t.doneAt) o.doneAt=t.doneAt; o.at=t.at||0;
     if(typeof t.ord==="number") o.ord=t.ord;   // 끌어서 바꾼 순서 (없으면 만든 순)
+    if(t.reopen===true && !o.done) o.reopen=true;   // 지난 시험 · 마감을 직접 다시 해제함 (자동 완료 안 함)
     return o;
   }
   function loadTodoCats(){
@@ -1326,7 +1363,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 미니 달력 (주 선택기). mark(ds)가 참인 날엔 점, 달력 표시 카테고리의 할 일이 있는 날엔 색 동그라미
   function miniCal(cellCls, mon, cm, mark){
     var today=ymd(new Date());
-    var h='<div class="'+cellCls+' mcal"><div class="mhead"><button data-cal="-1" aria-label="이전 달">‹</button><span class="mt">'+cm.getFullYear()+'년 '+(cm.getMonth()+1)+'월</span><button data-cal="1" aria-label="다음 달">›</button></div><div class="mgrid">';
+    var h='<div class="'+cellCls+' mcal"><div class="mhead"><button data-cal="-1" aria-label="이전 달">‹</button><button class="mt" data-bigcal>'+cm.getFullYear()+'년 '+(cm.getMonth()+1)+'월<span class="car">▾</span></button><button data-cal="1" aria-label="다음 달">›</button></div><div class="mgrid">';
     for(var w=0;w<7;w++) h+='<div class="mw">'+CAL_DOW[w]+'</div>';
     var selMon=ymd(mon), d=weekStartOf(cm), pins=todoPins();
     for(var row=0; row<6; row++){
@@ -1343,6 +1380,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     return h+'</div></div>';
   }
   agridEl.addEventListener("click", function(ev){
+    if(ev.target.closest("[data-bigcal]")){ openBigCal(); return; }
     var nav=ev.target.closest("[data-cal]");
     if(nav){ var cm0=calMonth || new Date(addDays(weekStartOf(anchor),3).getFullYear(), addDays(weekStartOf(anchor),3).getMonth(), 1);
       calMonth=new Date(cm0.getFullYear(), cm0.getMonth()+(+nav.getAttribute("data-cal")), 1); render(); return; }
@@ -1378,6 +1416,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   window.addEventListener("resize", function(){ if(layout!=="grid") render(); });
 
   function render(){
+    autoCompletePins();
     plannerEl.classList.toggle("list", layout==="list");
     plannerEl.classList.toggle("todo", layout==="todo");
     tabGridBtn.classList.toggle("on", layout==="grid");
@@ -1631,7 +1670,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // PC 키보드: Esc 뒤로(열린 창의 취소 · 닫기 버튼과 똑같이) · Ctrl(⌘)+Enter 저장 · ← → 넘기기 · N 추가 · T 오늘 · 1 2 3 화면
   // 위에 있는 창부터 확인 (하위 창은 부모 창을 숨기고 열리므로 보통 하나만 열려 있음)
   var KEY_LAYERS=[["dlg","dlgNo"],["todoPickSheet","tpCancel","tpOk"],["catSheet","catCloseBtn"],["todoSheet","todoCancel","todoSave"],["sheet","cancelBtn","saveBtn"],
-    ["acctSheet","acctClose"],["backupSheet","bkCloseBtn"],["listSheet","listCloseBtn"],["menuSheet","menuCloseBtn"],["todoDaySheet","todoDayClose"],["peek","peekClose","peekEdit"]];
+    ["acctSheet","acctClose"],["backupSheet","bkCloseBtn"],["listSheet","listCloseBtn"],["menuSheet","menuCloseBtn"],["calSheet","calClose"],["todoDaySheet","todoDayClose"],["peek","peekClose","peekEdit"]];
   function topLayer(){ for(var i=0;i<KEY_LAYERS.length;i++){ var el=document.getElementById(KEY_LAYERS[i][0]); if(el && el.classList.contains("on")) return KEY_LAYERS[i]; } return null; }
   // 닫힌 창 안에 포커스가 남으면 다음 키(← → 등)가 입력칸으로 가서 안 먹음 → 풀어 줌
   function dropHiddenFocus(){ var a=document.activeElement, box=a && a.closest && a.closest(".sheet,.peek"); if(box && !box.classList.contains("on")) a.blur(); }
@@ -1653,6 +1692,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       var step=(e.key==="ArrowLeft") ? -1 : 1;
       if(!top){ e.preventDefault(); if(step<0) goPrev(); else goNext(); }
       else if(top[0]==="todoDaySheet"){ e.preventDefault(); todoDaySheet.querySelector('.tday-nav[data-step="'+step+'"]').click(); }
+      else if(top[0]==="calSheet"){ e.preventDefault(); bigCalStep(step); }
       return;
     }
     if(top || e.repeat) return;
@@ -1740,10 +1780,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     for(var yr in years) refreshHolidays(+yr);
   }
   var TODO_CELL_MAX=6;   // 칸에 보이는 개수 (넘치면 "… +n", 칸을 누르면 하루 확대 보기)
+  function isPinTodo(t){ var c=t.cat && todoCatById(t.cat); return !!(c && c.pin); }
+  // 시험 · 마감(달력 표시) 할 일은 그 날이 지나면 자동으로 완료. 지난 걸 직접 다시 해제했으면(reopen) 그대로 둠
+  function autoCompletePins(){
+    if(applying) return;
+    var today=ymd(new Date()), now=Date.now(), n=0;
+    todos.forEach(function(t){ if(!t.done && !t.reopen && t.date<today && isPinTodo(t)){ t.done=true; t.doneAt=now; n++; } });
+    if(n) saveTodos();
+  }
   function todoItemHtml(t){
-    return '<div class="titem'+(t.done?" done":"")+'" data-id="'+esc(t.id)+'" style="--evt:'+todoCatColor(t.cat)+'">'+
+    var pin=isPinTodo(t), dd="";
+    if(pin && t.done) dd='<span class="tdday">완료</span>';
+    else if(pin){ var n=Math.round((parseYmd(t.date)-startOfDay(new Date()))/864e5); if(n>=0) dd='<span class="tdday tnum">'+(n===0 ? "D-DAY" : "D-"+n)+'</span>'; }
+    return '<div class="titem'+(t.done?" done":"")+(pin?" pin":"")+'" data-id="'+esc(t.id)+'" style="--evt:'+todoCatColor(t.cat)+'">'+
            '<button class="tchk" aria-label="완료" aria-pressed="'+(t.done?"true":"false")+'">'+CHECK_SVG+'</button>'+
-           '<div class="ttx"><span>'+esc(t.title)+'</span></div></div>';
+           '<div class="ttx"><span>'+esc(t.title)+'</span></div>'+dd+'</div>';
   }
   function todoById(id){ for(var i=0;i<todos.length;i++){ if(todos[i].id===id) return todos[i]; } return null; }
   // 체크 켜고 끄기 (칸 · 확대 보기 공통)
@@ -1753,6 +1804,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function toggleTodo(item, chk){
     var t=todoById(item.getAttribute("data-id")); if(!t) return;
     t.done=!t.done; if(t.done) t.doneAt=Date.now(); else delete t.doneAt;
+    if(t.done) delete t.reopen; else if(t.date<ymd(new Date()) && isPinTodo(t)) t.reopen=true;   // 지난 시험 · 마감을 다시 풀면 자동 완료 안 함
     item.classList.toggle("done", t.done); chk.setAttribute("aria-pressed", t.done?"true":"false");
     saveTodos();
     clearTimeout(tgridEl._t); tgridEl._t=setTimeout(settleTodos, TODO_SETTLE_MS);
@@ -1844,6 +1896,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var c=it.querySelector(".tchk"); return ev.clientX <= c.getBoundingClientRect().right+4 ? c : null;
   }
   tgridEl.addEventListener("click", function(ev){
+    if(ev.target.closest("[data-bigcal]")){ openBigCal(); return; }
     var nav=ev.target.closest("[data-cal]");
     if(nav){ var cm0=calMonth || new Date(addDays(weekStartOf(anchor),3).getFullYear(), addDays(weekStartOf(anchor),3).getMonth(), 1);
       calMonth=new Date(cm0.getFullYear(), cm0.getMonth()+(+nav.getAttribute("data-cal")), 1); render(); return; }
@@ -1866,6 +1919,28 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     todoDayListEl.innerHTML = items.length ? items.map(todoItemHtml).join("") : '<div class="tday-empty">할 일 없음</div>';
   }
   function openTodoDay(ds){ todoDayDate=ds; renderTodoDay(); openSheet(todoDaySheet); }
+
+
+  // ===== 큰 달력: 미니 달력 제목을 누르면 손가락 크기 칸으로 (주 고르기 · 시험 날짜 한눈에) =====
+  var calSheet=document.getElementById("calSheet"), calBigEl=document.getElementById("calBig"), bigMonth=null;
+  function renderBigCal(){
+    var mark=null;
+    if(layout==="todo"){ var m={}; todos.forEach(function(t){ if(!t.done) m[t.date]=1; }); mark=function(ds){ return !!m[ds]; }; }
+    calBigEl.innerHTML=miniCal("bigcal", weekStartOf(anchor), bigMonth, mark);
+  }
+  function openBigCal(){
+    var mid=addDays(weekStartOf(anchor),3);
+    bigMonth = calMonth ? new Date(calMonth) : new Date(mid.getFullYear(), mid.getMonth(), 1);
+    renderBigCal(); openSheet(calSheet);
+  }
+  function bigCalStep(n){ bigMonth=new Date(bigMonth.getFullYear(), bigMonth.getMonth()+n, 1); renderBigCal(); }
+  calBigEl.addEventListener("click", function(ev){
+    var nav=ev.target.closest("[data-cal]"); if(nav){ bigCalStep(+nav.getAttribute("data-cal")); return; }
+    var md=ev.target.closest(".md"); if(!md) return;
+    anchor=parseYmd(md.getAttribute("data-date")); calMonth=null;   // 그 날짜가 있는 주로
+    closeSheet(); render();
+  });
+  document.getElementById("calClose").onclick=closeSheet;
   todoDayListEl.addEventListener("click", function(ev){
     var chk=chkFromEvent(ev), item=ev.target.closest(".titem");
     if(chk){ toggleTodo(chk.closest(".titem"), chk); return; }
@@ -1936,7 +2011,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var title=todoTitleEl.value.trim(), date=todoDateEl.value;
     if(!title){ todoErrEl.textContent="할 일을 입력해 주세요"; todoTitleEl.focus(); return; }
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ todoErrEl.textContent="날짜를 골라 주세요"; return; }
-    if(todoEditId){ var t=todoById(todoEditId); if(t){ t.title=title.slice(0,100); if(t.date!==date) delete t.ord; t.date=date; if(todoCat) t.cat=todoCat; else delete t.cat; } }
+    if(todoEditId){ var t=todoById(todoEditId); if(t){ t.title=title.slice(0,100); if(t.date!==date){ delete t.ord; delete t.reopen; } t.date=date; if(todoCat) t.cat=todoCat; else delete t.cat; } }
     else todos.push({ id:uid(), title:title.slice(0,100), cat:todoCat||undefined, date:date, done:false, at:Date.now() });
     if(todoCat){ try{ localStorage.setItem(TODO_LASTCAT_KEY, todoCat); }catch(e){} }
     var back=todoFromDay; saveTodos(); closeSheet(); todoFromDay=back;
@@ -2326,7 +2401,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
 
   function openSheet(el){ scrim.classList.add("on"); el.classList.add("on"); }
-  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); catReturnToTodo=false; menuSheet.classList.remove("on"); acctSheet.classList.remove("on"); todoSheet.classList.remove("on"); if(tpSheet) tpSheet.classList.remove("on"); todoDaySheet.classList.remove("on"); todoFromDay=false; peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad");
+  function closeSheet(){ scrim.classList.remove("on"); sheet.classList.remove("on"); backupSheet.classList.remove("on"); listSheet.classList.remove("on"); catSheet.classList.remove("on"); catReturnToTodo=false; menuSheet.classList.remove("on"); acctSheet.classList.remove("on"); todoSheet.classList.remove("on"); if(tpSheet) tpSheet.classList.remove("on"); todoDaySheet.classList.remove("on"); todoFromDay=false; document.getElementById("calSheet").classList.remove("on"); peekEl.classList.remove("on"); catReturnToForm=false; errEl.textContent=""; fEnd.classList.remove("bad");
     var a=document.activeElement; if(a && a.closest && a.closest(".sheet,.peek")) a.blur();   // 닫힌 창의 입력칸에 커서가 남으면 다음 키가 거기로 감
   }
   // 바깥 탭 = Esc = 맨 위 창의 취소 · 닫기 (하위 창은 부모 창으로, 쓰던 내용이 있으면 묻기)
@@ -2510,6 +2585,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(ID_RE.test(t.cat)) o.cat=t.cat;
     if(o.done && isFinite(+t.doneAt) && +t.doneAt>0) o.doneAt=Math.round(+t.doneAt);
     if(typeof t.ord==="number" && isFinite(t.ord) && t.ord>=0 && t.ord<1e6) o.ord=Math.round(t.ord);
+    if(t.reopen===true) o.reopen=true;
     return todoClean(o);
   }
   function sanitizeEvent(e){
