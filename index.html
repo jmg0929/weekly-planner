@@ -1701,16 +1701,33 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   });
   // 예전엔 "한 번 밀면 한 번"이었는데, 관성 신호가 계속 들어와 다음 밀기까지 막혀 연속으로 못 넘겼음
   // → 민 거리를 모아 한 칸(하루 120px · 한 주 240px)마다 넘김. 너무 빨리 넘어가 눈이 못 따라가지 않게 최소 90ms 간격
-  var whAcc=0, whLast=0, whT=null;
+  var whAcc=0, whLast=0, whT=null, whLock=false, whPeak=0, whMin=0, whDir=0, whPrevT=0;
   [document.getElementById("scroll"), agendaEl, document.getElementById("todos"), document.getElementById("hdays")].forEach(function(el){
     el.addEventListener("wheel", function(e){
       if(e.ctrlKey || Math.abs(e.deltaX)<=Math.abs(e.deltaY)) return;   // 세로 스크롤 · 확대는 그대로
       e.preventDefault();                                                 // 브라우저 뒤로 가기 제스처 막기
       var dx=e.deltaX*(e.deltaMode===1 ? 30 : 1);                          // 줄 단위(마우스 휠)도 px로
+      if(layout!=="grid"){
+        // 주간 목록 · 할 일: 한 번 밀면 한 주만 (민 거리만큼 여러 주가 넘어가 너무 민감했음)
+        // 넘긴 뒤 손을 떼도 이어지는 관성 신호는 무시, 다시 밀기 시작하면 바로 다음 주:
+        //  ① 신호가 잠깐(90ms) 끊겼다 오면 ② 방향이 바뀌면 ③ 관성으로 절반 이하로 줄었던 신호가 다시 커지면 → 새로 민 것
+        var a=Math.abs(dx), dir=(dx>0) ? 1 : -1, tnow=Date.now();
+        if(tnow-whPrevT>90 || dir!==whDir){ whLock=false; whAcc=0; }
+        else if(whLock){
+          if(a>whPeak){ whPeak=a; whMin=a; }
+          else if(a<whMin) whMin=a;
+          if(whMin<=whPeak*0.5 && a>Math.max(whMin*2, whMin+8)){ whLock=false; whAcc=0; }
+        }
+        whPrevT=tnow; whDir=dir;
+        if(whLock) return;
+        whAcc+=dx;
+        if(Math.abs(whAcc)>=40){ whLock=true; whPeak=a; whMin=a; whAcc=0; if(dir>0) goNext(); else goPrev(); }
+        return;
+      }
       if(whAcc && (whAcc>0)!==(dx>0)) whAcc=0;                            // 방향 바꾸면 새로
       whAcc+=dx;
       clearTimeout(whT); whT=setTimeout(function(){ whAcc=0; }, 250);
-      var step=(layout==="grid" && (view==="day" || mode!=="7")) ? 120 : 240, now=Date.now();
+      var step=(view==="day" || mode!=="7") ? 120 : 240, now=Date.now();   // 시간표: 민 거리만큼 (하루 120px · 한 주 240px)
       if(Math.abs(whAcc)>=step && now-whLast>=90){
         whLast=now; if(whAcc>0){ whAcc-=step; goNext(); } else { whAcc+=step; goPrev(); }
       }

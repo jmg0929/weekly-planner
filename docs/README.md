@@ -7,9 +7,9 @@
 |---|---|
 | 서비스 주소 | https://jmg0929.github.io/weekly-planner/ |
 | 저장소 | `jmg0929/weekly-planner` (GitHub, Public) |
-| 개발 기간 | 2026-08-31 ~ 2026-11-10 (커밋 48개, 서비스워커 캐시 `planner-v1` → `planner-v54`) |
+| 개발 기간 | 2026-08-31 ~ 2026-11-10 (커밋 49개, 서비스워커 캐시 `planner-v1` → `planner-v55`) |
 | 개발 형태 | 1인 개발 (기획·디자인·구현·테스트·배포), 실사용자 = 본인 |
-| 규모 | `index.html` 약 3,180줄 (HTML·CSS·JS 한 파일), `sw.js` 48줄, `supabase/schema.sql` 94줄 |
+| 규모 | `index.html` 약 3,200줄 (HTML·CSS·JS 한 파일), `sw.js` 48줄, `supabase/schema.sql` 94줄 |
 
 ---
 
@@ -146,6 +146,7 @@ timeline
   2026-11-10 : PC 키보드 — Esc 뒤로 · Enter 저장 · 단축키 (v52)
              : 되돌리기 · 나가기 확인 · 최근 제목 · 문구 통일 (v53)
              : 시험 · 마감 강조 · 자동 완료 · 큰 달력 · 줄 없는 완료 (v54)
+             : 주간 목록 · 할 일 트랙패드 한 번에 한 주 (v55)
 ```
 
 ## 7. 배운 점
