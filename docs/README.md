@@ -7,9 +7,9 @@
 |---|---|
 | 서비스 주소 | https://jmg0929.github.io/weekly-planner/ |
 | 저장소 | `jmg0929/weekly-planner` (GitHub, Public) |
-| 개발 기간 | 2026-08-31 ~ 2026-11-11 (커밋 52개, 서비스워커 캐시 `planner-v1` → `planner-v58`) |
+| 개발 기간 | 2026-08-31 ~ 2026-11-11 (커밋 56개, 서비스워커 캐시 `planner-v1` → `planner-v59`) |
 | 개발 형태 | 1인 개발 (기획·디자인·구현·테스트·배포), 실사용자 = 본인 |
-| 규모 | `index.html` 약 3,320줄 (HTML·CSS·JS 한 파일), `sw.js` 48줄, `supabase/schema.sql` 94줄 |
+| 규모 | `index.html` 약 3,390줄 (HTML·CSS·JS 한 파일), `sw.js` 48줄, `supabase/schema.sql` 94줄 |
 
 ---
 
@@ -151,6 +151,7 @@ timeline
   2026-11-11 : 전체 점검 · 끌기 중 다시 그리기 버그 수정 (v56)
              : 월 캘린더 · 탭 순서 캘린더 → 시간표 → 할 일 (v57)
              : 월 칸 4개 · 탭 다시 누르면 주 ⇄ 월 (v58)
+             : 하루 종일 · 여러 날 일정, 월 캘린더 막대 (v59)
 ```
 
 ## 7. 배운 점
