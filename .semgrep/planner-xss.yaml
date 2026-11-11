@@ -1,0 +1,69 @@
+# 이 프로젝트 전용 Semgrep 규칙 — docs/07-보안설계.md의 위협 T6(XSS)을 코드 검사로 강제
+# 테스트: semgrep --test .semgrep   (같은 이름의 planner-xss.js에 "ruleid:" / "ok:" 표시)
+rules:
+  - id: planner-innerhtml-unescaped
+    mode: taint
+    languages: [javascript]
+    severity: ERROR
+    message: >-
+      사용자가 입력하거나 서버 · 백업 파일에서 들어온 값이 esc() 없이 innerHTML로 들어가요 (XSS).
+      글자는 esc()로 감싸고, id · 색 · 날짜처럼 속성에 들어가는 값은 정제 함수(ID_RE · COLOR_RE · DATE_RE)를 거친 값만 쓰세요.
+    pattern-sources:
+      # 일정 · 할 일 · 카테고리의 글자 필드, 입력 칸 값, 주소창 해시, 저장소에서 바로 읽은 값
+      - pattern: $X.title
+      - pattern: $X.name
+      - pattern: $X.location
+      - pattern: $X.emoji
+      - pattern: $X.email
+      - pattern: $X.value
+      - pattern: location.hash
+      - pattern: localStorage.getItem(...)
+    pattern-sanitizers:
+      - pattern: esc(...)
+      # 검토 후 안전 판정 (2026-11-11): 인자를 검색어 · 비교값으로만 쓰고, 돌려주는 값에 인자 글자를 넣지 않는 함수
+      #  - recentFrom(list, q): q로 걸러서 list의 원래 항목을 돌려줌 (항목 글자는 그리는 곳에서 esc)
+      #  - emoGrid(sel): 고정 목록 EMOJIS로만 버튼을 만들고 sel은 "선택됨" 비교에만 씀
+      - pattern: recentFrom(...)
+      - pattern: emoGrid(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $E.innerHTML = $SINK
+              - pattern: $E.innerHTML += $SINK
+              - pattern: $E.outerHTML = $SINK
+              - pattern: $E.insertAdjacentHTML($POS, $SINK)
+              - pattern: document.write($SINK)
+          - focus-metavariable: $SINK
+      # list.map(function(e){ return "<b>"+e.title+"</b>"; }).join("") — 콜백이 돌려주는 값도 검사
+      - patterns:
+          - pattern-inside: $E.innerHTML = $L.map(...).join(...)
+          - pattern-either:
+              - pattern: return $SINK;
+              - pattern: ($P) => $SINK
+          - focus-metavariable: $SINK
+    metadata:
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation"
+      owasp: "A03:2021 - Injection"
+      project-threat: "T6 (docs/07-보안설계.md)"
+
+  - id: planner-string-to-code
+    languages: [javascript]
+    severity: ERROR
+    message: 문자열을 코드로 실행하는 API예요. 공격자가 넣은 글자가 그대로 실행될 수 있어요.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+      - pattern: setTimeout("...", ...)
+      - pattern: setInterval("...", ...)
+    metadata:
+      cwe: "CWE-95: Eval Injection"
+
+  - id: planner-server-key-in-client
+    languages: [javascript]
+    severity: ERROR
+    message: >-
+      클라이언트 코드에 Supabase 서버 키(service_role · sb_secret)를 쓰면 누구나 RLS를 우회해요.
+      브라우저에는 공개용(publishable) 키만 두세요.
+    pattern-regex: (?i)(service_role|sb_secret_)
+    metadata:
+      cwe: "CWE-798: Use of Hard-coded Credentials"

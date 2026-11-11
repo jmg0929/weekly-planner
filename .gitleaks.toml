@@ -1,0 +1,28 @@
+# gitleaks 설정 — 비밀값 유출 검사 (CI · 커밋 직전 훅에서 사용)
+# 기본 규칙 전체 + 이 프로젝트에서 특히 위험한 Supabase 서버 키 규칙을 더함
+title = "weekly-planner"
+
+[extend]
+useDefault = true
+
+# Supabase 새 형식 서버 키. RLS를 무시하고 모든 사용자 데이터에 접근 가능 → 클라이언트 · 저장소에 절대 금지
+[[rules]]
+id = "supabase-secret-key"
+description = "Supabase secret key (sb_secret_…) — 서버 전용 키"
+regex = '''\bsb_secret_[A-Za-z0-9_-]{20,}'''
+keywords = ["sb_secret_"]
+
+# Supabase 예전 형식 service_role 키 (JWT 본문에 "role":"service_role"이 base64로 들어 있음 — 3가지 정렬 모두)
+[[rules]]
+id = "supabase-service-role-jwt"
+description = "Supabase service_role JWT — 서버 전용 키"
+regex = '''\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*(?:c2VydmljZV9yb2xl|NlcnZpY2Vfcm9sZ|zZXJ2aWNlX3JvbG)[A-Za-z0-9_-]*\.[A-Za-z0-9_-]{10,}'''
+keywords = ["eyj"]
+
+# 예외: 공개용(publishable) 키
+# - 브라우저에 그대로 내려가는 값이라 비밀이 아님 (권한은 서버 RLS가 막음, docs/07-보안설계.md)
+# - 기본 규칙 generic-api-key가 index.html의 SB_KEY를 잡기 때문에 값의 형식으로만 좁게 허용
+[[allowlists]]
+description = "Supabase publishable key는 공개값"
+regexTarget = "match"
+regexes = ['''sb_publishable_[A-Za-z0-9_-]+''']

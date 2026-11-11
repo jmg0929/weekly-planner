@@ -1,0 +1,13 @@
+#!/bin/sh
+# 커밋 직전 검사 — 비밀값이 저장소에 들어가기 전에 막음 (CI는 올라간 뒤 한 번 더 검사)
+# 켜기: git config core.hooksPath .githooks   (저장소마다 한 번)
+# 급할 때 git commit --no-verify 로 건너뛸 수는 있지만, 그래도 CI에서 다시 걸림
+
+node scripts/secret-guard.js || exit 1
+
+# gitleaks가 설치돼 있으면 같은 설정으로 한 번 더 (없으면 위 Node 검사만)
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --pre-commit --staged --config .gitleaks.toml --redact --no-banner || exit 1
+fi
+
+node scripts/check-syntax.js >/dev/null || { node scripts/check-syntax.js; exit 1; }

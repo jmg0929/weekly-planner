@@ -27,6 +27,18 @@ if (-not $changes) {
 Step "바뀐 파일"
 $changes | ForEach-Object { Write-Host "    $_" }
 
+# 1.5) 배포 전 검사 — CI와 같은 검사를 먼저 내 PC에서 (실패하면 버전도 안 올리고 멈춤)
+Step "배포 전 검사"
+node scripts/check-syntax.js
+if ($LASTEXITCODE -ne 0) { Fail "문법 검사에 실패했어요." }
+node tests/sw-cache-policy.test.js sw.js | Select-Object -Last 1
+if ($LASTEXITCODE -ne 0) { Fail "서비스워커 테스트에 실패했어요." }
+$changed = @(git ls-files -m -o --exclude-standard)
+if ($changed.Count -gt 0) {
+  node scripts/secret-guard.js $changed
+  if ($LASTEXITCODE -ne 0) { Fail "비밀값으로 보이는 내용이 있어요." }
+}
+
 # 2) 서비스워커 캐시 버전 +1 (아이폰이 새 버전을 확실히 받도록)
 $sw = Join-Path $PSScriptRoot 'sw.js'
 $utf8 = New-Object System.Text.UTF8Encoding $false   # BOM 없는 UTF-8 (한글 주석 보존)

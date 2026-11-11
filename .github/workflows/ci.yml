@@ -1,0 +1,108 @@
+# CI — push · PR마다 자동 검사 (문법 · 테스트 / 비밀값 / 정적 분석)
+# 공급망 보안: 외부 Action은 커밋 해시로 고정(태그는 바뀔 수 있음), 도구는 버전 고정 + 체크섬 확인
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# 기본은 읽기 전용 — 필요한 job에서만 권한을 더 줌 (최소 권한)
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 문법 · 테스트
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: 문법 검사 (index.html 스크립트 · sw.js · manifest)
+        run: node scripts/check-syntax.js
+      - name: 서비스워커 캐시 범위 테스트 (TC-14)
+        run: node tests/sw-cache-policy.test.js sw.js
+      - name: 커밋 직전 비밀값 검사 규칙 테스트
+        run: node tests/secret-guard.test.js
+
+  secrets:
+    name: 비밀값 검사 (gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GITLEAKS_VERSION: "8.30.1"
+      GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # 전체 이력 검사 (예전에 올렸다 지운 키도 찾음)
+          persist-credentials: false
+      - name: gitleaks 설치 (체크섬 확인)
+        run: |
+          curl -sSfL -o gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+          sudo install gitleaks /usr/local/bin/gitleaks
+          rm gitleaks gitleaks.tgz
+      - name: 저장소 전체 이력 검사
+        run: gitleaks git . --config .gitleaks.toml --redact --no-banner --verbose
+      - name: 탐지 확인 — 가짜 서버 키를 만들어 일부러 실패시키기
+        # 규칙이 망가져서 "아무것도 못 잡는" 상태로 통과하는 것을 막음 (가짜 키는 실행할 때만 만들고 저장소에는 없음)
+        run: |
+          d="$(mktemp -d)"
+          printf 'const KEY = "sb_%s_%s";\n' secret "$(head -c 48 /dev/urandom | base64 | tr -dc A-Za-z0-9 | head -c 32)" > "$d/leak.js"
+          set +e
+          gitleaks dir "$d" --config .gitleaks.toml --redact --no-banner --exit-code 42
+          code=$?
+          set -e
+          rm -rf "$d"
+          if [ "$code" -ne 42 ]; then echo "::error::가짜 서버 키를 잡지 못했어요 (exit $code)"; exit 1; fi
+          echo "가짜 서버 키 탐지 확인"
+
+  sast:
+    name: 정적 분석 (Semgrep 사용자 규칙)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write # 결과를 GitHub Security 탭(Code scanning)에 올림
+    env:
+      SEMGREP_VERSION: "1.182.1"
+      SEMGREP_SEND_METRICS: "off"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Semgrep 설치
+        run: python -m pip install --disable-pip-version-check "semgrep==${SEMGREP_VERSION}"
+      - name: 규칙 테스트 (잡아야 할 것 · 안 잡아야 할 것)
+        run: semgrep --test --metrics=off --config .semgrep/planner-xss.yaml .semgrep/planner-xss.js
+      - name: index.html 스크립트 꺼내기 (줄 번호 유지)
+        run: node scripts/extract-inline-js.js index.html .ci/js
+      - name: 검사
+        run: semgrep scan --metrics=off --config .semgrep/planner-xss.yaml --error --sarif-output=semgrep.sarif .ci/js sw.js
+      - name: 결과 위치를 index.html로 바꾸기
+        if: always() && hashFiles('semgrep.sarif') != ''
+        run: sed -i -E 's#\.ci/js/index\.inline-[0-9]+\.js#index.html#g' semgrep.sarif
+      - name: Security 탭에 올리기
+        if: always() && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
