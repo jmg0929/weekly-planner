@@ -1,0 +1,62 @@
+# RLS 자동 테스트 — CI 안에 로컬 Supabase(Docker)를 띄우고 supabase/schema.sql을 그대로 적용한 뒤
+# "B가 A의 데이터를 읽기 · 고치기 · 지우기 · 심기"를 앱과 같은 REST API로 시도 → 전부 막혀야 통과
+# 실제 서버(운영 프로젝트)에는 접속하지 않음 — 키 · 비밀번호 불필요
+name: RLS
+
+on:
+  push:
+    paths: ["supabase/**", "tests/rls/**", ".github/workflows/rls.yml"]
+  pull_request:
+    paths: ["supabase/**", "tests/rls/**", ".github/workflows/rls.yml"]
+  schedule:
+    - cron: "41 3 * * 1" # 매주 월요일 12:41 (KST) — Supabase 이미지가 바뀌어도 권한이 그대로인지
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rls-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rls:
+    name: RLS 공격 시나리오 (로컬 Supabase)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.122.0
+
+      - name: 로컬 Supabase 시작 (DB · 인증 · REST · 게이트웨이만)
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir sb && cd sb
+          supabase init
+          supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          supabase status -o json > "$RUNNER_TEMP/sb.json"
+          node -e '
+            const s = require(process.env.RUNNER_TEMP + "/sb.json");
+            const anon = s.ANON_KEY || s.PUBLISHABLE_KEY;
+            if (!s.API_URL || !s.DB_URL || !anon) { console.error("status 형식이 예상과 달라요: " + Object.keys(s).join(",")); process.exit(1); }
+            console.log("::add-mask::" + anon);
+            require("fs").appendFileSync(process.env.GITHUB_ENV, `SB_URL=${s.API_URL}\nSB_DB=${s.DB_URL}\nSB_ANON=${anon}\n`);
+          '
+
+      - name: schema.sql 적용 — 두 번 (다시 실행해도 안전한지)
+        run: |
+          psql "$SB_DB" -v ON_ERROR_STOP=1 -q -f supabase/schema.sql
+          psql "$SB_DB" -v ON_ERROR_STOP=1 -q -f supabase/schema.sql
+
+      - name: RLS 설정 점검 (public 테이블 전체)
+        run: psql "$SB_DB" -v ON_ERROR_STOP=1 -q -f tests/rls/rls-config.sql
+
+      - name: 공격 시나리오 (REST API, 사용자 A · B)
+        run: node tests/rls/rls.test.js

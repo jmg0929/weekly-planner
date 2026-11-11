@@ -1,0 +1,2 @@
+# ZAP 경고 판정표 — 형식: 규칙ID<TAB>IGNORE|INFO|WARN|FAIL<TAB>(근거)
+# 첫 스캔 결과를 보고 하나씩 판정해서 채움 (근거 없이 IGNORE 금지)
