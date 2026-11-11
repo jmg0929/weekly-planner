@@ -219,6 +219,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   .nav-btn:active{transform:scale(.92)}
   .nav-btn svg{width:17px;height:17px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 }
+/* 좁은 PC 창: ‹ › 를 숨겨 제목 · 오늘이 두 줄로 꺾이지 않게 (넘기기는 ← → · 트랙패드) */
+@media (hover:hover) and (pointer:fine) and (max-width:460px){ .nav-btn{display:none} }
+.title .month,.today-btn{white-space:nowrap}
 /* 보기 모드 버튼 (4일/3일/주) */
 .mode-btn{height:38px;min-width:46px;padding:0 11px;border-radius:12px;font-weight:800;font-size:13.5px;color:var(--ink);background:var(--surface);border:1px solid var(--line)}
 .mode-btn:active{transform:scale(.95)}
@@ -604,21 +607,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .mv-dow span:first-child{color:var(--sun-c)}
 .mv-dow span:last-child{color:var(--sat-c)}
 .mv-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 0;padding:0 3px}
-.mv-d{min-width:0;height:84px;padding:4px 2px 2px;border-radius:10px;cursor:pointer;overflow:hidden}
-.mv-d .n{display:block;width:24px;height:22px;margin:0 auto 3px;line-height:22px;text-align:center;border-radius:7px;font-size:13.5px;font-weight:700;color:var(--ink)}
+.mv-d{min-width:0;height:90px;padding:4px 2px 2px;border-radius:10px;cursor:pointer;overflow:hidden}
+.mv-d .n{display:block;width:24px;height:22px;margin:0 auto 2px;line-height:22px;text-align:center;border-radius:7px;font-size:13.5px;font-weight:700;color:var(--ink)}
 .mv-d.sun .n,.mv-d.holiday .n{color:var(--sun-c)}
 .mv-d.sat .n{color:var(--sat-c)}
 .mv-d.other{opacity:.35}
 .mv-d.today .n{background:var(--accent);color:var(--on-accent)}
 .mv-d.sel{background:var(--surface-2)}
-.mv-c{display:block;position:relative;height:16px;line-height:16px;margin:0 1px 2px;padding:0 1px 0 7px;border-radius:4px;font-size:10.5px;font-weight:700;letter-spacing:-.03em;color:var(--ink);white-space:nowrap;overflow:hidden;
+.mv-c{display:block;position:relative;height:14px;line-height:14px;margin:0 1px 1px;padding:0 1px 0 6px;border-radius:3.5px;font-size:9.5px;font-weight:600;letter-spacing:-.03em;color:var(--ink);white-space:nowrap;overflow:hidden;
   background:color-mix(in srgb,var(--evt) 22%,var(--surface-2))}
-.mv-c::before{content:"";position:absolute;left:2px;top:3px;bottom:3px;width:2.5px;border-radius:1.5px;background:color-mix(in srgb,var(--evt) 82%,var(--ink))}
+.mv-c::before{content:"";position:absolute;left:2px;top:3px;bottom:3px;width:2px;border-radius:1px;background:color-mix(in srgb,var(--evt) 82%,var(--ink))}
 /* 데드라인(시험 · 마감): 바탕 없이 작은 체크 네모 + 제목 (iOS 18 캘린더가 미리 알림을 보여 주는 방식, 할 일 화면의 둥근 네모 체크와 같은 모양), 칸 맨 위 */
-.mv-c.pin{display:flex;align-items:center;gap:3px;padding-left:1px;background:transparent;font-weight:800;color:var(--ink)}
+.mv-c.pin{display:flex;align-items:center;gap:3px;padding-left:1px;background:transparent;font-weight:700;color:var(--ink)}
 .mv-c.pin::before{display:none}
-.mv-box{flex:none;width:9px;height:9px;border-radius:2.5px;box-sizing:border-box;border:1.6px solid color-mix(in srgb,var(--evt) 85%,var(--ink))}
-.mv-c.pin.done{opacity:.45;font-weight:700}
+.mv-box{flex:none;width:8px;height:8px;border-radius:2.5px;box-sizing:border-box;border:1.6px solid color-mix(in srgb,var(--evt) 85%,var(--ink))}
+.mv-c.pin.done{opacity:.45;font-weight:600}
 .mv-c.pin.done .mv-box{background:color-mix(in srgb,var(--evt) 85%,var(--ink))}
 .mv-more{display:block;height:12px;line-height:12px;font-size:9.5px;font-weight:800;color:var(--muted);text-align:center}
 .mv-panel{margin:14px 12px 0}
@@ -1411,7 +1414,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         var chips=(pinBy[ds]||[]).slice().sort(todoOrder).map(function(t){ return '<span class="mv-c pin'+(t.done?" done":"")+'" style="--evt:'+todoCatColor(t.cat)+'">'+'<i class="mv-box"></i>'+esc(t.title)+'</span>'; })
           .concat(eventsForDate(d).filter(function(e){ return e.type!=="lecture"; }).sort(function(a,b){ return a.start-b.start; })
           .map(function(e){ return '<span class="mv-c" style="--evt:'+evColor(e)+'">'+esc(evLabel(e))+'</span>'; }));
-        var shown = chips.length>3 ? chips.slice(0,2).join("")+'<span class="mv-more tnum">+'+(chips.length-2)+'</span>' : chips.join("");
+        var shown = chips.length>4 ? chips.slice(0,3).join("")+'<span class="mv-more tnum">+'+(chips.length-3)+'</span>' : chips.join("");   // 4개까지, 넘치면 3개 + +n
         h+='<div class="mv-d'+dayCls(d)+(hol?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(ds===sel?" sel":"")+'" data-date="'+ds+'"'+(hol?' title="'+esc(hol)+'"':'')+'>'+
            '<span class="n tnum">'+d.getDate()+'</span>'+shown+'</div>';
         d=addDays(d,1);
@@ -1519,7 +1522,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(l==="grid") scrollToNow();
   }
   tabGridBtn.onclick=function(){ setLayout("grid"); };
-  tabListBtn.onclick=function(){ setLayout("list"); };
+  tabListBtn.onclick=function(){ if(layout==="list") setListMode(listMode==="month" ? "week" : "month"); else setLayout("list"); };   // 캘린더 탭에서 한 번 더 누르면 주 ⇄ 월
   tabTodoBtn.onclick=function(){ setLayout("todo"); };
   window.addEventListener("resize", function(){ if(layout!=="grid") bgRender(); });
   // 사용자가 누르지 않았는데 오는 다시 그리기(1분 타이머 · 화면 크기 변경 · 동기화)는
