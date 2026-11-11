@@ -596,7 +596,55 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .mgrid .md.sel.first{border-radius:7px 0 0 7px}
 .mgrid .md.sel.last{border-radius:0 7px 7px 0}
 .mgrid .md.today span{background:var(--accent);color:var(--on-accent);font-weight:800}
-.planner.list .dayhead,.planner.list #scroll,.planner.list #modeBtn{display:none}
+.planner.list .dayhead,.planner.list #scroll{display:none}   /* 주간 목록에서는 보기 버튼이 주 ⇄ 월 */
+/* ---------- 월 캘린더 (주간 목록 탭의 '월'): 칸에는 특정 날짜 일정 + 시험 · 마감, 아래에 고른 날 전체 ---------- */
+.mview{padding:0 0 8px}
+.mv-dow{display:grid;grid-template-columns:repeat(7,1fr);padding:4px 4px 6px;border-top:1px solid var(--line)}
+.mv-dow span{text-align:center;font-size:11px;font-weight:700;color:var(--muted)}
+.mv-dow span:first-child{color:var(--sun-c)}
+.mv-dow span:last-child{color:var(--sat-c)}
+.mv-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 0;padding:0 3px}
+.mv-d{min-width:0;height:84px;padding:4px 2px 2px;border-radius:10px;cursor:pointer;overflow:hidden}
+.mv-d .n{display:block;width:24px;height:22px;margin:0 auto 3px;line-height:22px;text-align:center;border-radius:7px;font-size:13.5px;font-weight:700;color:var(--ink)}
+.mv-d.sun .n,.mv-d.holiday .n{color:var(--sun-c)}
+.mv-d.sat .n{color:var(--sat-c)}
+.mv-d.other{opacity:.35}
+.mv-d.today .n{background:var(--accent);color:var(--on-accent)}
+.mv-d.sel{background:var(--surface-2)}
+.mv-c{display:block;position:relative;height:16px;line-height:16px;margin:0 1px 2px;padding:0 1px 0 7px;border-radius:4px;font-size:10.5px;font-weight:700;letter-spacing:-.03em;color:var(--ink);white-space:nowrap;overflow:hidden;
+  background:color-mix(in srgb,var(--evt) 22%,var(--surface-2))}
+.mv-c::before{content:"";position:absolute;left:2px;top:3px;bottom:3px;width:2.5px;border-radius:1.5px;background:color-mix(in srgb,var(--evt) 82%,var(--ink))}
+/* 데드라인(시험 · 마감): 바탕 없이 작은 체크 네모 + 제목 (iOS 18 캘린더가 미리 알림을 보여 주는 방식, 할 일 화면의 둥근 네모 체크와 같은 모양), 칸 맨 위 */
+.mv-c.pin{display:flex;align-items:center;gap:3px;padding-left:1px;background:transparent;font-weight:800;color:var(--ink)}
+.mv-c.pin::before{display:none}
+.mv-box{flex:none;width:9px;height:9px;border-radius:2.5px;box-sizing:border-box;border:1.6px solid color-mix(in srgb,var(--evt) 85%,var(--ink))}
+.mv-c.pin.done{opacity:.45;font-weight:700}
+.mv-c.pin.done .mv-box{background:color-mix(in srgb,var(--evt) 85%,var(--ink))}
+.mv-more{display:block;height:12px;line-height:12px;font-size:9.5px;font-weight:800;color:var(--muted);text-align:center}
+.mv-panel{margin:14px 12px 0}
+.mv-ph{display:flex;align-items:center;gap:8px;margin:0 2px 10px}
+.mv-ph h3{margin:0;font-size:18px;font-weight:800;letter-spacing:-.03em}
+.mv-ph .hol{font-size:12.5px;font-weight:700;color:var(--sun-c)}
+.mv-ph .go{margin-left:auto;padding:7px 10px;border-radius:10px;font-size:13px;font-weight:800;color:var(--ink-2);background:var(--surface-2)}
+.mv-ph .go:active{transform:scale(.95)}
+/* 아래 목록 한 줄: 회색 카드 · 왼쪽 작은 시간 · 얇은 색 막대 · 큰 제목 (시간 칸 폭을 고정해 막대가 한 줄로 맞춰짐) */
+.mv-list .arow{height:auto;min-height:48px;margin-bottom:8px;padding:5px 14px;gap:11px;border-radius:12px;background:var(--surface-2)}
+.mv-list .arow::before{display:none}
+.mv-list .arow .atm{flex:none;width:44px;display:flex;flex-direction:column;gap:3px;line-height:1.1}
+.mv-list .arow .atm b{font-size:15px;font-weight:800;color:var(--ink)}
+.mv-list .arow .atm i{font-style:normal;font-size:12px;font-weight:700;color:var(--muted)}
+.mv-list .arow .abar{flex:none;width:4px;height:34px;border-radius:2px;background:color-mix(in srgb,var(--evt) 82%,var(--ink))}
+.mv-list .arow .at{font-size:16.5px;font-weight:800;letter-spacing:-.03em}
+.mv-todos.tday-list .titem{margin:0 0 8px;padding:10px 14px;gap:11px;border-top:none;border-radius:12px;background:var(--surface-2)}
+.mv-todos.tday-list .titem.pin{margin:0 0 8px;padding:10px 14px;background:color-mix(in srgb,var(--evt) 16%,var(--surface))}
+.mv-todos.tday-list .titem.pin.done{background:color-mix(in srgb,var(--ink) 6%,var(--surface))}
+.mv-todos.tday-list .ttx{font-size:16px}
+.mv-sec{font-size:12.5px;font-weight:700;color:var(--muted);margin:14px 4px 4px}
+.mv-todos.tday-list{min-height:0;margin-bottom:0}
+.mv-empty{padding:18px 0;text-align:center;font-size:14px;font-weight:600;color:var(--muted)}
+.mv-add{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.mv-add button{padding:11px;border-radius:14px;background:var(--surface-2);font-size:15px;font-weight:800;color:var(--ink)}
+.mv-add button:active{transform:scale(.97)}
 .planner:not(.list) #agenda{display:none}
 
 /* ---------- 할 일: 주간 목록과 같은 2×4 배치, 하지만 "선으로 나뉜 판" 대신 "회색 바탕 위 카드" ---------- */
@@ -800,15 +848,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   </div>
 
   <!-- 주간 목록 보기 (왼쪽 위 달력에서 주 선택) -->
-  <div class="agenda" id="agenda"><div class="agrid" id="agrid"></div></div>
+  <div class="agenda" id="agenda"><div class="agrid" id="agrid"></div><div class="mview" id="mview" style="display:none"></div></div>
   <!-- 할 일 체크리스트 (일정과 따로) -->
   <div class="todos" id="todos"><div class="tgrid" id="tgrid"></div></div>
 </div>
 
 <!-- 아래 탭 바: 시간표 / 주간 목록 -->
 <nav class="tabbar" id="tabbar" aria-label="보기 전환">
-  <button id="tabGrid" class="on" aria-label="시간표 보기" title="시간표 (1)"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9.5h17M9 9.5v11M8 2.5v4M16 2.5v4"/></svg></button>
-  <button id="tabList" aria-label="주간 목록 보기" title="주간 목록 (2)"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2"/><rect x="13" y="13" width="7.5" height="7.5" rx="2"/></svg></button>
+  <button id="tabList" aria-label="주간 목록 보기" title="캘린더 (1)"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2"/><rect x="13" y="13" width="7.5" height="7.5" rx="2"/></svg></button>
+  <button id="tabGrid" aria-label="시간표 보기" title="시간표 (2)"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M3.5 9.5h17M9 9.5v11M8 2.5v4M16 2.5v4"/></svg></button>
   <button id="tabTodo" aria-label="할 일 보기" title="할 일 (3)"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M8 12.3l2.8 2.8 5.4-5.6"/></svg></button>
 </nav>
 
@@ -1145,7 +1193,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var winStart = startOfDay(new Date()); // N일 모드의 첫날
   // 화면 형식: "grid"=시간표 / "list"=주간 목록 (왼쪽 위 달력 + 요일별 칸)
   // 화면 형식: + "todo"=할 일 체크리스트
-  var layout = (function(){ try{ var l=localStorage.getItem("weekly-planner-layout"); return (l==="list"||l==="todo") ? l : "grid"; }catch(e){ return "grid"; } })();
+  var layout = (function(){ try{ var l=localStorage.getItem("weekly-planner-layout"); return (l==="grid"||l==="todo") ? l : "list"; }catch(e){ return "list"; } })();   // 처음엔 첫 번째 탭(캘린더)
+  var listMode = (function(){ try{ return localStorage.getItem("weekly-planner-listmode")==="month" ? "month" : "week"; }catch(e){ return "week"; } })();   // 주간 목록 탭: 주 ⇄ 월
   var calMonth = null;                // 주간 목록의 미니 달력이 보여주는 달 (null이면 선택한 주의 달)
   var editId = null;
   var categories = loadCategories();
@@ -1300,12 +1349,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   var backBtn=document.getElementById("backBtn");
   daysEl.style.height = ((DAY_END-DAY_START)*hourH)+"px";
   var plannerEl=document.querySelector(".planner");
-  var agendaEl=document.getElementById("agenda"), agridEl=document.getElementById("agrid");
+  var agendaEl=document.getElementById("agenda"), agridEl=document.getElementById("agrid"), mviewEl=document.getElementById("mview");
   var tabbarEl=document.getElementById("tabbar");
   var tabGridBtn=document.getElementById("tabGrid"), tabListBtn=document.getElementById("tabList"), tabTodoBtn=document.getElementById("tabTodo");
 
   // ---- 주간 목록 보기 ----
   function renderAgenda(){
+    agridEl.style.display=""; mviewEl.style.display="none";
     var mon=weekStartOf(anchor), today=ymd(new Date());
     var week=[]; for(var i=0;i<7;i++) week.push(addDays(mon,i));
     var cm = calMonth || new Date(addDays(mon,3).getFullYear(), addDays(mon,3).getMonth(), 1); // 주의 가운데(수요일)가 속한 달
@@ -1339,6 +1389,64 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     agridEl.innerHTML=h;
     for(var yr in years) refreshHolidays(+yr);
   }
+  // ---- 월 캘린더 ----
+  // 칸: 특정 날짜 일정 + 시험 · 마감(달력 표시) 할 일만 (매주 반복 강의는 칸을 꽉 채워서 아래 목록에만)
+  // 날짜 탭 = 그 날 고르기(아래 목록), 고른 날짜를 한 번 더 탭 = 그 주(주간 목록)로
+  function addMonths(d, n){ var y=d.getFullYear(), m=d.getMonth()+n, last=new Date(y, m+1, 0).getDate(); return new Date(y, m, Math.min(d.getDate(), last)); }
+  function setListMode(m){ listMode=m; calMonth=null; try{ localStorage.setItem("weekly-planner-listmode", m); }catch(e){} render(); }
+  function renderMonth(){
+    agridEl.style.display="none"; mviewEl.style.display="";
+    var today=ymd(new Date()), sel=ymd(anchor), cm=calMonth || new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    var years={}; years[cm.getFullYear()]=1; years[addMonths(cm,-1).getFullYear()]=1; years[addMonths(cm,1).getFullYear()]=1;
+    for(var yk in years) loadHolidayCache(+yk);
+    document.getElementById("monthLabel").textContent=cm.getFullYear()+"년 "+(cm.getMonth()+1)+"월";
+    backBtn.style.display="none";
+    var pinBy={}; todos.forEach(function(t){ if(isPinTodo(t)) (pinBy[t.date]=pinBy[t.date]||[]).push(t); });
+    var h='<div class="mv-dow">'+CAL_DOW.map(function(w){ return '<span>'+w+'</span>'; }).join("")+'</div><div class="mv-grid">';
+    var d=weekStartOf(cm);
+    for(var row=0; row<6; row++){
+      if(row>0 && d.getMonth()!==cm.getMonth() && d>cm) break;
+      for(var c=0;c<7;c++){
+        var ds=ymd(d), hol=holidays[ds];
+        var chips=(pinBy[ds]||[]).slice().sort(todoOrder).map(function(t){ return '<span class="mv-c pin'+(t.done?" done":"")+'" style="--evt:'+todoCatColor(t.cat)+'">'+'<i class="mv-box"></i>'+esc(t.title)+'</span>'; })
+          .concat(eventsForDate(d).filter(function(e){ return e.type!=="lecture"; }).sort(function(a,b){ return a.start-b.start; })
+          .map(function(e){ return '<span class="mv-c" style="--evt:'+evColor(e)+'">'+esc(evLabel(e))+'</span>'; }));
+        var shown = chips.length>3 ? chips.slice(0,2).join("")+'<span class="mv-more tnum">+'+(chips.length-2)+'</span>' : chips.join("");
+        h+='<div class="mv-d'+dayCls(d)+(hol?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(ds===sel?" sel":"")+'" data-date="'+ds+'"'+(hol?' title="'+esc(hol)+'"':'')+'>'+
+           '<span class="n tnum">'+d.getDate()+'</span>'+shown+'</div>';
+        d=addDays(d,1);
+      }
+    }
+    h+='</div>';
+    // 고른 날: 일정(강의 포함, 시간순) + 할 일
+    var sd=parseYmd(sel), shol=holidays[sel];
+    var evs=eventsForDate(sd).slice().sort(function(a,b){ return a.start-b.start || a.end-b.end; });
+    var tds=todos.filter(function(t){ return t.date===sel; }).sort(todoOrder);
+    h+='<div class="mv-panel"><div class="mv-ph"><h3>'+sd.getFullYear()+'년 '+(sd.getMonth()+1)+'월 '+sd.getDate()+'일 ('+DOW[wd(sd)]+')</h3>'+(shol?'<span class="hol">'+esc(shol)+'</span>':'')+
+       '<button class="go" data-toweek>주간 ›</button></div><div class="mv-list">';
+    evs.forEach(function(e){ h+='<div class="arow" data-id="'+esc(e.id)+'" style="--evt:'+evColor(e)+'"><span class="atm tnum"><b>'+minToStr(e.start)+'</b><i>'+minToStr(e.end)+'</i></span><span class="abar"></span><span class="at">'+esc(evLabel(e))+'</span></div>'; });
+    if(tds.length) h+='<div class="mv-sec">할 일</div><div class="tday-list mv-todos">'+tds.map(todoItemHtml).join("")+'</div>';
+    if(!evs.length && !tds.length) h+='<div class="mv-empty">일정 없음</div>';
+    h+='</div><div class="mv-add"><button data-addev>+ 일정</button><button data-addtd>+ 할 일</button></div></div>';
+    mviewEl.innerHTML=h;
+    for(var yr in years) refreshHolidays(+yr);
+  }
+  mviewEl.addEventListener("click", function(ev){
+    var cell=ev.target.closest(".mv-d");
+    if(cell){
+      var ds=cell.getAttribute("data-date");
+      if(ds===ymd(anchor)){ setListMode("week"); return; }   // 고른 날을 한 번 더 → 그 주
+      anchor=parseYmd(ds); selDate=ds; calMonth=null; render(); return;
+    }
+    if(ev.target.closest("[data-toweek]")){ setListMode("week"); return; }
+    if(ev.target.closest("[data-addev]")){ selDate=ymd(anchor); openAdd(ymd(anchor), 9*60); return; }
+    if(ev.target.closest("[data-addtd]")){ openTodo(null, ymd(anchor)); return; }
+    var row=ev.target.closest(".arow");
+    if(row){ var id=row.getAttribute("data-id"); for(var i=0;i<events.length;i++){ if(events[i].id===id){ openPeek(events[i], ymd(anchor)); return; } } return; }
+    var chk=chkFromEvent(ev); if(chk){ toggleTodo(chk.closest(".titem"), chk); return; }
+    var it=ev.target.closest(".titem"); if(it){ var t=todoById(it.getAttribute("data-id")); if(t) openTodo(t); }
+  });
+
   // 달력 표시 카테고리의 할 일 → { 날짜: {color, title, done, multi} }
   // 색: 안 끝난 할 일 중 카테고리 목록에서 더 위에 있는 카테고리 (다 끝났으면 같은 규칙으로 고르고 흐리게)
   // multi: 그 날 달력 표시 카테고리가 2개 이상 → 뒤에 겹친 카드 (color2 = 같은 규칙으로 두 번째)
@@ -1380,7 +1488,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     return h+'</div></div>';
   }
   agridEl.addEventListener("click", function(ev){
-    if(ev.target.closest("[data-bigcal]")){ openBigCal(); return; }
+    if(ev.target.closest("[data-bigcal]")){ setListMode("month"); return; }   // 주간 목록: 미니 달력 제목 → 월 캘린더
     var nav=ev.target.closest("[data-cal]");
     if(nav){ var cm0=calMonth || new Date(addDays(weekStartOf(anchor),3).getFullYear(), addDays(weekStartOf(anchor),3).getMonth(), 1);
       calMonth=new Date(cm0.getFullYear(), cm0.getMonth()+(+nav.getAttribute("data-cal")), 1); render(); return; }
@@ -1417,7 +1525,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 사용자가 누르지 않았는데 오는 다시 그리기(1분 타이머 · 화면 크기 변경 · 동기화)는
   // 할 일을 꾹 누르거나 끄는 중, 체크 뒤 1.5초 정리 대기 중이면 건너뜀 → 끝날 때 tdDrop · settleTodos가 다시 그림
   // (그대로 그리면 끌던 항목이 손가락 밑에서 사라지거나, 체크하자마자 줄이 내려가 다음 탭이 엇나감)
-  function bgRender(){ if(tdrag || tpress || (layout==="todo" && tgridEl._t)) return; render(); }
+  function bgRender(){ if(tdrag || tpress || (layout!=="grid" && tgridEl._t)) return; render(); }
 
   function render(){
     autoCompletePins();
@@ -1428,7 +1536,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     tabTodoBtn.classList.toggle("on", layout==="todo");
     document.getElementById("addBtn").setAttribute("aria-label", layout==="todo" ? "할 일 추가" : "일정 추가");
     if(layout==="todo"){ renderTodos(); return; }
-    if(layout==="list"){ renderAgenda(); return; }
+    syncModeBtn();
+    if(layout==="list"){ if(listMode==="month") renderMonth(); else renderAgenda(); return; }
     var isDay = (view==="day");
     var multi = !isDay && mode!=="7";             // 4일·3일 슬라이딩 모드
     var nVis = isDay ? 1 : (multi ? +mode : 7);   // 또렷하게 보이는 날 수
@@ -1618,14 +1727,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     });
   }
   function goPrev(){
-    if(layout!=="grid"){ anchor=addDays(weekStartOf(anchor),-7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-prev"); return; }
+    if(layout!=="grid"){ anchor = (layout==="list" && listMode==="month") ? addMonths(anchor,-1) : addDays(weekStartOf(anchor),-7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:(listMode==="month"?mviewEl:agridEl); ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-prev"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),-1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,-1); anchor=winStart; }   // 하루씩 미끄러지기
     else anchor=addDays(weekStartOf(anchor),-7);
     render(); animateNav(-1);
   }
   function goNext(){
-    if(layout!=="grid"){ anchor=addDays(weekStartOf(anchor),7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:agridEl; ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-next"); return; }
+    if(layout!=="grid"){ anchor = (layout==="list" && listMode==="month") ? addMonths(anchor,1) : addDays(weekStartOf(anchor),7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:(listMode==="month"?mviewEl:agridEl); ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-next"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,1); anchor=winStart; }
     else anchor=addDays(weekStartOf(anchor),7);
@@ -1634,7 +1743,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); winStart=startOfDay(new Date()); calMonth=null; render(); if(layout==="grid") scrollToNow(); };
   document.getElementById("addBtn").onclick=function(){
     if(layout==="todo"){ var mon=weekStartOf(anchor), t=startOfDay(new Date()); openTodo(null, ymd((t>=mon && t<addDays(mon,7)) ? t : mon)); }
-    else openAdd(selDate, 9*60);
+    else openAdd((layout==="list" && listMode==="month") ? ymd(anchor) : selDate, 9*60);
   };
   backBtn.onclick=function(){
     // 하루보기에서 다른 날로 옮겨 다녔으면, 돌아갈 때 그 날이 보이도록 창을 맞춤
@@ -1644,8 +1753,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // 보기 모드 버튼: 4일 → 3일 → 주 → 4일 …
   var modeBtn=document.getElementById("modeBtn");
-  function syncModeBtn(){ modeBtn.textContent = (mode==="7") ? "주" : mode+"일"; }
+  function syncModeBtn(){ modeBtn.textContent = (layout==="list") ? (listMode==="month" ? "월" : "주") : (mode==="7") ? "주" : mode+"일"; }
   modeBtn.onclick=function(){
+    if(layout==="list"){ setListMode(listMode==="month" ? "week" : "month"); return; }
     var next = mode==="4" ? "5" : (mode==="5" ? "7" : "4");
     // 지금 보던 날짜를 기준으로 이어서 보여주기
     var base;
@@ -1700,7 +1810,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       return;
     }
     if(top || e.repeat) return;
-    var k={ KeyN:"addBtn", KeyT:"todayBtn", Digit1:"tabGrid", Digit2:"tabList", Digit3:"tabTodo" }[e.code];   // code라서 한글 자판이어도 동작
+    var k={ KeyN:"addBtn", KeyT:"todayBtn", Digit1:"tabList", Digit2:"tabGrid", Digit3:"tabTodo" }[e.code];   // code라서 한글 자판이어도 동작
     if(k){ e.preventDefault(); document.getElementById(k).click(); }
   });
   // 예전엔 "한 번 밀면 한 번"이었는데, 관성 신호가 계속 들어와 다음 밀기까지 막혀 연속으로 못 넘겼음
@@ -1837,6 +1947,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       var m={}; el.querySelectorAll(".titem").forEach(function(it){ m[it.getAttribute("data-id")]=it.getBoundingClientRect().top; }); return m;
     });
     if(layout==="todo") renderTodos();
+    if(layout==="list" && listMode==="month") renderMonth();
     if(todoDaySheet.classList.contains("on")) renderTodoDay();
     if(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     lists.forEach(function(el, i){
