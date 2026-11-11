@@ -1,7 +1,8 @@
-# 10. DevSecOps 파이프라인 — 1단계: CI 보안 자동화
+# 10. DevSecOps 파이프라인 — 1단계 CI 보안 자동화 · 2단계 클라우드 권한 · 실행 중 점검
 
 > 사람이 "기억해서" 하던 검사를 **코드로 강제**한다. 커밋 직전(내 PC) → push 직후(GitHub Actions) → 배포 직전(`deploy.ps1`) 세 곳에서 같은 규칙을 검사한다.
-> 도입: 2026-11-11, 커밋 `be7a5d5` · 앱 코드(`index.html`)는 바꾸지 않음 → 캐시 버전 그대로(`planner-v58`)
+> 도입: 2026-11-11 — 1단계 `be7a5d5`, 2단계 `525fb57` · 앱 코드(`index.html`)는 바꾸지 않음 → 캐시 버전 그대로
+> 2단계 요약: **RLS 공격 시나리오 56/56 차단** (CI 안 로컬 Supabase), 발견 사항 **F-01** 재현 · **ZAP 첫 스캔 경고 21종(규칙 16개) → 판정표**(고칠 일 3 · 수용 8 · 무시 5)
 
 ## 1. 왜 만들었나
 
@@ -28,7 +29,10 @@ flowchart LR
     P --> S["secrets<br/>gitleaks 전체 이력 + 일부러 실패시키기"]
     P --> SA["sast<br/>Semgrep 사용자 규칙"]
     P --> Q["CodeQL<br/>security-extended"]
+    P --> R["RLS<br/>로컬 Supabase + schema.sql<br/>A · B 공격 시나리오"]
+    W["매주 월요일"] --> Z["ZAP baseline<br/>실제 사이트"]
   end
+  Z --> ISS["이슈 #1<br/>ZAP 주간 점검"]
   SA -- SARIF --> SEC["Security 탭<br/>Code scanning"]
   Q -- SARIF --> SEC
   P --> GH["GitHub Pages 배포"]
@@ -137,6 +141,73 @@ Semgrep은 `.html` 안의 `<script>`를 읽지 못함 → `scripts/extract-inlin
 |---|---|---|
 | 배포 게이트 | 검사와 Pages 배포가 나란히 실행 | **3단계**: Pages 배포를 Actions로 옮겨 `검사 통과 → Environment 승인(Required reviewers) → 배포`, main 브랜치 보호 |
 | Semgrep 범위 | 클라이언트 JS taint는 함수 안(intraprocedural)만 추적 | 새 화면 패턴이 생기면 테스트 예제부터 추가 |
-| 서버(클라우드) 설정 | RLS는 SQL 파일 + 수동 확인 | **2단계**: 로컬 Supabase(Docker)로 "A가 B의 행을 읽을 수 있나" 자동 테스트 |
-| 실행 중 앱 점검 | 없음 | **2단계**: OWASP ZAP baseline 주간 스캔 → 이슈 자동 등록, `<meta>` CSP |
+| 서버(클라우드) 설정 | ~~RLS는 SQL 파일 + 수동 확인~~ | **2단계 완료** (§9). 남은 일: F-01 완화(서버 시각 상한) — 운영 DB 적용은 대시보드에서 직접 |
+| 실행 중 앱 점검 | ~~없음~~ | **2단계 완료** (§10). 남은 일: ZAP의 고칠 일 3건 — `<meta>` CSP · 글꼴 CSS SRI(앱 코드 수정이라 기능 작업과 맞춰서) · 클릭재킹(커스텀 도메인 필요) |
 | 커밋 직전 훅 | 저장소마다 `git config core.hooksPath .githooks` 한 번 필요 | — (안 켜도 CI에서 다시 걸림) |
+
+## 9. 2단계 — 클라우드 권한 자동 테스트 (RLS)
+
+### 9.1 방식
+| 항목 | 내용 |
+|---|---|
+| 환경 | GitHub Actions 안에서 **Supabase CLI 2.122.0**으로 로컬 Supabase를 띄움 (DB · 인증 · REST · 게이트웨이만, 나머지 10개 서비스 제외 → 약 110초) |
+| 스키마 | 운영에 적용하는 `supabase/schema.sql`을 **그대로 두 번** 적용 — "여러 번 실행해도 안전"이라는 주석을 테스트로 확인 |
+| 공격 경로 | 앱과 똑같이 **REST API(PostgREST) + 사용자 토큰**으로 요청. DB에 직접 붙지 않음 → 실제 공격자가 쓸 수 있는 경로 그대로 |
+| 운영 서버 | 접속하지 않음. 키 · 비밀번호 · 비밀값 불필요 (로컬 키는 실행 중에만 생기고 로그에서 가림) |
+| 언제 | `supabase/` · 테스트 파일이 바뀔 때, 매주 월요일 (Supabase 이미지가 바뀌어도 권한이 그대로인지) |
+
+### 9.2 설정 점검 (`tests/rls/rls-config.sql`) — "새 테이블에 RLS를 깜빡"하는 실수를 막음
+| 점검 | 결과 |
+|---|---|
+| public 테이블 중 RLS가 꺼진 것 | 없음 (5개 모두 켜짐) |
+| RLS는 켰지만 정책이 없는 테이블 | 없음 |
+| `anon` · `public` 롤에 열린 정책 | 없음 |
+| 읽기(`using`) · 쓰기(`with check`) 양쪽에 `auth.uid()` 본인 확인 | 모두 있음 |
+| `search_path`가 고정되지 않은 함수 (스키마 바꿔치기) | 없음 (`keep_newer`는 `set search_path = ''`) |
+
+### 9.3 공격 시나리오 (`tests/rls/rls.test.js`) — 56/56 통과
+사용자 A · B를 가입시키고, 표 4개(`events` · `categories` · `todos` · `todo_categories`)마다 13개 + `prefs` 4개.
+
+| # | 시나리오 (B = 공격자) | 기대 | 결과 |
+|---|---|---|---|
+| 01 | A가 자기 행 upsert (앱과 같은 방식) | `user_id`가 자동으로 A | ✅ ×4 |
+| 02 · 03 | B가 전체 조회 / A의 `user_id`로 필터 | A 행 0개 | ✅ ×8 |
+| 04 · 05 | B가 A 행 수정 / 삭제 | 0행 반영, A 데이터 그대로 | ✅ ×8 |
+| 06 | B가 `user_id=A`로 새 행 심기 | 거부 (RLS `with check`) | ✅ ×4 |
+| 07 | B가 A 행의 키로 upsert 덮어쓰기 | 거부, A 데이터 그대로 | ✅ ×4 |
+| 08 | A가 자기 행을 B에게 넘기기 (`user_id` 변경) | 거부 | ✅ ×4 |
+| 09 · 10 | 로그인 안 한 요청(anon) 조회 / 쓰기 | 데이터 없음 / 거부 | ✅ ×8 |
+| 11 | 더 옛 시각의 수정 (오래된 기기) | 무시 (`keep_newer`) | ✅ ×4 |
+| 12 · 13 | `data` 8KB 초과 / `id` 41자 | 거부 (CHECK) | ✅ ×8 |
+| P-01~04 | `prefs` 본인 쓰기 · B 조회 · B 수정 · B upsert | 본인만 | ✅ ×4 |
+
+### 9.4 발견 사항 F-01 — 미래 시각으로 저장된 행이 잠김 (수용 위험 R10의 실제 영향)
+| 항목 | 내용 |
+|---|---|
+| 재현 | A가 `updated_at`을 100년 뒤로 저장 → 이후 정상 시각의 수정이 **모두 무시**됨 (CI 경고로 매번 표시) |
+| 원인 | `keep_newer`는 "더 옛 시각이면 무시"만 보고 시각의 **상한**을 보지 않음. 시각은 기기 시계 기준 (R10) |
+| 영향 | RLS 덕분에 **본인 계정 데이터에만** 영향 (다른 사용자 공격 불가). 다만 시계가 크게 앞선 기기 하나가 그 항목을 **다른 모든 기기에서 고칠 수 없게** 만들 수 있음 — R10의 "본인 데이터만 영향"보다 구체적인 영향 |
+| 완화안 | 트리거에서 `updated_at`을 서버 시각 + 5분으로 제한. 운영 DB는 대시보드 SQL Editor에서 직접 실행해야 하고, 앱의 동기화 비교 로직과 맞물리는지 확인이 필요해 **별도 작업으로 보류** |
+
+## 10. 2단계 — 실행 중 사이트 점검 (DAST, OWASP ZAP)
+
+### 10.1 방식
+| 항목 | 내용 |
+|---|---|
+| 도구 | `zaproxy/action-baseline` v0.15.0 (커밋 해시 고정) + ZAP 이미지 **다이제스트 고정** (2026-10-26 빌드) |
+| 범위 | 배포된 `https://jmg0929.github.io/weekly-planner/`만. baseline = 크롤링 + **수동(passive) 검사** — 공격 요청을 보내지 않음. 로그인 · Supabase는 스캔하지 않음 |
+| 주기 | 매주 월요일 + 판정표(`.zap/rules.tsv`) · 워크플로가 바뀔 때 |
+| 결과 | 이슈 하나("ZAP 주간 점검", #1)를 매번 갱신 + 보고서 파일(artifact) |
+
+### 10.2 첫 스캔 판정 (경고 21종 → `.zap/rules.tsv`)
+| 판정 | 경고 | 근거 · 연결 |
+|---|---|---|
+| **고칠 일 (WARN)** | CSP 헤더 없음 (10038) | GitHub Pages는 응답 헤더 설정 불가 → `<meta>` CSP로 보완 (R3, 백로그 높음) |
+| | 외부 CSS SRI 없음 (90003) | jsDelivr 글꼴 CSS에 `integrity` 추가 (R9) |
+| | 클릭재킹 방지 헤더 없음 (10020) | `frame-ancestors`는 `<meta>`로 불가 → 커스텀 도메인 · 프록시 필요 (새 수용 위험 R11 후보) |
+| **수용 (INFO)** | Permissions-Policy · X-Content-Type-Options · COOP/COEP · `Access-Control-Allow-Origin: *` | 모두 **헤더 설정이 불가한 플랫폼 한계**. 앱이 해당 기능(권한 API · 교차 출처 격리)을 쓰지 않거나, 공개 정적 파일이라 영향 낮음 |
+| | Base64 문자열 · 주석의 의심 단어 | 공개값(publishable 키 · 아이콘) · 한국어 개발 주석 — 비밀이 아님은 1단계 gitleaks로 확인 |
+| | CSP 세부 · HSTS | `jmg0929.github.io` 루트 · `robots.txt` · `sitemap.xml` = **이 앱이 아닌 GitHub 404 페이지** (범위 밖) |
+| **무시 (IGNORE)** | 캐시 관련 3종 · Sec-Fetch-* · Modern Web App | CDN 캐시는 의도된 동작(응답에 개인 데이터 없음), Sec-Fetch-*는 스캐너 자신의 요청 특성, 정보 제공용 |
+
+> 판정 원칙: **근거 없는 IGNORE 금지**. 고칠 수 있는 것은 WARN으로 남겨 매주 이슈에 계속 보이게 하고, 플랫폼 한계는 [07-보안설계 §5 수용 위험](07-보안설계.md#5-수용한-위험-accepted-risks)과 연결.
