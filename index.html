@@ -606,17 +606,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .mv-dow span{text-align:center;font-size:11px;font-weight:700;color:var(--muted)}
 .mv-dow span:first-child{color:var(--sun-c)}
 .mv-dow span:last-child{color:var(--sat-c)}
-.mv-grid{padding:0 3px}
-/* 주 한 줄 = 날짜 7칸 + 그 위에 겹치는 하루 종일 막대 층 (여러 날이면 칸을 가로질러 이어짐) */
-.mv-week{position:relative;margin-bottom:2px}
-.mv-row{display:grid;grid-template-columns:repeat(7,1fr)}
-.mv-bars{position:absolute;left:0;right:0;top:0;height:0;pointer-events:none;z-index:1}
-.mv-bar{position:absolute;height:14px;line-height:14px;padding:0 3px;font-size:9.5px;font-weight:600;letter-spacing:-.03em;color:var(--ink);white-space:nowrap;overflow:hidden;
-  background:color-mix(in srgb,var(--evt) 32%,var(--surface))}
-.mv-bar.head{padding-left:7px;border-radius:3.5px 0 0 3.5px}
-.mv-bar.head::before{content:"";position:absolute;left:2px;top:3px;bottom:3px;width:2px;border-radius:1px;background:color-mix(in srgb,var(--evt) 82%,var(--ink))}
-.mv-bar.tail{border-top-right-radius:3.5px;border-bottom-right-radius:3.5px}
-.mv-sp{display:block}
+.mv-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 0;padding:0 3px}
 .mv-d{min-width:0;height:90px;padding:4px 2px 2px;border-radius:10px;cursor:pointer;overflow:hidden}
 .mv-d .n{display:block;width:24px;height:22px;margin:0 auto 2px;line-height:22px;text-align:center;border-radius:7px;font-size:13.5px;font-weight:700;color:var(--ink)}
 .mv-d.sun .n,.mv-d.holiday .n{color:var(--sun-c)}
@@ -784,11 +774,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .recent .cdot{width:7px;height:7px;border-radius:50%;flex:none}
 .recent button:active{transform:scale(.96)}
 .two.range{grid-template-columns:1fr auto 1fr;align-items:center}
-/* 하루 종일 · 끝 날짜 */
-.ev-dates{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
-.ev-dates .ev-in{flex:1;min-width:0}
-.ev-lab.wide{width:auto;flex:1;font-size:14px;color:var(--ink-2)}
-.mv-list .arow .atm b.ad{font-size:13.5px}
 /* 달력 표시 카테고리(시험 · 마감 등) 할 일: 달력의 둥근 네모와 같은 모양 · 색으로 + D-day */
 /* 칠한 바탕은 양옆으로 4px 더 넓게(음수 여백) → 체크 · 글자 위치는 일반 할 일과 똑같이 */
 .titem.pin{background:color-mix(in srgb,var(--evt) 16%,var(--tcard));padding:4px 6px;margin:1px -4px}
@@ -906,23 +891,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     </div>
     <div class="ev-row" id="dateField" style="display:none">
       <span class="ev-lab">날짜</span>
-      <div class="ev-dates">
-        <input type="date" id="fDate" class="ev-in" aria-label="날짜">
-        <span class="ev-arrow" id="endArrow" style="display:none">→</span>
-        <input type="date" id="fEndDate" class="ev-in" aria-label="끝 날짜" style="display:none">
-      </div>
+      <input type="date" id="fDate" class="ev-in">
     </div>
-    <div class="ev-row" id="timeRow">
+    <div class="ev-row">
       <span class="ev-lab">시간</span>
       <div class="ev-time">
         <input type="time" id="fStart" step="300" class="ev-in" aria-label="시작">
         <span class="ev-arrow">→</span>
         <input type="time" id="fEnd" step="300" class="ev-in" aria-label="종료">
       </div>
-    </div>
-    <div class="ev-row" id="allDayRow">
-      <span class="ev-lab wide">하루 종일</span>
-      <button type="button" class="switch" id="allDaySw" role="switch" aria-checked="false" aria-label="하루 종일"><i></i></button>
     </div>
   </div>
 
@@ -1243,7 +1220,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(ch) saveCategories();
   })();
   var newCatColor = COLORS[0], newCatEmoji = "", editCat = null, catReturnToForm = false; // editCat = 수정 중인 카테고리 {id,name,color,emoji} 사본
-  var form = { allDay:false, type:"lecture", days:[], date:selDate, cat:(categories[0]&&categories[0].id), color:(categories[0]&&categories[0].color) };
+  var form = { type:"lecture", days:[], date:selDate, cat:(categories[0]&&categories[0].id), color:(categories[0]&&categories[0].color) };
 
   // ---- 한국 공휴일 (Nager.Date API, 키 불필요·CORS 지원) ----
   var holidays = {};           // { "YYYY-MM-DD": "공휴일 이름" }
@@ -1317,13 +1294,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   function catEmoji(id){ var c=catById(id); return (c && c.emoji) || ""; }
   function evColor(e){ return e.color || catColor(e.cat); } // 개별 색 우선, 없으면 카테고리 색
   function evLabel(e){ return e.title||"제목 없음"; }
-  // 여러 날 일정의 몇째 날 (예: "2/4"), 하루짜리면 ""
-  function evDayInfo(e, ds){
-    if(!e.endDate) return "";
-    var n=Math.round((parseYmd(ds)-parseYmd(e.date))/864e5)+1, tot=Math.round((parseYmd(e.endDate)-parseYmd(e.date))/864e5)+1;
-    return n+"/"+tot;
-  }
-  function evSortAD(a, b){ return (b.allDay?1:0)-(a.allDay?1:0) || a.start-b.start || a.end-b.end; }   // 하루 종일 먼저
 
   function weekDates(){ var mon=weekStartOf(anchor); var arr=[]; for(var i=0;i<7;i++)arr.push(addDays(mon,i)); return arr; }
   function startOfDay(d){ var x=new Date(d); x.setHours(0,0,0,0); return x; }
@@ -1337,7 +1307,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         if(e.until && ds > e.until) continue;              // 반복 종료 후
         out.push(e);
       } else {
-        if(e.date===ds || (e.endDate && ds>e.date && ds<=e.endDate)) out.push(e);   // 여러 날이면 끝 날짜까지
+        if(e.date===ds) out.push(e);
       }
     }
     return out;
@@ -1413,9 +1383,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       var dd=week[k], dds=ymd(dd), hol=holidays[dds];
       var ccls="acell"+dayCls(dd)+(hol?" holiday":"")+(dds===today?" today":"");
       h+='<div class="'+ccls+'" data-date="'+dds+'"><div class="ahead"><span class="adow">'+DOW[wd(dd)]+'</span><span class="anum tnum">'+dd.getDate()+'</span>'+(hol?'<span class="ahol">'+esc(hol)+'</span>':'')+'</div>';
-      var evs=eventsForDate(dd).slice().sort(evSortAD);
+      var evs=eventsForDate(dd).slice().sort(function(a,b){ return a.start-b.start || a.end-b.end; });
       evs.forEach(function(e){
-        h+='<div class="arow" data-id="'+esc(e.id)+'" style="--evt:'+evColor(e)+'"><span class="at">'+esc(evLabel(e))+'</span><span class="atm tnum">'+(e.allDay ? (evDayInfo(e, dds)||"종일") : minToStr(e.start))+'</span></div>';
+        h+='<div class="arow" data-id="'+esc(e.id)+'" style="--evt:'+evColor(e)+'"><span class="at">'+esc(evLabel(e))+'</span><span class="atm tnum">'+minToStr(e.start)+'</span></div>';
       });
       h+='</div>';
     }
@@ -1427,7 +1397,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 날짜 탭 = 그 날 고르기(아래 목록), 고른 날짜를 한 번 더 탭 = 그 주(주간 목록)로
   function addMonths(d, n){ var y=d.getFullYear(), m=d.getMonth()+n, last=new Date(y, m+1, 0).getDate(); return new Date(y, m, Math.min(d.getDate(), last)); }
   function setListMode(m){ listMode=m; calMonth=null; try{ localStorage.setItem("weekly-planner-listmode", m); }catch(e){} render(); }
-  var MV_LANES=3;   // 월 칸 위쪽 하루 종일 막대 줄 수
   function renderMonth(){
     agridEl.style.display="none"; mviewEl.style.display="";
     var today=ymd(new Date()), sel=ymd(anchor), cm=calMonth || new Date(anchor.getFullYear(), anchor.getMonth(), 1);
@@ -1437,50 +1406,28 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     backBtn.style.display="none";
     var pinBy={}; todos.forEach(function(t){ if(isPinTodo(t)) (pinBy[t.date]=pinBy[t.date]||[]).push(t); });
     var h='<div class="mv-dow">'+CAL_DOW.map(function(w){ return '<span>'+w+'</span>'; }).join("")+'</div><div class="mv-grid">';
-    var chipEv=function(e){ return '<span class="mv-c" style="--evt:'+evColor(e)+'">'+esc(evLabel(e))+'</span>'; };
     var d=weekStartOf(cm);
     for(var row=0; row<6; row++){
       if(row>0 && d.getMonth()!==cm.getMonth() && d>cm) break;
-      // 하루 종일(특정 날짜) 일정 → 이 주의 막대 조각. 먼저 시작하고 긴 것부터 비어 있는 가장 위 줄에 (여러 날이 같은 높이로 이어지게)
-      var wsD=new Date(d), ws=ymd(d), we=ymd(addDays(d,6)), segs=[];
-      events.forEach(function(e){
-        if(!e.allDay || e.type==="lecture" || (e.cat && hidden[e.cat])) return;
-        var s0=e.date, e0=e.endDate||e.date; if(e0<ws || s0>we) return;
-        var a=(s0<ws)?ws:s0, b=(e0>we)?we:e0;
-        segs.push({ e:e, c0:Math.round((parseYmd(a)-wsD)/864e5), c1:Math.round((parseYmd(b)-wsD)/864e5), head:a===s0, tail:b===e0 });
-      });
-      segs.sort(function(x, y){ return x.c0-y.c0 || (y.c1-y.c0)-(x.c1-x.c0); });
-      var laneEnd=[], over={};   // over[칸] = 줄(최대 MV_LANES)에 못 들어간 하루 종일 → 그 칸의 띠로
-      segs.forEach(function(sg){
-        for(var L=0; L<MV_LANES; L++){ if(laneEnd[L]===undefined || laneEnd[L]<sg.c0){ sg.lane=L; laneEnd[L]=sg.c1; return; } }
-        for(var cc=sg.c0; cc<=sg.c1; cc++) (over[cc]=over[cc]||[]).push(sg.e);
-      });
-      var placed=segs.filter(function(sg){ return sg.lane!==undefined; });
-      h+='<div class="mv-week"><div class="mv-row">';
       for(var c=0;c<7;c++){
-        var ds=ymd(d), hol=holidays[ds], lanesHere=0;
-        placed.forEach(function(sg){ if(sg.c0<=c && sg.c1>=c && sg.lane+1>lanesHere) lanesHere=sg.lane+1; });
+        var ds=ymd(d), hol=holidays[ds];
         var chips=(pinBy[ds]||[]).slice().sort(todoOrder).map(function(t){ return '<span class="mv-c pin'+(t.done?" done":"")+'" style="--evt:'+todoCatColor(t.cat)+'">'+'<i class="mv-box"></i>'+esc(t.title)+'</span>'; })
-          .concat((over[c]||[]).map(chipEv))
-          .concat(eventsForDate(d).filter(function(e){ return e.type!=="lecture" && !e.allDay; }).sort(function(a,b){ return a.start-b.start; }).map(chipEv));
-        var room=4-lanesHere;   // 칸 하나에 막대 + 띠 합쳐 4개까지, 넘치면 마지막 자리에 +n
-        var shown = chips.length>room ? chips.slice(0, Math.max(0, room-1)).join("")+'<span class="mv-more tnum">+'+(chips.length-Math.max(0, room-1))+'</span>' : chips.join("");
+          .concat(eventsForDate(d).filter(function(e){ return e.type!=="lecture"; }).sort(function(a,b){ return a.start-b.start; })
+          .map(function(e){ return '<span class="mv-c" style="--evt:'+evColor(e)+'">'+esc(evLabel(e))+'</span>'; }));
+        var shown = chips.length>4 ? chips.slice(0,3).join("")+'<span class="mv-more tnum">+'+(chips.length-3)+'</span>' : chips.join("");   // 4개까지, 넘치면 3개 + +n
         h+='<div class="mv-d'+dayCls(d)+(hol?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(ds===sel?" sel":"")+'" data-date="'+ds+'"'+(hol?' title="'+esc(hol)+'"':'')+'>'+
-           '<span class="n tnum">'+d.getDate()+'</span>'+(lanesHere ? '<span class="mv-sp" style="height:'+(lanesHere*15)+'px"></span>' : '')+shown+'</div>';
+           '<span class="n tnum">'+d.getDate()+'</span>'+shown+'</div>';
         d=addDays(d,1);
       }
-      h+='</div><div class="mv-bars">'+placed.map(function(sg){
-        return '<span class="mv-bar'+(sg.head?" head":"")+(sg.tail?" tail":"")+'" style="--evt:'+evColor(sg.e)+';left:calc('+sg.c0+' * 100% / 7 + 1px);width:calc('+(sg.c1-sg.c0+1)+' * 100% / 7 - 2px);top:'+(28+sg.lane*15)+'px">'+esc(evLabel(sg.e))+'</span>';
-      }).join("")+'</div></div>';
     }
     h+='</div>';
     // 고른 날: 일정(강의 포함, 시간순) + 할 일
     var sd=parseYmd(sel), shol=holidays[sel];
-    var evs=eventsForDate(sd).slice().sort(evSortAD);
+    var evs=eventsForDate(sd).slice().sort(function(a,b){ return a.start-b.start || a.end-b.end; });
     var tds=todos.filter(function(t){ return t.date===sel; }).sort(todoOrder);
     h+='<div class="mv-panel"><div class="mv-ph"><h3>'+sd.getFullYear()+'년 '+(sd.getMonth()+1)+'월 '+sd.getDate()+'일 ('+DOW[wd(sd)]+')</h3>'+(shol?'<span class="hol">'+esc(shol)+'</span>':'')+
        '<button class="go" data-toweek>주간 ›</button></div><div class="mv-list">';
-    evs.forEach(function(e){ h+='<div class="arow" data-id="'+esc(e.id)+'" style="--evt:'+evColor(e)+'"><span class="atm tnum">'+(e.allDay ? '<b class="ad">종일</b>'+(e.endDate?'<i>'+evDayInfo(e, sel)+'</i>':'') : '<b>'+minToStr(e.start)+'</b><i>'+minToStr(e.end)+'</i>')+'</span><span class="abar"></span><span class="at">'+esc(evLabel(e))+'</span></div>'; });
+    evs.forEach(function(e){ h+='<div class="arow" data-id="'+esc(e.id)+'" style="--evt:'+evColor(e)+'"><span class="atm tnum"><b>'+minToStr(e.start)+'</b><i>'+minToStr(e.end)+'</i></span><span class="abar"></span><span class="at">'+esc(evLabel(e))+'</span></div>'; });
     if(tds.length) h+='<div class="mv-sec">할 일</div><div class="tday-list mv-todos">'+tds.map(todoItemHtml).join("")+'</div>';
     if(!evs.length && !tds.length) h+='<div class="mv-empty">일정 없음</div>';
     h+='</div><div class="mv-add"><button data-addev>+ 일정</button><button data-addtd>+ 할 일</button></div></div>';
@@ -1608,7 +1555,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     // 빈 새벽시간 접기: 기본 07시, 더 이른 일정 있으면 그 시각까지만 내림
     (function(){
       var need=7;
-      for(var i=0;i<events.length;i++){ if(events[i].allDay) continue; var h=Math.floor(events[i].start/60); if(h<need) need=h; }
+      for(var i=0;i<events.length;i++){ var h=Math.floor(events[i].start/60); if(h<need) need=h; }
       if(need<0)need=0;
       if(need!==DAY_START){ DAY_START=need; buildGutter(); daysEl.style.height=((DAY_END-DAY_START)*hourH)+"px"; }
     })();
@@ -1658,7 +1605,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var any=false;
     for(var k=0;k<dates.length;k++){
       var col=cols[k], d2=dates[k];
-      var evs=eventsForDate(d2).filter(function(e){ return !e.allDay; });
+      var evs=eventsForDate(d2);
       evs.sort(function(a,b){ return a.start-b.start || a.end-b.end; });
       var clusters=clusterize(evs);
       for(var m=0;m<clusters.length;m++){ any=true;
@@ -2295,14 +2242,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     document.getElementById("peekDot").style.background=col;
     document.getElementById("peekCat").textContent=(catEmoji(e.cat)?catEmoji(e.cat)+" ":"")+catName(e.cat);
     document.getElementById("peekTitle").textContent=e.title||"제목 없음";
-    document.getElementById("peekTime").textContent = e.allDay ? "하루 종일" : (minToStr(e.start)+" – "+minToStr(e.end));
+    document.getElementById("peekTime").textContent=minToStr(e.start)+" – "+minToStr(e.end);
     var when;
     if(e.type==="lecture"){
       when="매주 "+(e.days||[]).slice().sort(function(a,b){return a-b;}).map(function(d){ return DOW[d]; }).join("·");
       if(e.from||e.until) when+="  ("+(e.from?fmtMD(e.from):"")+" ~ "+(e.until?fmtMD(e.until):"")+")";
     } else {
       var dd=parseYmd(e.date); when=(dd.getMonth()+1)+"월 "+dd.getDate()+"일 ("+DOW[wd(dd)]+")";
-      if(e.endDate){ var de=parseYmd(e.endDate); when+=" – "+(de.getMonth()+1)+"월 "+de.getDate()+"일 ("+DOW[wd(de)]+")"; }
     }
     document.getElementById("peekWhen").textContent=when;
     var lr=document.getElementById("peekLocRow");
@@ -2396,15 +2342,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     daysField.style.display = isRepeat?"":"none";
     rangeField.style.display = isRepeat?"":"none";
     dateField.style.display = isRepeat?"none":"";
-    // 하루 종일: 시간 줄 숨김, 특정 날짜면 끝 날짜(여러 날)
-    document.getElementById("timeRow").style.display = form.allDay ? "none" : "";
-    var showEnd = form.allDay && !isRepeat;
-    document.getElementById("endArrow").style.display = showEnd ? "" : "none";
-    document.getElementById("fEndDate").style.display = showEnd ? "" : "none";
-    var sw=document.getElementById("allDaySw"); sw.classList.toggle("on", !!form.allDay); sw.setAttribute("aria-checked", form.allDay ? "true" : "false");
   }
-  document.getElementById("allDaySw").addEventListener("click", function(){ form.allDay=!form.allDay; syncType(); });
-  document.getElementById("fEndDate").addEventListener("change", function(){ if(/^(끝 날짜|60일)/.test(errEl.textContent)) errEl.textContent=""; });
   function syncChips(){
     document.querySelectorAll("#dayChips button").forEach(function(b){
       b.classList.toggle("on", form.days.indexOf(+b.getAttribute("data-d"))>=0);
@@ -2654,7 +2592,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     document.getElementById("sheetTitle").textContent="일정 추가";
     document.getElementById("delBtn").style.display="none";
     var d=parseYmd(dateStr);
-    form.type="lecture"; form.days=[wd(d)]; form.date=dateStr; form.allDay=false; document.getElementById("fEndDate").value="";
+    form.type="lecture"; form.days=[wd(d)]; form.date=dateStr;
     if(!catById(form.cat)) form.cat=categories[0].id;   // 마지막에 쓰던 카테고리 유지
     form.color=catColor(form.cat);                      // 새 일정은 카테고리 색으로 시작
     fTitle.value=""; fLoc.value=""; fDate.value=dateStr;
@@ -2670,7 +2608,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     editId=e.id;
     document.getElementById("sheetTitle").textContent="일정 편집";
     document.getElementById("delBtn").style.display="";
-    form.type=e.type; form.allDay=!!e.allDay; document.getElementById("fEndDate").value=e.endDate||"";
+    form.type=e.type;
     form.cat=(e.cat && catById(e.cat)) ? e.cat : categories[0].id;
     form.color=e.color||catColor(form.cat);
     form.days=(e.days||[]).slice();
@@ -2688,7 +2626,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // ===== 쓰던 내용 보호 · 최근 제목 · 카테고리별 길이 =====
   var evSig0="";
-  function evSig(){ return JSON.stringify([!!form.allDay, document.getElementById("fEndDate").value, fTitle.value.trim(), form.type, form.days.slice().sort(), fDate.value, fStart.value, fEnd.value, form.cat, form.color, fLoc.value.trim(), fFrom.value, fUntil.value]); }
+  function evSig(){ return JSON.stringify([fTitle.value.trim(), form.type, form.days.slice().sort(), fDate.value, fStart.value, fEnd.value, form.cat, form.color, fLoc.value.trim(), fFrom.value, fUntil.value]); }
   function evDirty(){ return sheet.classList.contains("on") && evSig()!==evSig0 && !!(editId || fTitle.value.trim()); }
   // 최근에 쓴 제목 (새로 추가할 때만). 쓰는 중이면 그 글자가 들어간 것만
   function recentFrom(list, cur){
@@ -2711,8 +2649,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     if(e.cat && catById(e.cat)) form.cat=e.cat;
     form.color=e.color || catColor(form.cat);
     fLoc.value=e.location || "";
-    form.allDay=!!e.allDay; syncType();
-    if(!e.allDay){ setEndByDur(Math.max(5, e.end-e.start)); endTouched=true; }   // 그 일정의 길이
+    setEndByDur(Math.max(5, e.end-e.start)); endTouched=true;   // 그 일정의 길이
     syncCat(); syncSwatch(); renderEvRecent();
     if(e.location) setAdvanced(true);
   });
@@ -2743,14 +2680,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var title=fTitle.value.trim();
     if(!title){ errEl.textContent="제목을 입력해 주세요"; fTitle.focus(); return; }
     var s=strToMin(fStart.value||"0:0"), en=strToMin(fEnd.value||"0:0");
-    if(form.allDay){ s=0; en=24*60; }   // 하루 종일: 예전 앱 · 정제 검사도 통과하게 0~24시로 저장
-    else if(en<=s){ checkTimes(); fEnd.focus(); return; }
-    var endDate="", fED=document.getElementById("fEndDate").value, sd0=fDate.value||form.date;
-    if(form.allDay && form.type!=="lecture" && fED && fED!==sd0){
-      if(fED<sd0){ errEl.textContent="끝 날짜가 시작보다 빨라요"; return; }
-      if((parseYmd(fED)-parseYmd(sd0))/864e5>60){ errEl.textContent="60일까지 넣을 수 있어요"; return; }
-      endDate=fED;
-    }
+    if(en<=s){ checkTimes(); fEnd.focus(); return; }
     if(form.type==="lecture" && form.days.length===0){ errEl.textContent="요일을 하나 이상 골라 주세요"; return; }
     if(form.type==="lecture" && fFrom.value && fUntil.value && fUntil.value < fFrom.value){ errEl.textContent="반복 종료일이 시작일보다 빨라요"; setAdvanced(true); return; }
 
@@ -2763,13 +2693,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       if(fUntil.value) rec.until=fUntil.value;
     } else {
       rec.date=fDate.value||form.date;
-      if(endDate) rec.endDate=endDate;
     }
-    if(form.allDay) rec.allDay=true;
 
     if(editId){ for(var i=0;i<events.length;i++){ if(events[i].id===editId){ events[i]=rec; break; } } }
     else events.push(rec);
-    if(!form.allDay) rememberDur(cat, en-s);
+    rememberDur(cat, en-s);
     save(); closeSheet(); render();
   };
 
@@ -2812,10 +2740,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     } else {
       if(!DATE_RE.test(e.date)) return null;
       o.date=e.date;
-      // 여러 날(하루 종일만): 끝 날짜는 시작 뒤, 최대 60일
-      if(e.allDay===true && DATE_RE.test(e.endDate) && e.endDate>e.date && (parseYmd(e.endDate)-parseYmd(e.date))/864e5<=60) o.endDate=e.endDate;
     }
-    if(e.allDay===true) o.allDay=true;
     return o;
   }
   var bkLast=document.getElementById("bkLast");
