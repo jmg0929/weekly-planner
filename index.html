@@ -1495,7 +1495,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       anchor=parseYmd(ds); selDate=ds; calMonth=null; render(); return;
     }
     if(ev.target.closest("[data-toweek]")){ setListMode("week"); return; }
-    if(ev.target.closest("[data-addev]")){ selDate=ymd(anchor); openAdd(ymd(anchor), 9*60); return; }
+    if(ev.target.closest("[data-addev]")){ selDate=ymd(anchor); openAdd(ymd(anchor), 9*60, true); return; }   // 그 날 약속이 대부분 → 특정 날짜로
     if(ev.target.closest("[data-addtd]")){ openTodo(null, ymd(anchor)); return; }
     var row=ev.target.closest(".arow");
     if(row){ var id=row.getAttribute("data-id"); for(var i=0;i<events.length;i++){ if(events[i].id===id){ openPeek(events[i], ymd(anchor)); return; } } return; }
@@ -1555,7 +1555,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var ds=cell.getAttribute("data-date");
     var row=ev.target.closest(".arow");
     if(row){ var id=row.getAttribute("data-id"); for(var i=0;i<events.length;i++){ if(events[i].id===id){ openPeek(events[i], ds); return; } } return; }
-    selDate=ds; openAdd(ds, 9*60);   // 빈 곳 탭 → 그 날 일정 추가
+    selDate=ds; openAdd(ds, 9*60, true);   // 빈 곳 탭 → 그 날 일정 추가 (날짜 칸이라 기본 "특정 날짜")
   });
 
   // 탭 바: 시간표 ↔ 주간 목록
@@ -1799,7 +1799,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   document.getElementById("todayBtn").onclick=function(){ anchor=new Date(); selDate=ymd(new Date()); winStart=startOfDay(new Date()); calMonth=null; render(); if(layout==="grid") scrollToNow(); };
   document.getElementById("addBtn").onclick=function(){
     if(layout==="todo"){ var mon=weekStartOf(anchor), t=startOfDay(new Date()); openTodo(null, ymd((t>=mon && t<addDays(mon,7)) ? t : mon)); }
-    else openAdd((layout==="list" && listMode==="month") ? ymd(anchor) : selDate, 9*60);
+    else if(layout==="list" && listMode==="month") openAdd(ymd(anchor), 9*60, true);
+    else if(layout==="list"){ var wsL=weekStartOf(anchor), tL=startOfDay(new Date()); openAdd(ymd((tL>=wsL && tL<addDays(wsL,7)) ? tL : wsL), 9*60, true); }   // 주간 목록: 그 주(오늘이 있으면 오늘)
+    else openAdd(selDate, 9*60);
   };
   backBtn.onclick=function(){
     // 하루보기에서 다른 날로 옮겨 다녔으면, 돌아갈 때 그 날이 보이도록 창을 맞춤
@@ -2649,12 +2651,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     openSheet(listSheet);
   }
 
-  function openAdd(dateStr, startMin){
+  function openAdd(dateStr, startMin, onDate){   // onDate: 날짜를 골라 추가(월 캘린더) → 기본 "특정 날짜"
     editId=null;
     document.getElementById("sheetTitle").textContent="일정 추가";
     document.getElementById("delBtn").style.display="none";
     var d=parseYmd(dateStr);
-    form.type="lecture"; form.days=[wd(d)]; form.date=dateStr; form.allDay=false; document.getElementById("fEndDate").value="";
+    form.type=onDate ? "appointment" : "lecture"; form.days=[wd(d)]; form.date=dateStr; form.allDay=false; document.getElementById("fEndDate").value="";
     if(!catById(form.cat)) form.cat=categories[0].id;   // 마지막에 쓰던 카테고리 유지
     form.color=catColor(form.cat);                      // 새 일정은 카테고리 색으로 시작
     fTitle.value=""; fLoc.value=""; fDate.value=dateStr;
