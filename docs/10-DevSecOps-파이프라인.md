@@ -1,8 +1,9 @@
-# 10. DevSecOps 파이프라인 — 1단계 CI 보안 자동화 · 2단계 클라우드 권한 · 실행 중 점검
+# 10. DevSecOps 파이프라인 — 1단계 CI 보안 자동화 · 2단계 클라우드 권한 · 실행 중 점검 · 3단계 배포 게이트
 
 > 사람이 "기억해서" 하던 검사를 **코드로 강제**한다. 커밋 직전(내 PC) → push 직후(GitHub Actions) → 배포 직전(`deploy.ps1`) 세 곳에서 같은 규칙을 검사한다.
 > 도입: 2026-11-11 — 1단계 `be7a5d5`, 2단계 `525fb57` · 앱 코드(`index.html`)는 바꾸지 않음 → 캐시 버전 그대로
 > 2단계 요약: **RLS 공격 시나리오 56/56 차단** (CI 안 로컬 Supabase), 발견 사항 **F-01** 재현 · **ZAP 첫 스캔 경고 21종(규칙 16개) → 판정표**(고칠 일 3 · 수용 8 · 무시 5)
+> 3단계 요약 (2026-11-18 `d877f78`): **검사 통과 → 공개 파일만 빌드 → 사람 승인 → 배포 → 실제 사이트 확인**. 저장소 전체가 공개되던 문제(배포 스크립트 · DB 스키마 · 테스트 HTTP 200)를 허용 목록 빌드로 막음 (§11)
 
 ## 1. 왜 만들었나
 
@@ -35,10 +36,13 @@ flowchart LR
   Z --> ISS["이슈 #1<br/>ZAP 주간 점검"]
   SA -- SARIF --> SEC["Security 탭<br/>Code scanning"]
   Q -- SARIF --> SEC
-  P --> GH["GitHub Pages 배포"]
+  T & S & SA --> B["빌드<br/>공개 파일만 (허용 목록)"]
+  B --> AP{"사람 승인<br/>github-pages 환경"}
+  AP --> GH["GitHub Pages 배포"]
+  GH --> VF["실제 사이트 확인<br/>버전 · 해시 · 비공개 404"]
 ```
 
-> 지금은 검사와 Pages 배포가 **나란히** 돈다 (검사가 실패해도 배포는 됨). 검사 통과 → 승인 → 배포 순서의 게이트는 3단계에서 Pages 배포를 Actions로 옮기며 적용 (§8).
+> main에 push하면 Deploy 워크플로가 검사(test · secrets · sast)를 먼저 돌리고, 모두 통과해야 빌드 → 승인 → 배포로 넘어간다 (3단계, §11). 2단계까지는 검사와 Pages 배포가 나란히 돌아 검사가 실패해도 배포됐음.
 
 ## 3. 구성 요소
 
@@ -50,6 +54,7 @@ flowchart LR
 | CI `sast` | Semgrep 1.182.1 사용자 규칙 3개 | `esc()` 없는 `innerHTML`, `eval` 류, 클라이언트의 서버 키 | T6 (XSS) | `.semgrep/planner-xss.yaml` |
 | CodeQL | GitHub CodeQL `security-extended` | 일반 JS 취약점 패턴 (DOM XSS, 안전하지 않은 정규식 등) | 전반 | `.github/workflows/codeql.yml` |
 | 배포 직전 | `deploy.ps1` 1.5단계 | 위 검사를 통과하지 못한 배포 | — | `deploy.ps1` |
+| 배포 게이트 | Deploy 워크플로 + `github-pages` Environment | 검사 실패한 배포 · 비공개 파일 공개 · 승인 없는 배포 | 비밀 · 정보 노출 | `.github/workflows/deploy.yml` |
 
 ## 4. 비밀값 검사
 
@@ -139,7 +144,7 @@ Semgrep은 `.html` 안의 `<script>`를 읽지 못함 → `scripts/extract-inlin
 
 | 항목 | 현재 | 다음 |
 |---|---|---|
-| 배포 게이트 | 검사와 Pages 배포가 나란히 실행 | **3단계**: Pages 배포를 Actions로 옮겨 `검사 통과 → Environment 승인(Required reviewers) → 배포`, main 브랜치 보호 |
+| 배포 게이트 | ~~검사와 Pages 배포가 나란히 실행~~ | **3단계 완료** (§11). main 브랜치 보호는 1인 흐름이라 보류 |
 | Semgrep 범위 | 클라이언트 JS taint는 함수 안(intraprocedural)만 추적 | 새 화면 패턴이 생기면 테스트 예제부터 추가 |
 | 서버(클라우드) 설정 | ~~RLS는 SQL 파일 + 수동 확인~~ | **2단계 완료** (§9). 남은 일: F-01 완화(서버 시각 상한) — 운영 DB 적용은 대시보드에서 직접 |
 | 실행 중 앱 점검 | ~~없음~~ | **2단계 완료** (§10). 남은 일: ZAP의 고칠 일 3건 — `<meta>` CSP · 글꼴 CSS SRI(앱 코드 수정이라 기능 작업과 맞춰서) · 클릭재킹(커스텀 도메인 필요) |
@@ -211,3 +216,54 @@ Semgrep은 `.html` 안의 `<script>`를 읽지 못함 → `scripts/extract-inlin
 | **무시 (IGNORE)** | 캐시 관련 3종 · Sec-Fetch-* · Modern Web App | CDN 캐시는 의도된 동작(응답에 개인 데이터 없음), Sec-Fetch-*는 스캐너 자신의 요청 특성, 정보 제공용 |
 
 > 판정 원칙: **근거 없는 IGNORE 금지**. 고칠 수 있는 것은 WARN으로 남겨 매주 이슈에 계속 보이게 하고, 플랫폼 한계는 [07-보안설계 §5 수용 위험](07-보안설계.md#5-수용한-위험-accepted-risks)과 연결.
+
+## 11. 3단계 — 배포 게이트 (검사 → 승인 → 배포)
+
+> 도입: 2026-11-18 `d877f78` · 앱 코드 변경 없음
+
+### 11.1 바꾼 것
+
+| 이전 상태 | 위험 | 3단계에서 바꾼 것 |
+|---|---|---|
+| 검사와 Pages 배포가 나란히 실행 | 검사가 실패해도 배포됨 — 깨진 코드 · 비밀값이 든 커밋도 공개 | Deploy 워크플로가 CI를 `workflow_call`로 **먼저** 실행, 통과해야 다음 단계 |
+| `main` 브랜치 **전체**를 그대로 공개 | `deploy.ps1` · `supabase/schema.sql` · 테스트 · 스크립트가 주소로 바로 열림 (HTTP 200 확인) → DB 구조 · 내부 도구 정보 노출 | **허용 목록 빌드**: 앱 파일 · 아이콘 · `updates/` · `docs/`만 모아서 공개 |
+| push = 바로 배포 | 실수로 올린 커밋도 곧장 사용자 기기로 | `github-pages` Environment **Required reviewers** — 사람이 승인해야 배포 |
+| 배포 확인은 앱을 열어 눈으로 | 배포 실패 · 옛 버전 캐시를 늦게 알아챔 | 배포 뒤 job이 실제 사이트를 자동 확인 |
+
+### 11.2 흐름 (`.github/workflows/deploy.yml`)
+
+| job | 하는 일 | 실패하면 |
+|---|---|---|
+| 1. 검사 | `ci.yml` 재사용 — 문법 · 테스트 / gitleaks / Semgrep | 승인 요청 없이 멈춤, 사이트는 이전 버전 그대로 |
+| 2. 빌드 (공개 파일만) | 허용 목록을 `_src`로 복사 → 금지 파일(`*.ps1` `*.bat` `*.sql` `*.toml` · `tests/` · `scripts/` · 숨김 파일)이 섞이면 실패 → 공개될 파일에 `secret-guard` 한 번 더 → Jekyll(`docs/*.md` → 페이지, 기존 주소 유지) → Pages artifact | 멈춤 |
+| 3. 승인 후 배포 | `github-pages` 환경에서 대기 → 승인 → `deploy-pages`. 배포 권한(`pages: write` · `id-token: write`)은 **이 job에만** | — |
+| 4. 실제 사이트 확인 | `sw.js`의 `planner-vN`이 저장소와 같아질 때까지 확인(최대 5분) · `index.html` SHA-256 비교 · 비공개 파일 4개가 404인지 | 빨간 X (이미 배포됨 → 알림 역할) |
+
+### 11.3 설계 판단
+
+| 판단 | 이유 |
+|---|---|
+| 거부 목록이 아니라 **허용 목록** | 새 파일이 생겨도 기본은 비공개. 빠뜨리면 "안 보임"으로 바로 드러나고, 반대 실수(노출)는 조용함 |
+| 같은 검사 두 번 방지 | `ci.yml`의 push 트리거를 `branches-ignore: [main]`으로 — main은 Deploy가 부름. PR · 다른 브랜치 · 수동 실행은 그대로 |
+| 반쯤 배포 방지 | `concurrency: pages` + `cancel-in-progress: false` |
+| 승인자 = 본인, "Prevent self-review" 끔 | 혼자 쓰는 저장소라 켜면 아무도 승인 못 함. 가치는 **자동 검사 결과를 본 뒤 한 번 더 결정** + 누가 언제 승인했는지 기록 |
+| `main` 브랜치 보호는 보류 | `deploy.bat`이 main에 바로 push하는 1인 흐름 유지. 게이트는 배포(Environment)에 둠 — 코드가 main에 들어와도 **공개는 승인 뒤** |
+| 새 Action 4개도 해시 고정 | `configure-pages` v6.0.0 · `jekyll-build-pages` v1.0.13 · `upload-pages-artifact` v5.0.0 · `deploy-pages` v5.0.1 (§6 규칙 그대로) |
+
+### 11.4 첫 실행 (커밋 `d877f78`, 2026-11-18)
+
+| job | 결과 | 걸린 시간 |
+|---|---|---|
+| 1. 검사 · 문법 · 테스트 / gitleaks / Semgrep | 성공 | 13초 / 9초 / 28초 (나란히) |
+| 2. 빌드 (공개 파일만) | 성공 | 33초 |
+| 승인 대기 | 승인 | 약 1분 25초 |
+| 3. 배포 | 성공 | 9초 |
+| 4. 실제 사이트 확인 | 성공 | 5초 — `planner-v60 · index.html 일치 · 비공개 파일 404` |
+
+| 경로 | 이전 | 이후 |
+|---|---|---|
+| `deploy.ps1` | 200 | **404** |
+| `supabase/schema.sql` | 200 | **404** |
+| `tests/sw-cache-policy.test.js` · `scripts/secret-guard.js` | 200 | **404** |
+| `.gitleaks.toml` · `.github/workflows/ci.yml` | 404 (Jekyll이 숨김 파일 제외) | 404 |
+| 앱 · `sw.js` · manifest · 아이콘 · `updates/` · `docs/` 페이지 | 200 | 200 (주소 그대로) |
