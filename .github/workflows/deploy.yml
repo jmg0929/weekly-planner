@@ -1,0 +1,99 @@
+# 배포 게이트 — main에 올라오면: 검사 전부 통과 → 공개할 파일만 모아 빌드 → 사람이 승인 → 배포 → 실제 사이트 확인
+# 승인 = GitHub Settings → Environments → github-pages의 Required reviewers (모바일 앱에서도 승인 가능)
+# 예전 방식(main 브랜치를 그대로 공개)과 달리 테스트 · 스크립트 · DB 스키마 · 배포 스크립트는 사이트에 올라가지 않음
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 배포는 한 번에 하나씩, 진행 중인 배포는 취소하지 않음 (반쯤 배포된 상태 방지)
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: 1. 검사
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      security-events: write
+
+  build:
+    name: 2. 빌드 (공개 파일만)
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 공개할 파일만 모으기 (허용 목록)
+        run: |
+          mkdir _src
+          cp index.html sw.js manifest.webmanifest ./*.png _src/
+          cp -r updates docs _src/              # 업데이트 내역 · 포트폴리오 문서 (지금과 같은 주소 유지)
+          echo "공개 파일:"; (cd _src && find . -type f | sort)
+      - name: 비공개 파일이 섞이지 않았는지 확인
+        run: |
+          if find _src \( -name '*.ps1' -o -name '*.bat' -o -name '*.sql' -o -name '*.toml' -o -path '*/tests/*' -o -path '*/scripts/*' -o -name '.*' \) | grep .; then
+            echo "::error::공개하면 안 되는 파일이 있어요"; exit 1
+          fi
+          node scripts/secret-guard.js $(find _src -type f -not -name '*.png')
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Jekyll 빌드 (예전과 같은 방식으로 문서 .md → 페이지)
+        uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1.0.13
+        with:
+          source: ./_src
+          destination: ./_site
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ./_site
+
+  deploy:
+    name: 3. 승인 후 배포
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages # 여기서 승인을 기다림 (Required reviewers)
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  verify:
+    name: 4. 실제 사이트 확인
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 새 버전이 떴는지 · 비공개 파일이 안 보이는지
+        env:
+          SITE: https://jmg0929.github.io/weekly-planner
+        run: |
+          want=$(grep -o 'planner-v[0-9]*' sw.js | head -1)
+          for i in $(seq 1 20); do
+            got=$(curl -fsS "$SITE/sw.js?nc=$GITHUB_RUN_ID-$i" | grep -o 'planner-v[0-9]*' | head -1 || true)
+            [ "$got" = "$want" ] && break
+            sleep 15
+          done
+          [ "$got" = "$want" ] || { echo "::error::사이트 버전 $got (기대 $want)"; exit 1; }
+          echo "사이트 버전 $got 확인"
+          [ "$(curl -fsS "$SITE/index.html?nc=$GITHUB_RUN_ID" | sha256sum)" = "$(sha256sum < index.html)" ] || { echo "::error::index.html 내용이 저장소와 달라요"; exit 1; }
+          for p in deploy.ps1 supabase/schema.sql tests/sw-cache-policy.test.js scripts/secret-guard.js; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/$p?nc=$GITHUB_RUN_ID")
+            [ "$code" = "404" ] || { echo "::error::$p 가 공개돼 있어요 ($code)"; exit 1; }
+          done
+          echo "::notice title=배포 확인::$got · index.html 일치 · 비공개 파일 404"

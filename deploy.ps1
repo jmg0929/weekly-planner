@@ -81,4 +81,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "[완료] 배포됐어요! 1~2분 뒤 아이폰에서 앱을 완전히 껐다 켜면 새 버전이 떠요." -ForegroundColor Green
+Write-Host "[완료] 올렸어요! GitHub 검사(2~3분)가 끝나면 승인 요청이 와요." -ForegroundColor Green
+Write-Host "       승인: https://github.com/jmg0929/weekly-planner/actions  (Deploy → Review deployments → Approve)" -ForegroundColor Green
+Write-Host "       승인 후 1~2분 뒤 아이폰에서 앱을 완전히 껐다 켜면 새 버전이 떠요." -ForegroundColor Green

@@ -4,8 +4,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches-ignore: [main] # main은 Deploy 워크플로가 배포 전에 이 검사를 부름 (같은 검사 두 번 방지)
   pull_request:
+  workflow_call: # Deploy 워크플로의 1단계로 재사용
   workflow_dispatch:
 
 # 기본은 읽기 전용 — 필요한 job에서만 권한을 더 줌 (최소 권한)
