@@ -93,7 +93,15 @@ jobs:
           echo "사이트 버전 $got 확인"
           [ "$(curl -fsS "$SITE/index.html?nc=$GITHUB_RUN_ID" | sha256sum)" = "$(sha256sum < index.html)" ] || { echo "::error::index.html 내용이 저장소와 달라요"; exit 1; }
           for p in deploy.ps1 supabase/schema.sql tests/sw-cache-policy.test.js scripts/secret-guard.js; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/$p?nc=$GITHUB_RUN_ID")
-            [ "$code" = "404" ] || { echo "::error::$p 가 공개돼 있어요 ($code)"; exit 1; }
+            # 5xx · 연결 실패(000)는 Pages 쪽 일시 오류 → 5초 간격 5번까지 다시 물어봄 (공개 여부를 모르는 상태)
+            for i in 1 2 3 4 5; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/$p?nc=$GITHUB_RUN_ID-$i")
+              case "$code" in 5??|000) sleep 5 ;; *) break ;; esac
+            done
+            [ "$code" = "404" ] && continue
+            case "$code" in
+              5??|000) echo "::error::$p 확인 못 함 — 서버 응답 $code (공개 여부 모름, 잠시 뒤 Re-run)"; exit 1 ;;
+              *)       echo "::error::$p 가 공개돼 있어요 ($code)"; exit 1 ;;
+            esac
           done
           echo "::notice title=배포 확인::$got · index.html 일치 · 비공개 파일 404"
