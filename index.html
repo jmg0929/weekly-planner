@@ -1444,8 +1444,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   }
   // ---- 월 캘린더 ----
   // 칸: 특정 날짜 일정 + 시험 · 마감(달력 표시) 할 일만 (매주 반복 강의는 칸을 꽉 채워서 아래 목록에만)
-  // 날짜 탭 = 그 날 고르기(아래 목록), 고른 날짜를 한 번 더 탭 = 그 주(주간 목록)로
+  // 날짜 탭 = 그 날 고르기(아래 목록), 고른 날짜를 한 번 더 탭 = 그 날 할 일 추가 (주간 목록은 `주간 ›` · 탭 버튼)
+  // 앞뒤 달 날짜(첫 줄 · 마지막 줄의 흐린 칸)를 골라도 보던 달 그대로 (calMonth 고정)
   function addMonths(d, n){ var y=d.getFullYear(), m=d.getMonth()+n, last=new Date(y, m+1, 0).getDate(); return new Date(y, m, Math.min(d.getDate(), last)); }
+  function monthStep(n){   // 보고 있는 달에서 n달, 날짜(일)는 고른 날 그대로 (그 달에 없으면 말일)
+    var cm=calMonth || anchor, y=cm.getFullYear(), m=cm.getMonth()+n, last=new Date(y, m+1, 0).getDate();
+    return new Date(y, m, Math.min(anchor.getDate(), last));
+  }
   function setListMode(m){ listMode=m; calMonth=null; try{ localStorage.setItem("weekly-planner-listmode", m); }catch(e){} render(); }
   var MV_LANES=3;   // 월 칸 위쪽 하루 종일 막대 줄 수
   function renderMonth(){
@@ -1511,8 +1516,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     var cell=ev.target.closest(".mv-d");
     if(cell){
       var ds=cell.getAttribute("data-date");
-      if(ds===ymd(anchor)){ setListMode("week"); return; }   // 고른 날을 한 번 더 → 그 주
-      anchor=parseYmd(ds); selDate=ds; calMonth=null; render(); return;
+      if(ds===ymd(anchor)){ openTodo(null, ds); return; }   // 고른 날을 한 번 더 → 그 날 할 일 추가
+      calMonth=calMonth || new Date(anchor.getFullYear(), anchor.getMonth(), 1);   // 지금 보는 달 고정
+      anchor=parseYmd(ds); selDate=ds; render(); return;
     }
     if(ev.target.closest("[data-toweek]")){ setListMode("week"); return; }
     if(ev.target.closest("[data-addev]")){ selDate=ymd(anchor); openAdd(ymd(anchor), 9*60, true); return; }   // 그 날 약속이 대부분 → 특정 날짜로
@@ -1545,18 +1551,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     return out;
   }
   // 미니 달력 (주 선택기). mark(ds)가 참인 날엔 점, 달력 표시 카테고리의 할 일이 있는 날엔 색 동그라미
-  function miniCal(cellCls, mon, cm, mark){
+  function miniCal(cellCls, mon, cm, mark, range){   // range=[시작, 끝] (ymd)이면 그 날들만 칠함 (시간표 4 · 5일 · 하루), 없으면 mon이 있는 주 줄
     var today=ymd(new Date());
     var h='<div class="'+cellCls+' mcal"><div class="mhead"><button data-cal="-1" aria-label="이전 달">‹</button><button class="mt" data-bigcal>'+cm.getFullYear()+'년 '+(cm.getMonth()+1)+'월<span class="car">▾</span></button><button data-cal="1" aria-label="다음 달">›</button></div><div class="mgrid">';
     for(var w=0;w<7;w++) h+='<div class="mw">'+CAL_DOW[w]+'</div>';
     var selMon=ymd(mon), d=weekStartOf(cm), pins=todoPins();
     for(var row=0; row<6; row++){
       if(row>0 && d.getMonth()!==cm.getMonth() && d>cm) break;   // 다음 달로 넘어가면 끝
-      var rowSel = (ymd(d)===selMon);
+      var rowSel = !range && (ymd(d)===selMon);
       for(var c=0;c<7;c++){
         var ds=ymd(d);
+        if(range){ var inR=(ds>=range[0] && ds<=range[1]); rowSel=inR; var rFirst=inR && (ds===range[0] || c===0), rLast=inR && (ds===range[1] || c===6); }
         var mk=mark ? mark(ds) : null, pin=pins[ds];
-        var cls="md"+dayCls(d)+(holidays[ds]?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(rowSel?" sel"+(c===0?" first":"")+(c===6?" last":""):"")+(mk?" has":"")+(pin?" pin"+(pin.done?" pdone":"")+(pin.multi?" multi":""):"");
+        var cls="md"+dayCls(d)+(holidays[ds]?" holiday":"")+(d.getMonth()!==cm.getMonth()?" other":"")+(ds===today?" today":"")+(rowSel?" sel"+((range ? rFirst : c===0)?" first":"")+((range ? rLast : c===6)?" last":""):"")+(mk?" has":"")+(pin?" pin"+(pin.done?" pdone":"")+(pin.multi?" multi":""):"");
         h+='<div class="'+cls+'" data-date="'+ds+'"'+(pin?' style="--pin:'+pin.color+(pin.color2?';--pin2:'+pin.color2:'')+'" title="'+esc(pin.title)+'"':'')+'><span>'+d.getDate()+'</span></div>';
         d=addDays(d,1);
       }
@@ -1833,14 +1840,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     });
   }
   function goPrev(){
-    if(layout!=="grid"){ anchor = (layout==="list" && listMode==="month") ? addMonths(anchor,-1) : addDays(weekStartOf(anchor),-7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:(listMode==="month"?mviewEl:agridEl); ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-prev"); return; }
+    if(layout!=="grid"){ anchor = (layout==="list" && listMode==="month") ? monthStep(-1) : addDays(weekStartOf(anchor),-7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:(listMode==="month"?mviewEl:agridEl); ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-prev"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),-1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,-1); anchor=winStart; }   // 하루씩 미끄러지기
     else anchor=addDays(weekStartOf(anchor),-7);
     render(); animateNav(-1);
   }
   function goNext(){
-    if(layout!=="grid"){ anchor = (layout==="list" && listMode==="month") ? addMonths(anchor,1) : addDays(weekStartOf(anchor),7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:(listMode==="month"?mviewEl:agridEl); ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-next"); return; }
+    if(layout!=="grid"){ anchor = (layout==="list" && listMode==="month") ? monthStep(1) : addDays(weekStartOf(anchor),7); calMonth=null; render(); var ag=(layout==="todo")?tgridEl:(listMode==="month"?mviewEl:agridEl); ag.classList.remove("anim-next","anim-prev"); void ag.offsetWidth; ag.classList.add("anim-next"); return; }
     if(view==="day"){ selDate=ymd(addDays(parseYmd(selDate),1)); anchor=parseYmd(selDate); }
     else if(mode!=="7"){ winStart=addDays(winStart,1); anchor=winStart; }
     else anchor=addDays(weekStartOf(anchor),7);
@@ -1961,6 +1968,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   // 제목 탭 -> 날짜로 점프
   var jumpDate=document.getElementById("jumpDate");
   document.getElementById("titleBtn").addEventListener("click", function(){
+    if(layout==="grid"){ openBigCal(); return; }   // 시간표: 큰 달력에서 날짜 고르기 (지금 보이는 날들 표시)
     jumpDate.value = (layout!=="grid") ? ymd(weekStartOf(anchor)) : (view==="day") ? selDate : (mode!=="7" ? ymd(winStart) : ymd(weekStartOf(anchor)));
     try{ if(jumpDate.showPicker) jumpDate.showPicker(); else { jumpDate.focus(); jumpDate.click(); } }catch(e){ try{ jumpDate.focus(); jumpDate.click(); }catch(_){} }
   });
@@ -2070,14 +2078,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       });
     });
   }
-  // 꾸욱(0.38초) 눌러 들어 올린 뒤 위아래로 끌어 같은 날 안에서 순서 바꾸기 (칸 · 하루 확대 보기 공통)
+  // 꾸욱(0.38초) 눌러 들어 올린 뒤 위아래로 끌어 같은 날 안에서 순서 바꾸기 (칸 · 하루 확대 보기 · 월 캘린더 고른 날 목록 공통)
   // 놓으면 그 날 전체를 ord 0,1,2…로 다시 매김. 끄는 동안엔 스크롤 · 주 넘기기 스와이프 · 클릭을 막음
   var TODO_HOLD_MS=380, tpress=null, tdrag=null, tdragEnd=0;
   function tdLift(item, y){
     var list=item.parentNode, items=[].slice.call(list.querySelectorAll(".titem"));
     if(items.length<2) return;
     var rects=items.map(function(it){ return it.getBoundingClientRect(); }), idx=items.indexOf(item);
-    tdrag={ item:item, list:list, items:items, rects:rects, idx:idx, to:idx, y0:y, h:rects[idx].height };
+    var gap=Math.max(0, rects[1].top-rects[0].bottom);   // 항목 사이 간격(월 목록은 카드 사이 8px) → 비켜 주는 거리에 포함
+    tdrag={ item:item, list:list, items:items, rects:rects, idx:idx, to:idx, y0:y, h:rects[idx].height+gap };
     item.classList.add("lift"); item.style.transition="none"; item.style.transform="scale(1.03)";
     items.forEach(function(it){ if(it!==item) it.classList.add("shift"); });
   }
@@ -2110,10 +2119,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     order.forEach(function(t, i){ t.ord=i; });
     saveTodos();
     if(layout==="todo") renderTodos();
+    if(layout==="list" && listMode==="month") renderMonth();
     if(todoDaySheet.classList.contains("on")) renderTodoDay();
   }
   function tdCancelPress(){ if(tpress){ clearTimeout(tpress.t); tpress=null; } }
-  [tgridEl, document.getElementById("todoDayList")].forEach(function(box){
+  [tgridEl, document.getElementById("todoDayList"), mviewEl].forEach(function(box){
     box.addEventListener("pointerdown", function(e){
       if(e.button>0 || tdrag) return;
       var item=e.target.closest(".titem"); if(!item) return;
@@ -2166,21 +2176,33 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
   // ===== 큰 달력: 미니 달력 제목을 누르면 손가락 크기 칸으로 (주 고르기 · 시험 날짜 한눈에) =====
   var calSheet=document.getElementById("calSheet"), calBigEl=document.getElementById("calBig"), bigMonth=null;
+  function gridRange(){   // 시간표에 또렷하게 보이는 날들 [시작, 끝]
+    if(view==="day") return [selDate, selDate];
+    if(mode==="7") return [ymd(weekStartOf(anchor)), ymd(addDays(weekStartOf(anchor),6))];
+    return [ymd(winStart), ymd(addDays(winStart, +mode-1))];
+  }
   function renderBigCal(){
     var mark=null;
     if(layout==="todo"){ var m={}; todos.forEach(function(t){ if(!t.done) m[t.date]=1; }); mark=function(ds){ return !!m[ds]; }; }
-    calBigEl.innerHTML=miniCal("bigcal", weekStartOf(anchor), bigMonth, mark);
+    if(layout==="grid"){ var a={}; events.forEach(function(e){ if(e.type!=="lecture" && e.date && !(e.cat && hidden[e.cat])) a[e.date]=1; }); mark=function(ds){ return !!a[ds]; }; }   // 그 날 약속 있음
+    calBigEl.innerHTML=miniCal("bigcal", weekStartOf(anchor), bigMonth, mark, layout==="grid" ? gridRange() : null);
   }
   function openBigCal(){
-    var mid=addDays(weekStartOf(anchor),3);
-    bigMonth = calMonth ? new Date(calMonth) : new Date(mid.getFullYear(), mid.getMonth(), 1);
+    var mid = (layout==="grid") ? parseYmd(gridRange()[0]) : addDays(weekStartOf(anchor),3);
+    bigMonth = (calMonth && layout!=="grid") ? new Date(calMonth) : new Date(mid.getFullYear(), mid.getMonth(), 1);
     renderBigCal(); openSheet(calSheet);
   }
   function bigCalStep(n){ bigMonth=new Date(bigMonth.getFullYear(), bigMonth.getMonth()+n, 1); renderBigCal(); }
   calBigEl.addEventListener("click", function(ev){
     var nav=ev.target.closest("[data-cal]"); if(nav){ bigCalStep(+nav.getAttribute("data-cal")); return; }
     var md=ev.target.closest(".md"); if(!md) return;
-    anchor=parseYmd(md.getAttribute("data-date")); calMonth=null;   // 그 날짜가 있는 주로
+    var ds=md.getAttribute("data-date");
+    if(layout==="grid"){   // 시간표: 보기는 그대로 — 하루면 그 날, 4 · 5일이면 그 날부터, 주면 그 주
+      if(view==="day") selDate=ds;
+      winStart=parseYmd(ds); anchor=parseYmd(ds); calMonth=null;
+      closeSheet(); render(); return;
+    }
+    anchor=parseYmd(ds); calMonth=null;   // 그 날짜가 있는 주로
     closeSheet(); render();
   });
   document.getElementById("calClose").onclick=closeSheet;
