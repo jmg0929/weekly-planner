@@ -311,8 +311,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .evt:active{transform:scale(.97);box-shadow:var(--shadow)}
 /* 카테고리 색 띠: 태그명 줄에만 (짧은 일정은 내용 한 줄 옆에) */
-.evt .etag,.evt.short:not(.cluster) .et{position:relative;padding-left:7px}
-.evt .etag::before,.evt.short:not(.cluster) .et::before{content:"";position:absolute;left:0;top:1px;bottom:1px;width:3px;border-radius:2px;
+.evt .etag,.evt.short .et,.cpage.ps .et{position:relative;padding-left:7px}
+.evt .etag::before,.evt.short .et::before,.cpage.ps .et::before{content:"";position:absolute;left:0;top:1px;bottom:1px;width:3px;border-radius:2px;
   background:color-mix(in srgb,var(--evt) 82%,var(--ink))} /* 파스텔 색이 흐려 보이지 않게 살짝 진하게 */
 .evt .et{
   font-size:11px;font-weight:700;line-height:var(--lh);letter-spacing:-.025em;
@@ -347,8 +347,28 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   overflow:visible;
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 30%,var(--line-strong));
 }
-.evt.cluster .et{padding-right:16px}
-.cdots{display:flex;gap:3px;margin-top:auto;padding-top:2px}
+.evt.cluster{transition:background-color .2s, box-shadow .2s}
+.evt.cluster:active{transform:none}
+.cpages{flex:1;min-height:0;display:flex;gap:8px;border-radius:inherit;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.cpages::-webkit-scrollbar{display:none}
+.cpage{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;overflow:hidden;
+  position:relative;isolation:isolate;padding:var(--pt,6px) 3px 6px 6px}
+.evt.short .cpage{justify-content:center;padding:2px 7px 2px 6px}
+/* 묶음 카드 = 겹친 전체 시간(옅게), 그 안에 지금 보는 일정의 실제 시간만 진하게 */
+:root .evt.cluster{padding:0;background:color-mix(in srgb,var(--evt) 10%,transparent)}   /* :root = 다크모드 .evt 채움보다 뒤에서 이기게 */
+.cfill{position:absolute;left:0;right:0;z-index:-1;border-radius:6px;
+  background:color-mix(in srgb,var(--evt) 22%,var(--surface-2));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--evt) 45%,var(--line-strong))}
+.cpage.ps .et{font-size:9.5px}
+.cpage.ps .etag,.cpage.ps .etime{display:none}
+.cpage > .cfill + *{padding-right:16px}
+/* 7일 보기는 칸이 좁아 배지를 아래(점 옆)로 → 맨 윗줄을 가리지 않게 */
+.evt.cluster.narrow:not(.short) .cbadge{top:auto;bottom:3px}
+.evt.cluster.narrow:not(.short) .cpage > .cfill + *{padding-right:0}
+.cdots i{opacity:.35;transition:opacity .2s}
+.cdots i.on{opacity:1}
+.cdots{display:flex;gap:3px;position:absolute;left:6px;bottom:4px;z-index:2;pointer-events:none}
+.evt.cluster.short .cdots{display:none}
 .cdots i{width:6px;height:6px;border-radius:50%;flex:none}
 .cbadge{
   position:absolute;top:4px;right:4px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;
@@ -1662,7 +1682,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
       evs.sort(function(a,b){ return a.start-b.start || a.end-b.end; });
       var clusters=clusterize(evs);
       for(var m=0;m<clusters.length;m++){ any=true;
-        col.appendChild(clusters[m].length===1 ? evNode(clusters[m][0], ymd(d2)) : clusterNode(clusters[m], ymd(d2)));
+        var nd=clusters[m].length===1 ? evNode(clusters[m][0], ymd(d2)) : clusterNode(clusters[m], ymd(d2));
+        col.appendChild(nd); if(nd._init) nd._init();
       }
     }
 
@@ -1704,25 +1725,54 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     return clusters;
   }
 
-  // 겹친 묶음 카드 (개수 배지 + 첫 일정 제목, 탭하면 목록)
+  // 겹친 묶음 카드: 한 쪽에 일정 하나, 옆으로 밀어 넘김 (점 = 지금 몇 번째)
+  // 탭 = 보고 있는 일정 미리보기, 개수 배지 탭 = 목록. 다시 그려도 보던 쪽 유지
+  var clPage={};
   function clusterNode(cl, ds){
     var minStart=cl[0].start, maxEnd=cl[0].end;
     for(var i=1;i<cl.length;i++){ if(cl[i].start<minStart)minStart=cl[i].start; if(cl[i].end>maxEnd)maxEnd=cl[i].end; }
-    // 묶음에 든 서로 다른 색들 (중복 제거)
-    var cols=[]; cl.forEach(function(e){ var c=evColor(e); if(cols.indexOf(c)<0) cols.push(c); });
     var el=document.createElement("div");
-    var dur=maxEnd-minStart;
-    el.className="evt cluster"+(dur<=45?" short":"");
-    el.style.setProperty("--evt", cols[0]);
+    var dur=maxEnd-minStart, short=dur<=45, wide=(view==="day" || mode!=="7");
+    el.className="evt cluster"+(short?" short":"")+(wide?"":" narrow");
     el.style.top=((minStart-DAY_START*60)/60*hourH)+"px";
     el.style.height=Math.max(dur/60*hourH-2,15)+"px";
     el.style.left="calc(0% + 3px)"; el.style.width="calc(100% - 10px)";
-    var inner='<span class="cbadge">'+cl.length+'</span>';
-    inner+='<div class="et">'+esc(evLabel(cl[0]))+' 외 '+(cl.length-1)+'</div>';
-    if(view==="day" || mode!=="7") inner+='<div class="etime tnum">'+minToStr(minStart)+'–'+minToStr(maxEnd)+'</div>';
-    inner+='<div class="cdots">'+cols.slice(0,5).map(function(c){ return '<i style="background:'+c+'"></i>'; }).join('')+'</div>';
-    el.innerHTML=inner;
-    el.addEventListener("click", function(ev){ ev.stopPropagation(); openClusterList(cl, ds); });
+    var key=ds+"|"+cl.map(function(e){ return e.id; }).join(","), cur=Math.min(clPage[key]||0, cl.length-1);
+    var H=Math.max(dur/60*hourH-2,15);
+    var pages=cl.map(function(e){
+      // 이 일정의 실제 시간 칸(카드 안 위치) + 글자는 그 칸 맨 위에서 시작 (카드 밖으로 밀려나지 않게)
+      var off=(e.start-minStart)/60*hourH, len=Math.max((e.end-e.start)/60*hourH-2, 15);
+      if(off+len>H) len=Math.max(H-off, 15);
+      var ps=!short && (e.end-e.start)<=45;
+      var pt=short ? null : Math.max(0, Math.min(off, H-(ps?18:30)))+(ps?2:6);
+      var h='<div class="cpage'+(ps?' ps':'')+'" style="--evt:'+evColor(e)+(pt!==null?';--pt:'+pt+'px':'')+'">';
+      h+='<span class="cfill" style="top:'+off+'px;height:'+len+'px"></span>';
+      if(!short) h+='<div class="etag">'+esc(catName(e.cat))+'</div>';
+      h+='<div class="et">'+esc(evLabel(e))+'</div>';
+      if(wide && !short) h+='<div class="etime tnum">'+minToStr(e.start)+'–'+minToStr(e.end)+'</div>';
+      return h+'</div>';
+    }).join('');
+    var dots=cl.length<=8 ? cl.map(function(e){ return '<i style="background:'+evColor(e)+'"></i>'; }).join('') : '';
+    el.innerHTML='<span class="cbadge" role="button" aria-label="겹친 일정 '+cl.length+'개 목록">'+cl.length+'</span><div class="cpages">'+pages+'</div>'+(dots?'<div class="cdots">'+dots+'</div>':'');
+    var box=el.querySelector(".cpages"), dotEls=el.querySelectorAll(".cdots i");
+    function show(n){
+      cur=n; clPage[key]=n;
+      el.style.setProperty("--evt", evColor(cl[n]));
+      for(var k=0;k<dotEls.length;k++) dotEls[k].classList.toggle("on", k===n);
+    }
+    show(cur);
+    function pitch(){ return box.clientWidth+8; }   // 쪽 사이 8px (소수점 너비에서 다음 쪽 1px이 비치지 않게)
+    box.addEventListener("scroll", function(){
+      var w=pitch(); if(w<=8) return;
+      var n=Math.max(0, Math.min(cl.length-1, Math.round(box.scrollLeft/w)));
+      if(n!==cur) show(n);
+    }, {passive:true});
+    el._init=function(){ if(cur) box.scrollLeft=cur*pitch(); };   // 화면에 붙은 뒤에야 위치를 정할 수 있음
+    el.addEventListener("click", function(ev){
+      ev.stopPropagation();
+      if(ev.target.closest(".cbadge")) openClusterList(cl, ds);
+      else openPeek(cl[cur], ds);
+    });
     return el;
   }
 
@@ -1826,10 +1876,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   };
 
   // 좌우 스와이프로 주/일 넘기기 (세로 스크롤과 구분: 가로 이동이 뚜렷할 때만)
-  var swX=0, swY=0, swT=0;
+  var swX=0, swY=0, swT=0, swCard=false;
   [document.getElementById("scroll"), agendaEl, document.getElementById("todos")].forEach(function(swEl){
-    swEl.addEventListener("touchstart", function(e){ var t=e.touches[0]; swX=t.clientX; swY=t.clientY; swT=Date.now(); }, {passive:true});
+    swEl.addEventListener("touchstart", function(e){ var t=e.touches[0]; swX=t.clientX; swY=t.clientY; swT=Date.now(); swCard=!!(e.target.closest && e.target.closest(".cpages")); }, {passive:true});
     swEl.addEventListener("touchend", function(e){
+      if(swCard) return;                               // 겹친 일정 카드 안에서 민 건 카드 넘기기
       if(tdrag || Date.now()-tdragEnd<450) return;   // 할 일 끌기 중엔 주를 넘기지 않음
       var t=e.changedTouches[0]; var dx=t.clientX-swX, dy=t.clientY-swY;
       if(Date.now()-swT<600 && Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.6){ if(dx<0) goNext(); else goPrev(); }
@@ -1877,6 +1928,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   [document.getElementById("scroll"), agendaEl, document.getElementById("todos"), document.getElementById("hdays")].forEach(function(el){
     el.addEventListener("wheel", function(e){
       if(e.ctrlKey || Math.abs(e.deltaX)<=Math.abs(e.deltaY)) return;   // 세로 스크롤 · 확대는 그대로
+      if(e.target.closest && e.target.closest(".cpages")) return;          // 겹친 일정 카드 위 가로 밀기 = 카드 넘기기
       e.preventDefault();                                                 // 브라우저 뒤로 가기 제스처 막기
       var dx=e.deltaX*(e.deltaMode===1 ? 30 : 1);                          // 줄 단위(마우스 휠)도 px로
       if(layout!=="grid"){
